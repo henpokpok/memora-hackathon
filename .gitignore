@@ -1,0 +1,20 @@
+node_modules
+dist
+dist-ssr
+*.local
+.env
+.env.*
+.DS_Store
+
+# Backend & SQLite
+server/node_modules
+server/dist
+server/uploads/*
+!server/uploads/.gitkeep
+server/prisma/*.db
+server/prisma/*.db-journal
+*.db
+*.db-journal
+
+# Vercel
+.vercel

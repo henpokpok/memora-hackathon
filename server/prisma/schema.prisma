@@ -1,0 +1,134 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String         @id @default(uuid())
+  email        String         @unique
+  passwordHash String
+  name         String
+  role         String         @default("relative") // "elder" | "relative" | "admin"
+  avatarUrl    String?
+  familyId     String?
+  family       Family?        @relation(fields: [familyId], references: [id])
+  familyMember FamilyMember?
+  mediaUploads MediaUpload[]
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+}
+
+model Family {
+  id           String         @id @default(uuid())
+  familyName   String
+  familyCode   String         @unique // e.g. "MEMORA-8821"
+  users        User[]
+  members      FamilyMember[]
+  memoryOrbs   MemoryOrb[]
+  mediaUploads MediaUpload[]
+  sessionLogs  SessionLog[]
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+}
+
+model FamilyMember {
+  id              String         @id @default(uuid())
+  familyId        String
+  family          Family         @relation(fields: [familyId], references: [id], onDelete: Cascade)
+  userId          String?        @unique
+  user            User?          @relation(fields: [userId], references: [id])
+  name            String
+  role            String         // "elder" | "relative"
+  relationTitle   String         // e.g. "คุณยาย", "ลูกสาวคนโต"
+  avatarIcon      String         @default("heart")
+  avatarColor     String         @default("bg-rose-500 text-white")
+  isCurrentActive Boolean        @default(false)
+  birthYear       Int?
+  notes           String?
+  sessionLogs     SessionLog[]
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+}
+
+model MemoryOrb {
+  id              String         @id @default(uuid())
+  familyId        String
+  family          Family         @relation(fields: [familyId], references: [id], onDelete: Cascade)
+  targetElderId   String?        // สำหรับเจาะจงผู้สูงอายุ หรือ null หากแชร์ทั้งครอบครัว
+  emotion         String         // "joy" | "nostalgia" | "love" | "vitality" | "celebration"
+  title           String
+  titleEn         String?
+  description     String?
+  descriptionEn   String?
+  memoryYear      String         // e.g. "พ.ศ. 2567 (สนามเด็กเล่น)"
+  memoryYearEn    String?        // e.g. "2024 (Playground Park)"
+  photoUrl        String
+  videoUrl        String?        // วิดีโอความทรงจำครอบครัว
+  voicePrompt     String
+  voicePromptEn   String?
+  voiceSuccess    String
+  voiceSuccessEn  String?
+  gentleClue      String
+  gentleClueEn    String?
+  correctAnswer   String
+  correctAnswerEn String?
+  glowColor       String         @default("rgba(245, 158, 11, 0.45)")
+  accentBg        String         @default("from-amber-400 via-amber-300 to-yellow-200")
+  isUnlocked      Boolean        @default(false)
+  uploadedBy      String?
+  uploadedByEn    String?
+  uploadDate      String?
+  uploadDateEn    String?
+  options         MemoryOption[]
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+}
+
+model MemoryOption {
+  id         String    @id @default(uuid())
+  orbId      String
+  orb        MemoryOrb @relation(fields: [orbId], references: [id], onDelete: Cascade)
+  label      String
+  labelEn    String?
+  relation   String
+  relationEn String?
+  photoUrl   String
+  isCorrect  Boolean   @default(false)
+}
+
+model MediaUpload {
+  id               String   @id @default(uuid())
+  familyId         String
+  family           Family   @relation(fields: [familyId], references: [id], onDelete: Cascade)
+  uploaderId       String?
+  uploader         User?    @relation(fields: [uploaderId], references: [id])
+  mediaType        String   // "image" | "video"
+  originalFilename String
+  storedFilename   String
+  filePath         String
+  fileUrl          String
+  fileSize         Int
+  mimeType         String
+  createdAt        DateTime @default(now())
+}
+
+model SessionLog {
+  id              String        @id @default(uuid())
+  familyId        String
+  family          Family        @relation(fields: [familyId], references: [id], onDelete: Cascade)
+  elderId         String
+  elder           FamilyMember  @relation(fields: [elderId], references: [id])
+  completedOrbs   Int
+  totalOrbs       Int
+  streakDays      Int           @default(1)
+  averageSpeedSec Float
+  overallMood     String        @default("ความสุขเบ่งบาน")
+  lineSent        Boolean       @default(false)
+  lineSentAt      DateTime?
+  rawMetricsJson  String?
+  createdAt       DateTime      @default(now())
+}

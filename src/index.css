@@ -1,0 +1,303 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    background-color: #F8FAFC;
+    color: #1E293B;
+    font-family: 'Nunito', 'Mitr', 'Prompt', -apple-system, BlinkMacSystemFont, sans-serif;
+    letter-spacing: -0.01em;
+    overflow-x: hidden;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Mitr', 'Nunito', 'Prompt', sans-serif;
+    letter-spacing: -0.015em;
+  }
+}
+
+/* Living, Dynamic Organic Aura Mist for Top Bar (Rounded, Dynamic Size, Swirling Vapor, Contained within Top Bar) */
+@keyframes auraMistSwirlA {
+  0% {
+    transform: scale(0.9) translate(0px, 0px) rotate(0deg);
+    opacity: 0.65;
+  }
+  33% {
+    transform: scale(1.15) translate(3px, -2px) rotate(15deg);
+    opacity: 0.85;
+  }
+  66% {
+    transform: scale(0.95) translate(-2px, 2px) rotate(-10deg);
+    opacity: 0.6;
+  }
+  100% {
+    transform: scale(0.9) translate(0px, 0px) rotate(0deg);
+    opacity: 0.65;
+  }
+}
+
+@keyframes auraMistSwirlB {
+  0% {
+    transform: scale(1.12) translate(0px, 0px) rotate(0deg);
+    opacity: 0.6;
+  }
+  40% {
+    transform: scale(0.88) translate(-3px, -2px) rotate(-20deg);
+    opacity: 0.8;
+  }
+  75% {
+    transform: scale(1.14) translate(2px, 2px) rotate(10deg);
+    opacity: 0.65;
+  }
+  100% {
+    transform: scale(1.12) translate(0px, 0px) rotate(0deg);
+    opacity: 0.6;
+  }
+}
+
+@keyframes auraMistCoreGlow {
+  0%, 100% {
+    transform: scale(0.92);
+    opacity: 0.75;
+  }
+  50% {
+    transform: scale(1.14);
+    opacity: 0.95;
+  }
+}
+
+.animate-aura-mist {
+  background: radial-gradient(
+    circle at center,
+    rgba(251, 191, 36, 0.75) 0%,
+    rgba(251, 113, 133, 0.55) 35%,
+    rgba(168, 85, 247, 0.35) 60%,
+    transparent 80%
+  );
+  border-radius: 50%;
+  animation: auraMistSwirlA 14s ease-in-out infinite;
+  transform-origin: center center;
+  filter: blur(8px);
+  will-change: transform, opacity;
+}
+
+.animate-aura-mist-glow {
+  background: radial-gradient(
+    circle at center,
+    rgba(56, 189, 248, 0.65) 0%,
+    rgba(139, 92, 246, 0.5) 40%,
+    rgba(244, 63, 94, 0.3) 65%,
+    transparent 80%
+  );
+  border-radius: 50%;
+  animation: auraMistSwirlB 18s ease-in-out infinite;
+  transform-origin: center center;
+  filter: blur(10px);
+  will-change: transform, opacity;
+}
+
+.animate-aura-mist-core {
+  background: radial-gradient(
+    circle at center,
+    rgba(255, 255, 255, 0.9) 0%,
+    rgba(251, 191, 36, 0.7) 35%,
+    rgba(244, 63, 94, 0.4) 65%,
+    transparent 85%
+  );
+  border-radius: 50%;
+  animation: auraMistCoreGlow 4s ease-in-out infinite;
+  transform-origin: center center;
+  filter: blur(6px);
+  will-change: transform, opacity;
+}
+
+/* Mystic Ethereal Aura for Memory Orbs */
+@keyframes mysticAuraPulse {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 0.85;
+  }
+  50% {
+    transform: scale(1.15);
+    opacity: 1;
+  }
+}
+
+@keyframes mysticShimmerRotate {
+  0% {
+    transform: rotate(0deg) scale(1);
+  }
+  50% {
+    transform: rotate(180deg) scale(1.08);
+  }
+  100% {
+    transform: rotate(360deg) scale(1);
+  }
+}
+
+.animate-mystic-pulse {
+  animation: mysticAuraPulse 2.8s ease-in-out infinite;
+  will-change: transform, opacity;
+}
+
+.animate-mystic-shimmer {
+  animation: mysticShimmerRotate 8s linear infinite;
+  will-change: transform;
+}
+
+/* Swirling mist inside cloudy memory balls */
+@keyframes swirlInsideOrb {
+  0% {
+    transform: rotate(0deg) scale(1);
+    opacity: 0.7;
+  }
+  50% {
+    transform: rotate(180deg) scale(1.18);
+    opacity: 0.95;
+  }
+  100% {
+    transform: rotate(360deg) scale(1);
+    opacity: 0.7;
+  }
+}
+
+.animate-mist-swirl {
+  animation: swirlInsideOrb 9s linear infinite;
+}
+
+/* Floating orb animation */
+@keyframes floatOrb {
+  0%, 100% {
+    transform: translateY(0px) rotate(0deg);
+  }
+  50% {
+    transform: translateY(-8px) rotate(1deg);
+  }
+}
+
+@keyframes pulseHalo {
+  0%, 100% {
+    opacity: 0.45;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.75;
+    transform: scale(1.08);
+  }
+}
+
+/* Breathing Aura Glow - Dimming and Brightening organically like a living spirit */
+@keyframes auraBreathe {
+  0%, 100% {
+    opacity: 0.35;
+    transform: scale(0.95);
+    filter: blur(4px);
+  }
+  50% {
+    opacity: 0.88;
+    transform: scale(1.12);
+    filter: blur(8px);
+  }
+}
+
+.animate-aura-breathe {
+  animation: auraBreathe 3.6s ease-in-out infinite;
+  will-change: transform, opacity, filter;
+}
+
+@keyframes auraBreatheSoft {
+  0%, 100% {
+    opacity: 0.28;
+    transform: scale(0.96);
+    filter: blur(6px);
+  }
+  50% {
+    opacity: 0.78;
+    transform: scale(1.1);
+    filter: blur(12px);
+  }
+}
+
+.animate-aura-breathe-soft {
+  animation: auraBreatheSoft 4.2s ease-in-out infinite;
+  will-change: transform, opacity, filter;
+}
+
+/* Infinite Memory Shelf Marquee Scroll */
+@keyframes scrollShelfLeft {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
+}
+
+.animate-float-slow {
+  animation: floatOrb 5s ease-in-out infinite;
+}
+
+.animate-pulse-halo {
+  animation: pulseHalo 4s ease-in-out infinite;
+}
+
+.animate-shelf-scroll {
+  display: flex;
+  width: max-content;
+  animation: scrollShelfLeft 36s linear infinite;
+}
+
+.animate-shelf-scroll:hover {
+  animation-play-state: paused;
+}
+
+/* Luminous 3D Glass Memory Orb on Light Background */
+.glass-memory-orb-light {
+  position: relative;
+  aspect-ratio: 1 / 1;
+  border-radius: 9999px !important;
+  overflow: hidden;
+  box-shadow: 
+    inset 0 4px 18px rgba(255, 255, 255, 0.95),
+    inset 0 -12px 28px rgba(15, 23, 42, 0.25),
+    0 16px 35px -8px rgba(0, 0, 0, 0.1),
+    0 8px 20px -4px rgba(99, 102, 241, 0.12);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.9);
+  flex-shrink: 0;
+}
+
+.orb-shine-light {
+  position: absolute;
+  top: 6%;
+  left: 14%;
+  width: 48%;
+  height: 28%;
+  border-radius: 50%;
+  background: radial-gradient(ellipse at center, rgba(255, 255, 255, 0.95) 0%, rgba(255, 255, 255, 0) 75%);
+  transform: rotate(-30deg);
+  pointer-events: none;
+  z-index: 20;
+}
+
+.orb-bottom-rim-light {
+  position: absolute;
+  bottom: 4%;
+  left: 20%;
+  right: 20%;
+  height: 18%;
+  border-radius: 50%;
+  background: radial-gradient(ellipse at center, rgba(255, 255, 255, 0.8) 0%, rgba(255, 255, 255, 0) 70%);
+  pointer-events: none;
+  z-index: 20;
+}
+
+/* Custom scrollbars */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}

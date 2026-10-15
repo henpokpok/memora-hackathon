@@ -1,0 +1,217 @@
+import React, { useState } from 'react';
+import { initialMemoryOrbs } from './data/memoryOrbs';
+import { initialFamilyGroup } from './data/familyData';
+import { MemoryOrb, NavigationPage, Language, FamilyGroup } from './types';
+import { translations } from './data/translations';
+import { TopHeader } from './components/TopHeader';
+import { BottomNav } from './components/BottomNav';
+import { HomeView } from './components/views/HomeView';
+import { TestView } from './components/views/TestView';
+import { VaultView } from './components/views/VaultView';
+import { SettingsView } from './components/views/SettingsView';
+import { ChildPortalView } from './components/views/ChildPortalView';
+import { SessionReviewView } from './components/views/SessionReviewView';
+import { TodayRecapView } from './components/views/TodayRecapView';
+import { LineCapsuleModal } from './components/LineCapsuleModal';
+import { stopSpeech } from './services/elevenlabs';
+import { familyApi, orbsApi } from './services/api';
+
+export const App: React.FC = () => {
+  const [lang, setLang] = useState<Language>('th');
+  const [currentPage, setCurrentPage] = useState<NavigationPage>('home');
+  const [orbs, setOrbs] = useState<MemoryOrb[]>(initialMemoryOrbs);
+  const [activeOrbId, setActiveOrbId] = useState<string>(initialMemoryOrbs[0].id);
+  const [isLineModalOpen, setIsLineModalOpen] = useState(false);
+
+  // Family System state (Multi-Elder Support)
+  const [familyGroup, setFamilyGroup] = useState<FamilyGroup>(initialFamilyGroup);
+  const [activeSeniorId, setActiveSeniorId] = useState<string>('elder-1');
+
+  // Hydrate from SQLite / Prisma Backend Database on Mount
+  React.useEffect(() => {
+    familyApi.getCurrentFamily().then((family) => {
+      if (family && family.members.length > 0) {
+        setFamilyGroup(family);
+        const active = family.members.find((m) => m.role === 'elder' && m.isCurrentActive);
+        if (active) {
+          setActiveSeniorId(active.id);
+        } else {
+          const firstElder = family.members.find((m) => m.role === 'elder');
+          if (firstElder) setActiveSeniorId(firstElder.id);
+        }
+      }
+    });
+
+    orbsApi.getOrbs().then((dbOrbs) => {
+      if (dbOrbs && dbOrbs.length > 0) {
+        setOrbs(dbOrbs);
+        setActiveOrbId(dbOrbs[0].id);
+      }
+    });
+  }, []);
+
+  const activeSenior =
+    familyGroup.members.find((m) => m.id === activeSeniorId && m.role === 'elder') ||
+    familyGroup.members.find((m) => m.role === 'elder') ||
+    familyGroup.members[0];
+
+  const t = translations[lang];
+
+  // Unlocked counter
+  const unlockedCount = orbs.filter((o) => o.isUnlocked).length;
+
+  // Language toggle
+  const handleToggleLang = () => {
+    stopSpeech();
+    setLang((prev) => (prev === 'th' ? 'en' : 'th'));
+  };
+
+  // Navigation handlers
+  const handleNavigate = (page: NavigationPage) => {
+    stopSpeech();
+    setCurrentPage(page);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleSelectOrbForTest = (orbId: string) => {
+    stopSpeech();
+    setActiveOrbId(orbId);
+    setCurrentPage('test');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  // Correct answer callback -> Persist unlock to Database
+  const handleCorrectAnswer = (orbId: string) => {
+    setOrbs((prev) =>
+      prev.map((orb) => (orb.id === orbId ? { ...orb, isUnlocked: true } : orb))
+    );
+    orbsApi.unlockOrb(orbId).catch((err) => console.warn('Unlock persist error:', err));
+  };
+
+  // Finish session callback -> navigate to Session Review celebration page!
+  const handleFinishSession = () => {
+    stopSpeech();
+    setCurrentPage('session-review');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  // Add new orb from LINE simulation -> Persist to Database
+  const handleAddNewOrb = (newOrb: MemoryOrb) => {
+    setOrbs((prev) => [newOrb, ...prev]);
+    orbsApi.createOrb(newOrb).catch((err) => console.warn('Create orb persist error:', err));
+  };
+
+  // Switch senior callback -> Persist to Database
+  const handleSwitchSenior = (seniorId: string) => {
+    setActiveSeniorId(seniorId);
+    familyApi.setActiveSenior(seniorId).catch((err) => console.warn('Switch senior persist error:', err));
+  };
+
+  return (
+    <div className="min-h-screen bg-[#F8FAFC] text-slate-900 flex flex-col font-sans selection:bg-amber-200 selection:text-amber-950">
+      {/* Top Header with Living Aura Mist and Clean Settings Button ⚙️ */}
+      <TopHeader onOpenSettings={() => handleNavigate('settings')} />
+
+      {/* Main Multi-Page Content Area with Bottom Padding for Tablet Floating Bar */}
+      <main className="flex-1 max-w-5xl w-full mx-auto px-4 sm:px-6 py-4 pb-32 sm:pb-36">
+        {currentPage === 'home' && (
+          <HomeView
+            orbs={orbs}
+            unlockedCount={unlockedCount}
+            onNavigate={handleNavigate}
+            onSelectOrbForTest={handleSelectOrbForTest}
+            lang={lang}
+            activeSenior={activeSenior}
+          />
+        )}
+
+        {currentPage === 'test' && (
+          <TestView
+            orbs={orbs}
+            activeOrbId={activeOrbId}
+            onSelectOrb={(id) => {
+              stopSpeech();
+              setActiveOrbId(id);
+            }}
+            onCorrectAnswer={handleCorrectAnswer}
+            onFinishSession={handleFinishSession}
+            lang={lang}
+          />
+        )}
+
+        {/* Dedicated Session Review & Daily Milestone Celebration Page */}
+        {currentPage === 'session-review' && (
+          <SessionReviewView
+            orbs={orbs}
+            activeSenior={activeSenior}
+            onNavigate={handleNavigate}
+            onOpenLineModal={() => setIsLineModalOpen(true)}
+            lang={lang}
+          />
+        )}
+
+        {currentPage === 'vault' && (
+          <VaultView
+            orbs={orbs}
+            onSelectOrbForTest={handleSelectOrbForTest}
+            lang={lang}
+            onNavigate={handleNavigate}
+          />
+        )}
+
+        {/* Dedicated Today's Storytelling Recap View */}
+        {currentPage === 'today-recap' && (
+          <TodayRecapView
+            onNavigate={handleNavigate}
+            lang={lang}
+          />
+        )}
+
+        {/* Dedicated Full Page for Settings (No popup modal!) */}
+        {currentPage === 'settings' && (
+          <SettingsView
+            onNavigate={handleNavigate}
+            lang={lang}
+            onToggleLang={handleToggleLang}
+            onResetOrbs={() => setOrbs((prev) => prev.map((o) => ({ ...o, isUnlocked: false })))}
+            onUnlockAllOrbs={() => setOrbs((prev) => prev.map((o) => ({ ...o, isUnlocked: true })))}
+          />
+        )}
+
+        {/* Dedicated Caregiver & Family Console (Separated for safety) */}
+        {currentPage === 'child-portal' && (
+          <ChildPortalView
+            onNavigate={handleNavigate}
+            orbs={orbs}
+            unlockedCount={unlockedCount}
+            familyGroup={familyGroup}
+            onUpdateFamily={(updated) => setFamilyGroup(updated)}
+            activeSenior={activeSenior}
+            onSwitchActiveSenior={handleSwitchSenior}
+            onAddNewOrb={handleAddNewOrb}
+            lang={lang}
+          />
+        )}
+      </main>
+
+      {/* LINE Memory Capsule Push Preview Modal */}
+      <LineCapsuleModal
+        isOpen={isLineModalOpen}
+        onClose={() => setIsLineModalOpen(false)}
+        orbs={orbs}
+        unlockedCount={unlockedCount}
+      />
+
+      {/* Plain Minimal Bottom Navigation Bar with Selected Dot Indicator */}
+      <BottomNav
+        currentPage={currentPage}
+        onNavigate={handleNavigate}
+        unlockedCount={unlockedCount}
+        totalCount={orbs.length}
+        lang={lang}
+      />
+    </div>
+  );
+};
+
+export default App;

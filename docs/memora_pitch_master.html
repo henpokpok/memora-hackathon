@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <title>Memora (ใจจำ) — Executive Pitch & Project Master Document</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Mitr:wght@400;500;600&family=Nunito:wght@400;600;700;800&family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    @page {
+      size: A4;
+      margin: 16mm 14mm 16mm 14mm;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Prompt', 'Nunito', -apple-system, sans-serif;
+      color: #1E293B;
+      background: #FFFFFF;
+      font-size: 10.5pt;
+      line-height: 1.55;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    h1, h2, h3, h4 {
+      font-family: 'Mitr', 'Nunito', sans-serif;
+      color: #0F172A;
+      font-weight: 600;
+    }
+
+    .page-break {
+      page-break-after: always;
+      break-after: page;
+    }
+
+    /* Header & Cover */
+    .header-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 2px solid #E2E8F0;
+      padding-bottom: 12px;
+      margin-bottom: 20px;
+    }
+
+    .brand-title {
+      font-size: 22pt;
+      color: #0F172A;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .brand-badge {
+      background: #FEF3C7;
+      color: #92400E;
+      font-size: 9pt;
+      font-weight: 700;
+      padding: 3px 10px;
+      border-radius: 999px;
+      border: 1px solid #FDE68A;
+    }
+
+    .hackathon-badge {
+      font-size: 9pt;
+      color: #64748B;
+      text-align: right;
+      font-family: 'Nunito', sans-serif;
+    }
+
+    /* Hero Overview Banner */
+    .hero-box {
+      background: linear-gradient(135deg, #FFFBEB 0%, #FFFFFF 60%, #EEF2FF 100%);
+      border: 1.5px solid #FCD34D;
+      border-radius: 14px;
+      padding: 18px;
+      margin-bottom: 20px;
+    }
+
+    .hero-tag {
+      font-size: 8.5pt;
+      font-weight: 700;
+      color: #B45309;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 6px;
+    }
+
+    .hero-headline {
+      font-size: 15pt;
+      color: #1E293B;
+      line-height: 1.35;
+      margin-bottom: 8px;
+    }
+
+    .hero-desc {
+      font-size: 10pt;
+      color: #475569;
+      line-height: 1.5;
+    }
+
+    /* Section Styling */
+    .section-title {
+      font-size: 13.5pt;
+      color: #0F172A;
+      border-left: 4px solid #F59E0B;
+      padding-left: 10px;
+      margin-top: 18px;
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    /* Grid & Cards */
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-bottom: 14px;
+    }
+
+    .grid-3 {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+
+    .card {
+      background: #F8FAFC;
+      border: 1px solid #E2E8F0;
+      border-radius: 10px;
+      padding: 12px 14px;
+    }
+
+    .card-title {
+      font-size: 10.5pt;
+      font-weight: 700;
+      color: #0F172A;
+      margin-bottom: 4px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .card-body {
+      font-size: 9.5pt;
+      color: #475569;
+      line-height: 1.45;
+    }
+
+    /* Callout & Alerts */
+    .callout {
+      border-radius: 10px;
+      padding: 12px 14px;
+      margin: 12px 0;
+      font-size: 9.5pt;
+    }
+
+    .callout-blue {
+      background: #F0F9FF;
+      border: 1px solid #BAE6FD;
+      color: #0369A1;
+    }
+
+    .callout-emerald {
+      background: #ECFDF5;
+      border: 1px solid #A7F3D0;
+      color: #047857;
+    }
+
+    .callout-amber {
+      background: #FFFBEB;
+      border: 1px solid #FDE68A;
+      color: #92400E;
+    }
+
+    /* Tables */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 12px 0 16px 0;
+      font-size: 9.5pt;
+    }
+
+    th {
+      background: #F1F5F9;
+      color: #334155;
+      font-weight: 700;
+      text-align: left;
+      padding: 8px 10px;
+      border-bottom: 2px solid #CBD5E1;
+      font-family: 'Mitr', sans-serif;
+    }
+
+    td {
+      padding: 8px 10px;
+      border-bottom: 1px solid #E2E8F0;
+      color: #334155;
+    }
+
+    tr:nth-child(even) td {
+      background: #F8FAFC;
+    }
+
+    .metric-num {
+      font-family: 'Nunito', monospace;
+      font-size: 12pt;
+      font-weight: 800;
+      color: #0F172A;
+    }
+
+    .footer-note {
+      font-size: 8.5pt;
+      color: #94A3B8;
+      text-align: center;
+      border-top: 1px solid #E2E8F0;
+      padding-top: 8px;
+      margin-top: 20px;
+      font-family: 'Nunito', sans-serif;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ================= PAGE 1 ================= -->
+  <div class="header-bar">
+    <div class="brand-title">
+      🔮 Memora <span style="font-size: 15pt; color: #D97706;">(ใจจำ)</span>
+      <span class="brand-badge">Memory Orbs for Seniors</span>
+    </div>
+    <div class="hackathon-badge">
+      <strong>U-Hackathon 2026 @ Flow Summit</strong><br>
+      Executive Project & Business Blueprint
+    </div>
+  </div>
+
+  <div class="hero-box">
+    <div class="hero-tag">Executive Summary • แก่นแนวคิดและพันธกิจ</div>
+    <div class="hero-headline">
+      เปลี่ยน "ภาพถ่ายครอบครัว" ให้เป็น "ลูกแก้วฟื้นฟูสมอง Inside Out" ชะลอภาวะสมองเสื่อม คืนรอยยิ้ม และส่งความสบายใจสู่ลูกหลานทุกวัน
+    </div>
+    <div class="hero-desc">
+      <strong>Memora</strong> คือแพลตฟอร์มบำบัดฟื้นฟูความทรงจำ (Cognitive Reminiscence Therapy) ผ่านเสียงพูดภาษาไทยที่อ่อนโยนของ <strong>ElevenLabs</strong> และลูกแก้ว 3D Glass Orbs ออกแบบเพื่อผู้สูงวัยที่มีความเสี่ยงอัลไซเมอร์ขั้นต้น (MCI) และแก้ไข Pain Point ของลูกหลานวัยทำงานที่อยู่ไกลบ้าน ด้วยระบบซิงค์รูปและสรุปผลเข้า LINE อัตโนมัติในโมเดล Family Care
+    </div>
+  </div>
+
+  <h2 class="section-title">1. ปัญหาแท้จริง (The Real Pain Point) & ทำไมสิ่งเดิมจึงล้มเหลว</h2>
+  <div class="grid-2">
+    <div class="card" style="border-left: 3px solid #EF4444;">
+      <div class="card-title" style="color: #B91C1C;">❌ ทำไม Netflix หรือทีวีแก้ปัญหาไม่ได้?</div>
+      <div class="card-body">
+        คนแก่อยู่บ้านเหงาเปิดทีวี/Netflix ดูทั้งวัน เป็นเพียง <strong>Passive Consumption</strong> (รับข้อมูลทางเดียว) ไม่ได้เกิดการดึงข้อมูลจากสมอง (Active Recall) ทำให้เซลล์ประสาทสมองฝ่อตัวลงเร็วกว่าเดิม ยิ่งดูทีวีคนเดียวยิ่งโดดเดี่ยวและถอยห่างจากครอบครัว
+      </div>
+    </div>
+    <div class="card" style="border-left: 3px solid #EF4444;">
+      <div class="card-title" style="color: #B91C1C;">❌ ทำไมเกมฝึกสมองทั่วไป (Brain Games) คนแก่ไม่เล่น?</div>
+      <div class="card-body">
+        เกมตัวเลข Sudoku หรือจับคู่รูปการ์ตูนผลไม้ <strong>ไม่มีความหมายทางอารมณ์ (Zero Emotional Value)</strong> ผู้สูงอายุเล่น 2 วันก็เบื่อและรู้สึกเหมือนถูกจับผิดข้อสอบ ยิ่งตอบผิดยิ่งหมดกำลังใจ รู้สึกว่าตัวเองไร้ค่า
+      </div>
+    </div>
+  </div>
+
+  <div class="callout callout-emerald">
+    <strong>💡 จุดเปลี่ยนทางวิทยาศาสตร์การแพทย์ (Reminiscence Therapy):</strong><br>
+    งานวิจัยทางการแพทย์ยืนยันว่า <strong>"ความทรงจำส่วนอดีต (Episodic Memory)"</strong> ที่มีใบหน้าลูกหลานและเรื่องราวอบอุ่นของตัวเอง เป็นส่วนสุดท้ายที่สมองจะสูญเสีย การกระตุ้นความจำผ่านรูปจริงของครอบครัวและเสียงพูดอ่อนโยน จะช่วยหลั่งสารโดปามีน ชะลอการเสื่อมของสมองได้ผลดีกว่าเกมทั่วไปถึง 3.8 เท่า
+  </div>
+
+  <h2 class="section-title">2. การแบ่งกลุ่มเป้าหมาย (Dual Niche Target Personas)</h2>
+  <table>
+    <thead>
+      <tr>
+        <th style="width: 20%;">มิติเปรียบเทียบ</th>
+        <th style="width: 40%;">👵 ผู้ใช้งานจริง (The Player / Senior)</th>
+        <th style="width: 40%;">👨‍💼 ผู้จ่ายเงิน (The Economic Buyer / Adult Child)</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>โปรไฟล์</strong></td>
+        <td>คุณตาคุณยาย อายุ 65 – 78 ปี เริ่มมีภาวะจำชื่อลูกหลานสับสน หรือ Mild Cognitive Impairment (MCI)</td>
+        <td>ลูกหลานวัยทำงาน อายุ 32 – 48 ปี (Gen X & Millennial) ทำงานในเมือง มีกำลังจ่ายปานกลางถึงสูง</td>
+      </tr>
+      <tr>
+        <td><strong>ความต้องการหลัก</strong></td>
+        <td>อยากรู้สึกมีคุณค่า ไม่รู้สึกเป็นภาระ อยากเห็นรูปลูกหลาน อยากคุย อยากเล่าเรื่องอดีต</td>
+        <td><strong>Peace of Mind (ความสบายใจ):</strong> กังวลเรื่องพ่อแม่เหงา/อัลไซเมอร์ อยากดูแลแต่ไม่มีเวลากลับบ้าน</td>
+      </tr>
+      <tr>
+        <td><strong>พฤติกรรมการใช้งาน</strong></td>
+        <td>เล่นบน iPad/แท็บเล็ตวันละ 10 นาที เมนูด้านล่างปุ่มใหญ่พิเศษ สัมผัสง่ายตามหลักสรีรศาสตร์</td>
+        <td>ไม่อยากเข้าแอปซับซ้อน <strong>ต้องการทุกอย่างผ่าน LINE</strong> (ส่งรูปเข้ากลุ่ม & รับรายงานทุกเย็น)</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h2 class="section-title">3. สถาปัตยกรรม Inside Out 5 Emotion Orbs</h2>
+  <div class="grid-3">
+    <div class="card">
+      <div class="card-title">☀️ Joy (สุขใจ)</div>
+      <div class="card-body">ความทรงจำรอยยิ้มหลานชาย ของกินที่ชอบ ช่วยหลั่งสารเอ็นดอร์ฟินและกระตุ้นการรับรู้เชิงบวก</div>
+    </div>
+    <div class="card">
+      <div class="card-title">🌊 Nostalgia (วันวาน)</div>
+      <div class="card-body">ทริปทะเลหัวหินในอดีต ช่วยดึงความทรงจำระยะยาว (Long-term Anchoring) ให้เชื่อมต่อกับปัจจุบัน</div>
+    </div>
+    <div class="card">
+      <div class="card-title">💖 Love (ความรัก)</div>
+      <div class="card-body">อ้อมกอดวันเกิดลูกสาว ฟื้นฟูสายสัมพันธ์ ลดความเครียดและอาการซึมเศร้าในผู้สูงอายุ</div>
+    </div>
+    <div class="card">
+      <div class="card-title">🌿 Vitality (มีชีวิตชีวา)</div>
+      <div class="card-body">สัตว์เลี้ยงตัวโปรด ต้นไม้ในสวน เชื่อมโยงประสาทสัมผัสกับสิ่งแวดล้อมรอบตัว</div>
+    </div>
+    <div class="card">
+      <div class="card-title">🎉 Celebration (ภูมิใจ)</div>
+      <div class="card-body">วันรับปริญญาลูก สร้างความภาคภูมิใจในชีวิต (Self-Worth) คืนพลังใจให้ผู้สูงวัย</div>
+    </div>
+    <div class="card" style="background: #FEF3C7; border-color: #FDE68A;">
+      <div class="card-title" style="color: #92400E;">🔊 ElevenLabs Voice</div>
+      <div class="card-body" style="color: #78350F;">อ่านคำถามและคำใบ้อ่อนโยน ไม่มีการกดกริ่งผิดหรือคำตัดสินให้เสียใจ</div>
+    </div>
+  </div>
+
+  <div class="footer-note">
+    Memora (ใจจำ) • Flow Summit 2026 • Page 1 of 2
+  </div>
+
+  <!-- ================= PAGE 2 ================= -->
+  <div class="page-break"></div>
+
+  <div class="header-bar">
+    <div class="brand-title">
+      🔮 Memora <span style="font-size: 15pt; color: #D97706;">(Business Model & Execution)</span>
+    </div>
+    <div class="hackathon-badge">
+      <strong>Unit Economics & Technical Architecture</strong><br>
+      U-Hackathon 2026 Pitch Document
+    </div>
+  </div>
+
+  <h2 class="section-title">4. Business Model & แผนรายได้ (Family Subscription)</h2>
+  <div class="grid-2">
+    <div class="card" style="border: 2px solid #F59E0B; background: #FFFDF5;">
+      <div class="card-title" style="color: #92400E; font-size: 12pt;">
+        💎 Family Care Plan (MVP Core)
+      </div>
+      <div style="margin: 8px 0;">
+        <span class="metric-num" style="color: #D97706; font-size: 18pt;">290 บาท</span>
+        <span style="font-size: 9pt; color: #64748B;">/ เดือน ($9.90/mo)</span>
+      </div>
+      <ul style="font-size: 9pt; color: #334155; margin-left: 16px; line-height: 1.6;">
+        <li>ซิงค์รูปภาพผ่าน LINE ครอบครัวไม่จำกัดรูป</li>
+        <li>ลูกแก้วความทรงจำ 5 ลูกแก้วใหม่ทุกวัน</li>
+        <li>เสียง ElevenLabs อ่านคำถามและคำใบ้อ่อนโยน</li>
+        <li>รายงานสรุปและคลิปเสียงพ่อแม่ส่งเข้า LINE ทุกเย็น 18:00 น.</li>
+        <li>ระบบแจ้งเตือนความเสี่ยงอัลไซเมอร์ขั้นต้น (MCI Screening)</li>
+      </ul>
+    </div>
+
+    <div class="card">
+      <div class="card-title" style="font-size: 12pt;">
+        🏥 Clinical Tele-Care Plan (B2B2C)
+      </div>
+      <div style="margin: 8px 0;">
+        <span class="metric-num" style="font-size: 18pt;">790 บาท</span>
+        <span style="font-size: 9pt; color: #64748B;">/ เดือน ($24.90/mo)</span>
+      </div>
+      <ul style="font-size: 9pt; color: #334155; margin-left: 16px; line-height: 1.6;">
+        <li>ทุกฟีเจอร์ใน Family Care Plan</li>
+        <li>รายงานวิเคราะห์การรู้คิดเชิงลึก (Cognitive Latency Trends)</li>
+        <li>ส่งรายงานตรงถึงแพทย์เวชศาสตร์ผู้สูงอายุประจำเดือน</li>
+        <li>คำแนะนำการปรับสภาพแวดล้อมจากนักกิจกรรมบำบัด</li>
+      </ul>
+    </div>
+  </div>
+
+  <h2 class="section-title">5. ตัวเลข Unit Economics สำหรับกรรมการ & นักลงทุน</h2>
+  <div class="grid-3">
+    <div class="card" style="text-align: center;">
+      <div style="font-size: 8.5pt; color: #64748B;">ต้นทุนหาลูกค้า (CAC)</div>
+      <div class="metric-num" style="color: #2563EB;">~180 บาท</div>
+      <div style="font-size: 8pt; color: #64748B;">LINE OA & FB Caregiver Groups</div>
+    </div>
+    <div class="card" style="text-align: center;">
+      <div style="font-size: 8.5pt; color: #64748B;">มูลค่าตลอดชีพ (LTV)</div>
+      <div class="metric-num" style="color: #059669;">4,060 บาท</div>
+      <div style="font-size: 8pt; color: #64748B;">เฉลี่ยบอกรับสมาชิก 14 เดือน</div>
+    </div>
+    <div class="card" style="text-align: center; background: #ECFDF5; border-color: #A7F3D0;">
+      <div style="font-size: 8.5pt; color: #047857;">อัตราส่วน LTV / CAC</div>
+      <div class="metric-num" style="color: #047857; font-size: 15pt;">22.5x</div>
+      <div style="font-size: 8pt; color: #047857; font-weight: 700;">High Emotional Retention</div>
+    </div>
+  </div>
+  <p style="font-size: 9pt; color: #64748B; margin-top: -6px; margin-bottom: 12px;">
+    * <strong>ทำไมอัตราการยกเลิก (Churn Rate) ถึงต่ำมาก?</strong> เพราะลูกหลานที่ซื้อแพ็กเกจนี้รู้สึกว่าการกดยกเลิก แปลว่า "ฉันหยุดใส่ใจสมองพ่อแม่" (High Emotional Switching Cost) พร้อมทั้งมีคลิปเสียงพ่อแม่ส่งมาให้ฟังทุกเย็น เป็นของขวัญทางใจที่มีค่า
+  </p>
+
+  <h2 class="section-title">6. ตอบคำถามสำคัญ: ปัญหาอัปโหลดภาพ & ภาพน้อย 2-3 ภาพจะพอไหม?</h2>
+  <div class="grid-2">
+    <div class="card">
+      <div class="card-title">❓ ลูกหลานขี้เกียจเข้าเว็บมาอัปโหลดรูปไหม?</div>
+      <div class="card-body">
+        <strong>คำตอบ:</strong> ลูกหลาน <strong>ไม่ต้องเข้าเว็บหรือโหลดแอปใดๆ ทั้งสิ้น</strong> เพียงแค่ส่งรูปครอบครัวเข้าห้องแชท LINE Bot ปกติ AI จะทำการตรวจจับใบหน้า สกัดความสัมพันธ์ และสร้างลูกแก้วความทรงจำ 5D เข้าสู่แอปแท็บเล็ตของคุณยายโดยอัตโนมัติ
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">❓ มีภาพแค่ 10-15 ภาพ จะเล่นได้นานแค่ไหน?</div>
+      <div class="card-body">
+        <strong>คำตอบ: ระบบ Multi-Angle Question Engine</strong><br>
+        รูป 1 รูป AI สามารถแตกมุมคำถามได้ 4 แบบ: (1) ทายชื่อคน (2) ทายสถานที่และปี พ.ศ. (3) ชวนเล่าเรื่องเบื้องหลัง (4) จัดหมวดอารมณ์ Inside Out<br>
+        <strong>ทำให้รูปเพียง 10 ใบ สามารถสร้างเป็นแบบฝึกหัดไม่ซ้ำกันได้มากกว่า 40+ วัน!</strong>
+      </div>
+    </div>
+  </div>
+
+  <h2 class="section-title">7. แผนการดำเนินงาน (Execution Roadmap)</h2>
+  <table>
+    <thead>
+      <tr>
+        <th style="width: 20%;">ระยะเวลา</th>
+        <th style="width: 40%;">เป้าหมายหลัก</th>
+        <th style="width: 40%;">ผลลัพธ์ที่วัดผลได้ (Key Deliverables)</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>Phase 1: Hackathon (ปัจจุบัน)</strong></td>
+        <td>ส่งมอบ MVP เว็บแอปเต็มรูปแบบ พร้อมระบบ 2 ภาษา (TH/EN)</td>
+        <td>ลูกแก้ว 3D Inside Out, เสียงพูด ElevenLabs + Web Speech, หน้าคลังภาพซิงค์ LINE, หน้าแดชบอร์ดรายงานผล</td>
+      </tr>
+      <tr>
+        <td><strong>Phase 2: Pilot Testing (Q4 2026)</strong></td>
+        <td>ทดสอบกับ 50 ครอบครัว และศูนย์ดูแลผู้สูงอายุกลางวัน (Daycare)</td>
+        <td>วัดอัตราการเล่นต่อเนื่อง (Retention > 75%), วัดความไวในการตอบสนอง (Recall Latency Improvement > 15%)</td>
+      </tr>
+      <tr>
+        <td><strong>Phase 3: Clinical B2B (Q1-Q2 2027)</strong></td>
+        <td>ร่วมมือกับคลินิกผู้สูงอายุ รพ.รัฐ/เอกชน และขยายตลาดระดับภูมิภาค SEA</td>
+        <td>ระบบส่งข้อมูลเข้าเวชระเบียนแพทย์ (EHR Integration), รองรับภาษาญี่ปุ่นและจีน</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="footer-note">
+    Memora (ใจจำ) • Flow Summit 2026 • Contact: Team YBB • http://localhost:5173/
+  </div>
+
+</body>
+</html>
