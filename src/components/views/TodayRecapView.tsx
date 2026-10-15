@@ -25,8 +25,22 @@ interface TodayRecapViewProps {
   lang: Language;
 }
 
-// Organic post-it rotations
-const postItRotations = [-2.8, 2.5, -1.8, 3.2, -2.2, 1.9, -3.0, 2.7];
+// Organic post-it configurations (varied tilt angles, vertical stagger offsets, and washi tape colors)
+interface PostItConfig {
+  rotate: number;
+  yOffset: number;
+  tapeColor: string;
+  tapeRotate: number;
+}
+
+const postItConfigs: PostItConfig[] = [
+  { rotate: -3.8, yOffset: -6, tapeColor: 'bg-amber-100/90 border-amber-300/60', tapeRotate: -2.5 },
+  { rotate: 4.2, yOffset: 14, tapeColor: 'bg-yellow-100/90 border-yellow-300/60', tapeRotate: 3.0 },
+  { rotate: -2.5, yOffset: -2, tapeColor: 'bg-emerald-100/90 border-emerald-300/60', tapeRotate: -1.5 },
+  { rotate: 5.0, yOffset: 18, tapeColor: 'bg-rose-100/90 border-rose-300/60', tapeRotate: 3.8 },
+  { rotate: -4.2, yOffset: -8, tapeColor: 'bg-sky-100/90 border-sky-300/60', tapeRotate: -3.0 },
+  { rotate: 3.5, yOffset: 12, tapeColor: 'bg-amber-100/90 border-amber-300/60', tapeRotate: 2.0 },
+];
 
 // Emotion choices with big emoji and small label underneath
 const emotionChoices: { id: OrbEmotion; emoji: string; labelTh: string; labelEn: string }[] = [
@@ -366,26 +380,59 @@ export const TodayRecapView: React.FC<TodayRecapViewProps> = ({ onNavigate, lang
     }
   };
 
-  // Handle File Upload from Local Device Gallery
+  // Handle File Upload from Local Device Gallery (with smart downscaling to protect localStorage quota)
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
       Array.from(e.target.files).forEach((file) => {
         const reader = new FileReader();
         reader.onload = (uploadEvent) => {
-          if (uploadEvent.target?.result) {
-            setPhotos((prev) => [...prev, uploadEvent.target!.result as string]);
-          }
+          const rawUrl = uploadEvent.target?.result as string;
+          if (!rawUrl) return;
+
+          // Downscale high-resolution device photos to safe dimensions (max 640px)
+          const img = new Image();
+          img.onload = () => {
+            const maxDim = 640;
+            let width = img.width;
+            let height = img.height;
+            if (width > maxDim || height > maxDim) {
+              if (width > height) {
+                height = Math.round((height * maxDim) / width);
+                width = maxDim;
+              } else {
+                width = Math.round((width * maxDim) / height);
+                height = maxDim;
+              }
+            }
+            const canvas = document.createElement('canvas');
+            canvas.width = width;
+            canvas.height = height;
+            const ctx = canvas.getContext('2d');
+            if (ctx) {
+              ctx.drawImage(img, 0, 0, width, height);
+              const compressedUrl = canvas.toDataURL('image/jpeg', 0.75);
+              setPhotos((prev) => [...prev, compressedUrl]);
+            } else {
+              setPhotos((prev) => [...prev, rawUrl]);
+            }
+          };
+          img.onerror = () => {
+            setPhotos((prev) => [...prev, rawUrl]);
+          };
+          img.src = rawUrl;
         };
         reader.readAsDataURL(file);
       });
+      // Reset input value so same photo can be re-selected if deleted
+      e.target.value = '';
     }
   };
 
-  // Quick Add from Recent Gallery Photos
-  const handleQuickAddPhoto = (url: string) => {
-    if (!photos.includes(url)) {
-      setPhotos((prev) => [...prev, url]);
-    }
+  // Toggle select / unselect from Recent Gallery Photos
+  const handleToggleRecentPhoto = (url: string) => {
+    setPhotos((prev) =>
+      prev.includes(url) ? prev.filter((p) => p !== url) : [...prev, url]
+    );
   };
 
   // Remove photo
@@ -582,25 +629,6 @@ export const TodayRecapView: React.FC<TodayRecapViewProps> = ({ onNavigate, lang
             className="w-full text-slate-800 text-sm sm:text-base leading-relaxed bg-transparent resize-none focus:outline-none placeholder:text-slate-400 font-medium"
           />
         </div>
-
-        {/* Quick Topic Inspiration Pills for Instant 1-Tap Experience */}
-        <div className="w-full max-w-xl mt-3 flex flex-wrap items-center justify-center gap-2 px-1">
-          <span className="text-[11px] font-bold text-slate-400 w-full text-center flex items-center justify-center space-x-1">
-            <Lightbulb className="w-3 h-3 text-amber-500" />
-            <span>{lang === 'en' ? 'Or tap a quick story topic:' : 'หรือแตะหัวข้อเรื่องเล่าด่วน:'}</span>
-          </span>
-          {quickStoryPrompts.map((q) => (
-            <button
-              key={q.labelEn}
-              type="button"
-              onClick={() => handleSelectQuickPrompt(q)}
-              className="px-3 py-1.5 rounded-full bg-white hover:bg-amber-50 border border-slate-200/90 hover:border-amber-400 text-slate-700 hover:text-amber-950 text-xs font-bold transition-all shadow-2xs hover:scale-105 active:scale-95 cursor-pointer flex items-center space-x-1.5"
-            >
-              <span>{q.icon}</span>
-              <span>{lang === 'en' ? q.labelEn : q.labelTh}</span>
-            </button>
-          ))}
-        </div>
       </div>
 
       {/* 4. PHOTO ADDITION SECTION (GALLERY UPLOAD + 3 RECENT QUICK ADD PHOTOS) */}
@@ -623,8 +651,8 @@ export const TodayRecapView: React.FC<TodayRecapViewProps> = ({ onNavigate, lang
             </p>
           </div>
 
-          <span className="text-xs font-extrabold px-3 py-1 rounded-full bg-amber-100 text-amber-900 border border-amber-200">
-            {photos.length} {lang === 'en' ? 'Photos' : 'รูปภาพ'}
+          <span className="text-sm font-black px-3 py-1 rounded-full bg-amber-100 text-amber-900 border border-amber-200 min-w-8 text-center shadow-2xs">
+            {photos.length}
           </span>
         </div>
 
@@ -651,8 +679,8 @@ export const TodayRecapView: React.FC<TodayRecapViewProps> = ({ onNavigate, lang
           />
         </div>
 
-        {/* 3 RECENT GALLERY PHOTOS PREVIEW (QUICK ADD) */}
-        <div className="bg-slate-50/90 rounded-2xl p-3.5 border border-slate-200/90 space-y-2">
+        {/* 3 RECENT GALLERY PHOTOS PREVIEW (QUICK ADD) - NO TITLES, PURE THUMBNAILS */}
+        <div className="bg-slate-50/90 rounded-2xl p-3 border border-slate-200/90 space-y-2">
           <div className="flex items-center justify-between px-1">
             <span className="text-xs font-bold text-slate-600 flex items-center space-x-1.5">
               <ImageIcon className="w-3.5 h-3.5 text-amber-500" />
@@ -664,44 +692,34 @@ export const TodayRecapView: React.FC<TodayRecapViewProps> = ({ onNavigate, lang
             </span>
           </div>
 
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-3 gap-2.5 sm:gap-3">
             {recentGalleryPhotos.map((item) => {
               const isAdded = photos.includes(item.url);
               return (
                 <button
                   key={item.id}
                   type="button"
-                  onClick={() => handleQuickAddPhoto(item.url)}
-                  className={`group relative rounded-xl overflow-hidden border-2 transition-all p-1 text-left flex flex-col cursor-pointer ${
+                  onClick={() => handleToggleRecentPhoto(item.url)}
+                  title={isAdded ? (lang === 'en' ? 'Tap to remove' : 'แตะเพื่อเอาออก') : (lang === 'en' ? 'Tap to add' : 'แตะเพื่อเพิ่ม')}
+                  className={`group relative rounded-xl sm:rounded-2xl overflow-hidden border-2 transition-all cursor-pointer aspect-4/3 bg-slate-100 ${
                     isAdded
-                      ? 'border-amber-400 bg-amber-50/80 shadow-xs'
-                      : 'border-white bg-white hover:border-amber-300 hover:shadow-md'
+                      ? 'border-amber-500 shadow-md ring-2 ring-amber-400/40'
+                      : 'border-white hover:border-amber-300 hover:shadow-md'
                   }`}
                 >
-                  <div className="aspect-4/3 w-full rounded-lg overflow-hidden relative bg-slate-100">
-                    <img
-                      src={item.url}
-                      alt={lang === 'en' ? item.titleEn : item.titleTh}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform"
-                    />
-                    <div
-                      className={`absolute top-1.5 right-1.5 w-6 h-6 rounded-full flex items-center justify-center text-xs shadow-xs transition-transform ${
-                        isAdded
-                          ? 'bg-amber-500 text-slate-950 font-black'
-                          : 'bg-black/50 text-white group-hover:bg-amber-500 group-hover:text-slate-950'
-                      }`}
-                    >
-                      {isAdded ? <Check className="w-3.5 h-3.5 stroke-[3]" /> : <Plus className="w-3.5 h-3.5 stroke-[3]" />}
-                    </div>
-                  </div>
-
-                  <div className="pt-1.5 px-0.5">
-                    <p className="text-[11px] font-bold text-slate-800 line-clamp-1">
-                      {lang === 'en' ? item.titleEn : item.titleTh}
-                    </p>
-                    <p className="text-[10px] text-slate-400">
-                      {lang === 'en' ? item.timeEn : item.timeTh}
-                    </p>
+                  <img
+                    src={item.url}
+                    alt=""
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                  />
+                  <div
+                    className={`absolute top-1.5 right-1.5 sm:top-2 sm:right-2 w-6 h-6 sm:w-7 sm:h-7 rounded-full flex items-center justify-center text-xs shadow-md transition-all ${
+                      isAdded
+                        ? 'bg-amber-500 text-slate-950 font-black scale-105'
+                        : 'bg-black/55 text-white group-hover:bg-amber-500 group-hover:text-slate-950'
+                    }`}
+                  >
+                    {isAdded ? <Check className="w-3.5 h-3.5 sm:w-4 sm:h-4 stroke-[3]" /> : <Plus className="w-3.5 h-3.5 sm:w-4 sm:h-4 stroke-[3]" />}
                   </div>
                 </button>
               );
@@ -709,7 +727,7 @@ export const TodayRecapView: React.FC<TodayRecapViewProps> = ({ onNavigate, lang
           </div>
         </div>
 
-        {/* 5. ORGANIC POST-IT / SCRAPBOOK PHOTO GRID */}
+        {/* 5. ORGANIC POST-IT SCRAPBOOK PHOTO BOARD (NOT RIGID GRID, 2-3 PER ROW, STAGGERED) */}
         {photos.length === 0 ? (
           <div className="text-center py-10 px-4 rounded-3xl border-2 border-dashed border-slate-200 bg-white/60">
             <ImageIcon className="w-10 h-10 text-slate-300 mx-auto mb-2" />
@@ -723,62 +741,82 @@ export const TodayRecapView: React.FC<TodayRecapViewProps> = ({ onNavigate, lang
             </p>
           </div>
         ) : (
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-5 sm:gap-6 pt-2 pb-4">
-            {photos.map((photoUrl, index) => {
-              const rotation = postItRotations[index % postItRotations.length];
-              return (
-                <motion.div
-                  key={`${photoUrl}-${index}`}
-                  initial={{ opacity: 0, scale: 0.85, y: 15 }}
-                  animate={{ opacity: 1, scale: 1, y: 0 }}
-                  exit={{ opacity: 0, scale: 0.8 }}
-                  whileHover={{ scale: 1.04, rotate: 0 }}
-                  style={{ transform: `rotate(${rotation}deg)` }}
-                  className="relative group aspect-[4/3] rounded-2xl overflow-hidden shadow-md hover:shadow-xl transition-all cursor-pointer select-none bg-slate-100"
-                >
-                  {/* Pure Raw Image without Container or Description */}
-                  <img
-                    src={photoUrl}
-                    alt={`Memory ${index + 1}`}
-                    className="w-full h-full object-cover"
-                    loading="lazy"
-                  />
+          <div className="bg-amber-50/40 rounded-3xl p-4 sm:p-6 border border-amber-200/50 shadow-inner relative">
+            <div className="flex items-center justify-between px-2 mb-2">
+              <span className="text-sm font-bold text-slate-800">
+                {lang === 'en' ? "Today's Photos" : "ภาพในวันนี้"}
+              </span>
+              <span className="text-xs font-bold text-slate-400">
+                {photos.length}
+              </span>
+            </div>
 
-                  {/* Floating Remove Button on top-right of image */}
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleRemovePhoto(index);
+            {/* Natural Post-it scatter layout: 2-3 photos per row, organic tilt & staggered positions */}
+            <div className="flex flex-wrap justify-center items-start gap-x-5 sm:gap-x-8 gap-y-10 sm:gap-y-14 pt-4 pb-6 px-1">
+              {photos.map((photoUrl, index) => {
+                const cfg = postItConfigs[index % postItConfigs.length];
+                return (
+                  <motion.div
+                    key={`${photoUrl}-${index}`}
+                    initial={{ opacity: 0, scale: 0.85, y: 15 }}
+                    animate={{ opacity: 1, scale: 1, y: 0 }}
+                    exit={{ opacity: 0, scale: 0.8 }}
+                    whileHover={{ scale: 1.06, rotate: 0, zIndex: 30 }}
+                    style={{
+                      transform: `rotate(${cfg.rotate}deg) translateY(${cfg.yOffset}px)`,
+                      marginTop: `${Math.max(0, cfg.yOffset)}px`,
                     }}
-                    title={lang === 'en' ? 'Remove photo' : 'ลบรูป'}
-                    aria-label={lang === 'en' ? 'Remove photo' : 'ลบรูปถ่าย'}
-                    className="absolute top-2.5 right-2.5 w-7 h-7 rounded-full bg-slate-900/70 hover:bg-rose-600 text-white flex items-center justify-center transition-all cursor-pointer shadow-md backdrop-blur-xs opacity-90 hover:opacity-100 hover:scale-110 active:scale-95"
+                    className="relative group w-[45%] sm:w-[29%] min-w-[135px] rounded-2xl overflow-visible shadow-[0_12px_24px_-6px_rgba(0,0,0,0.18),0_4px_8px_-2px_rgba(0,0,0,0.08)] hover:shadow-2xl transition-all cursor-pointer select-none bg-white flex flex-col"
                   >
-                    <X className="w-4 h-4 stroke-[2.5]" />
-                  </button>
-                </motion.div>
-              );
-            })}
+                    {/* Post-it Washi Tape sticking to the top */}
+                    <div
+                      className={`absolute -top-3 left-1/2 w-14 sm:w-18 h-4.5 rounded-[2px] shadow-2xs border z-20 pointer-events-none backdrop-blur-xs ${cfg.tapeColor}`}
+                      style={{
+                        transform: `translateX(-50%) rotate(${cfg.tapeRotate}deg)`,
+                      }}
+                    />
+
+                    {/* Pure Raw Image preserving natural aspect ratio (portrait, landscape, or square) */}
+                    <div className="w-full rounded-2xl overflow-hidden bg-slate-100 flex items-center justify-center">
+                      <img
+                        src={photoUrl}
+                        alt={`Memory photo ${index + 1}`}
+                        className="w-full h-auto max-h-[380px] sm:max-h-[460px] object-cover block rounded-2xl"
+                        loading="lazy"
+                      />
+                    </div>
+
+                    {/* Floating Remove Button on top-right of image */}
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleRemovePhoto(index);
+                      }}
+                      title={lang === 'en' ? 'Remove photo' : 'ลบรูป'}
+                      aria-label={lang === 'en' ? 'Remove photo' : 'ลบรูปถ่าย'}
+                      className="absolute top-2 right-2 w-7 h-7 rounded-full bg-slate-900/75 hover:bg-rose-600 text-white flex items-center justify-center transition-all cursor-pointer shadow-md backdrop-blur-xs opacity-90 hover:opacity-100 hover:scale-110 active:scale-95 z-30"
+                    >
+                      <X className="w-4 h-4 stroke-[2.5]" />
+                    </button>
+                  </motion.div>
+                );
+              })}
+            </div>
           </div>
         )}
       </div>
 
-      {/* 6. PROMINENT & SATISFYING SAVE MEMORY BUTTON */}
-      <div className="pt-5 pb-10">
+      {/* 6. PROMINENT & SATISFYING SAVE MEMORY BUTTON (NO DESCRIPTION, TALL & JUMBO) */}
+      <div className="pt-6 pb-12">
         <button
           onClick={() => setIsPreviewOpen(true)}
-          className="w-full py-5 rounded-3xl bg-gradient-to-r from-amber-500 via-amber-400 to-yellow-400 hover:from-amber-400 hover:to-yellow-300 text-slate-950 font-black text-xl sm:text-2xl shadow-[0_12px_28px_-6px_rgba(245,158,11,0.55)] hover:shadow-[0_16px_36px_-6px_rgba(245,158,11,0.7)] hover:scale-[1.01] active:scale-[0.98] active:translate-y-1 transition-all flex flex-col items-center justify-center cursor-pointer border-2 border-amber-300/90 relative overflow-hidden group"
+          className="w-full py-6 sm:py-7 min-h-[76px] sm:min-h-[86px] rounded-3xl bg-gradient-to-r from-amber-500 via-amber-400 to-yellow-400 hover:from-amber-400 hover:to-yellow-300 text-slate-950 font-black text-2xl sm:text-3xl shadow-[0_14px_34px_-6px_rgba(245,158,11,0.6)] hover:shadow-[0_18px_42px_-6px_rgba(245,158,11,0.75)] hover:scale-[1.01] active:scale-[0.98] active:translate-y-1 transition-all flex items-center justify-center space-x-4 cursor-pointer border-2 border-amber-300/90 relative overflow-hidden group"
         >
           {/* Subtle light sheen effect */}
           <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/25 to-white/0 -translate-x-full group-hover:translate-x-full transition-transform duration-1000 pointer-events-none" />
 
-          <div className="flex items-center space-x-3 relative z-10">
-            <Sparkles className="w-6 h-6 text-slate-950 fill-amber-300 animate-pulse" />
-            <span>{lang === 'en' ? 'Save Today’s Memory ✨' : 'บันทึกความทรงจำ ✨'}</span>
-          </div>
-          <span className="text-xs sm:text-sm font-semibold text-amber-950/80 mt-0.5 relative z-10">
-            {lang === 'en' ? 'Tap to preview and confirm saving' : 'แตะเพื่อตรวจสอบและยืนยันการบันทึก'}
-          </span>
+          <Sparkles className="w-7 h-7 sm:w-8 sm:h-8 text-slate-950 fill-amber-300 animate-pulse relative z-10" />
+          <span className="relative z-10">{lang === 'en' ? 'Save Today’s Memory ✨' : 'บันทึกความทรงจำ ✨'}</span>
         </button>
       </div>
 
@@ -795,6 +833,7 @@ export const TodayRecapView: React.FC<TodayRecapViewProps> = ({ onNavigate, lang
               {/* Close Button */}
               <button
                 onClick={() => setIsPreviewOpen(false)}
+                aria-label={lang === 'en' ? 'Close preview' : 'ปิดหน้าต่างพรีวิว'}
                 className="absolute top-5 right-5 w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 flex items-center justify-center transition-colors cursor-pointer"
               >
                 <X className="w-4 h-4" />
@@ -851,12 +890,12 @@ export const TodayRecapView: React.FC<TodayRecapViewProps> = ({ onNavigate, lang
                         style={{
                           transform: `rotate(${tilt}deg) translateY(${yOffset}px)`,
                         }}
-                        className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl overflow-hidden shadow-md shrink-0 relative hover:scale-105 hover:rotate-0 transition-transform select-none bg-slate-100"
+                        className="h-20 sm:h-24 w-auto min-w-[60px] max-w-[140px] rounded-2xl overflow-hidden shadow-md shrink-0 relative hover:scale-105 hover:rotate-0 transition-transform select-none bg-slate-100 flex items-center justify-center"
                       >
                         <img
                           src={p}
                           alt="Preview thumbnail"
-                          className="w-full h-full object-cover"
+                          className="h-full w-auto max-w-[140px] object-cover rounded-2xl block"
                         />
                       </motion.div>
                     );
@@ -929,6 +968,8 @@ export const TodayRecapView: React.FC<TodayRecapViewProps> = ({ onNavigate, lang
                         key={emo.id}
                         type="button"
                         onClick={() => setSelectedEmotion(emo.id)}
+                        aria-label={lang === 'en' ? emo.labelEn : emo.labelTh}
+                        aria-pressed={isSelected}
                         className={`group flex flex-col items-center focus:outline-none transition-all cursor-pointer ${
                           isSelected ? 'scale-110' : 'hover:scale-105 opacity-70 hover:opacity-100'
                         }`}

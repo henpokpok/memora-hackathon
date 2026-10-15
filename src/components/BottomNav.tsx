@@ -30,9 +30,9 @@ export const BottomNav: React.FC<BottomNavProps> = ({
     },
     {
       id: 'test' as NavigationPage,
-      label: lang === 'en' ? 'Play Orbs' : 'ลูกแก้วความจำ',
+      label: lang === 'en' ? 'Reminisce' : 'ย้อนวันวาน',
       icon: Brain,
-      badge: isCompletedAll ? '✨' : `${unlockedCount}/${totalCount}`,
+      badge: null,
     },
     {
       id: 'vault' as NavigationPage,

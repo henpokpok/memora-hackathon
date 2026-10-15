@@ -5,7 +5,7 @@ let currentAudioUrl: string | null = null;
 let currentAbortController: AbortController | null = null;
 
 function getApiKey(): string {
-  return (import.meta.env.VITE_ELEVENLABS_API_KEY || 'sk_7c7917152a1c7d76ab51086c56d7a17c07888c69dd30c5b5').trim();
+  return (import.meta.env.VITE_ELEVENLABS_API_KEY || '').trim();
 }
 
 function cleanupAudioUrl(): void {

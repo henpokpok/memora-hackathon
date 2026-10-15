@@ -15,9 +15,9 @@ export const TopHeader: React.FC<TopHeaderProps> = ({ onOpenSettings }) => {
             {/* Logo Sphere with Centered Organic Swirling Mist Vapor */}
             <div className="relative flex items-center justify-center w-11 h-11 sm:w-12 sm:h-12">
               {/* Multi-layered Organic Mist Vapor (Centered on Orb, Dynamic Size, Rounded & Soft Swirling, Contained within Top Bar) */}
-              <div className="absolute w-20 h-20 sm:w-24 sm:h-24 rounded-full animate-aura-mist pointer-events-none -z-10" />
-              <div className="absolute w-16 h-16 sm:w-20 sm:h-20 rounded-full animate-aura-mist-glow pointer-events-none -z-10" />
-              <div className="absolute w-12 h-12 sm:w-14 sm:h-14 rounded-full animate-aura-mist-core pointer-events-none -z-10" />
+              <div className="absolute w-20 h-20 sm:w-24 sm:h-24 rounded-full animate-aura-mist pointer-events-none z-0" />
+              <div className="absolute w-16 h-16 sm:w-20 sm:h-20 rounded-full animate-aura-mist-glow pointer-events-none z-0" />
+              <div className="absolute w-12 h-12 sm:w-14 sm:h-14 rounded-full animate-aura-mist-core pointer-events-none z-0" />
 
               {/* Logo Sphere */}
               <div className="relative z-10 w-full h-full rounded-full bg-gradient-to-tr from-amber-400 via-rose-400 to-indigo-500 p-[1.5px] shadow-sm shadow-amber-200/50 flex items-center justify-center">

@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { MemoryOrb, NavigationPage, Language, FamilyMember, OrbEmotion } from '../../types';
 import { translations } from '../../data/translations';
-import { Play, ArrowRight, Sparkles, X, Mic } from 'lucide-react';
+import { Play, ArrowRight, Sparkles, X, Mic, Calendar } from 'lucide-react';
 import { speakWithElevenLabs, stopSpeech } from '../../services/elevenlabs';
 
 interface HomeViewProps {
@@ -403,13 +403,18 @@ export const HomeView: React.FC<HomeViewProps> = ({
   // Clicking the auto mini-preview card immediately expands into full-screen memory modal
   const handleOpenFromMiniPreview = (orb: MemoryOrb, event: React.MouseEvent<HTMLDivElement>) => {
     if (animationPhase !== 'idle') return;
-    const rect = event.currentTarget.getBoundingClientRect();
+    const photoEl = event.currentTarget.querySelector<HTMLElement>('[data-mini-photo]');
+    const rect = photoEl ? photoEl.getBoundingClientRect() : event.currentTarget.getBoundingClientRect();
+    
+    // Remember the active orb key on the rail if mini preview was open
+    const targetKey = activeOrbKey;
+
     setOriginPos({
       x: rect.left + rect.width / 2,
       y: rect.top + rect.height / 2,
     });
     setOrbSize(Math.min(rect.width, rect.height));
-    setSelectedKey(`mini-${orb.id}`);
+    setSelectedKey(targetKey || `orb-${orb.id}`);
     setExpandedOrb(orb);
     setIsTrayPaused(true);
     setIsMiniPreviewVisible(false);
@@ -424,19 +429,45 @@ export const HomeView: React.FC<HomeViewProps> = ({
 
   // Exit Animation Choreography:
   // Simultaneous: Rectangle morphs directly into sphere WHILE gliding back into socket in tray!
-  // Single fluid, continuous 520ms motion for maximum buttery smoothness.
+  // Single fluid, continuous 520ms motion with aura staying active on the flight and fading out in socket.
   const handleCloseOrb = () => {
     if (animationPhase !== 'morphed') return;
     stopSpeech();
     setIsPlayingAudio(false);
 
-    // Re-read exact live position of socket on the paused shelf immediately before gliding
+    // Re-read exact live position of visible socket on the paused shelf immediately before gliding
     let socketEl: Element | null = null;
     if (selectedKey) {
       socketEl = document.querySelector(`[data-orb-key="${selectedKey}"]`);
     }
-    if (!socketEl && expandedOrb) {
-      socketEl = document.querySelector(`[data-orb-id="${expandedOrb.id}"]`);
+
+    // If not found or if off-screen, find the best visible matching orb socket in the center of the rail
+    if (!socketEl || socketEl.getBoundingClientRect().right < 0 || socketEl.getBoundingClientRect().left > window.innerWidth) {
+      const railEl = railContainerRef.current;
+      if (railEl && expandedOrb) {
+        const railRect = railEl.getBoundingClientRect();
+        const railCenterX = railRect.left + railRect.width / 2;
+        const matchingEls = Array.from(railEl.querySelectorAll<HTMLElement>(`[data-orb-id="${expandedOrb.id}"]`));
+        let bestEl: HTMLElement | null = null;
+        let minDistance = Infinity;
+
+        for (const el of matchingEls) {
+          const r = el.getBoundingClientRect();
+          const elCenterX = r.left + r.width / 2;
+          if (r.right > railRect.left && r.left < railRect.right) {
+            const dist = Math.abs(elCenterX - railCenterX);
+            if (dist < minDistance) {
+              minDistance = dist;
+              bestEl = el;
+            }
+          }
+        }
+        if (bestEl) {
+          socketEl = bestEl;
+          const k = bestEl.getAttribute('data-orb-key');
+          if (k) setSelectedKey(k);
+        }
+      }
     }
 
     if (socketEl) {
@@ -452,22 +483,29 @@ export const HomeView: React.FC<HomeViewProps> = ({
     setAnimationPhase('gliding-out');
 
     setTimeout(() => {
-      // Arrived at tray socket! Dock in tray first!
+      // Arrived at tray socket! Dock in tray and gracefully fade out aura over 450ms!
       setAnimationPhase('docked');
 
-      // Let the orb rest docked in the tray FIRST while aura gently fades to zero!
+      // Let the orb rest docked in the tray FIRST while aura gently and smoothly fades to zero!
       setTimeout(() => {
         setIsTrayPaused(false);
         setAnimationPhase('idle');
         setExpandedOrb(null);
         setSelectedKey(null);
-      }, 380);
+      }, 450);
     }, 520);
   };
 
-  // Duplicate orbs twice for a 100% mathematically seamless infinite marquee loop:
-  // Set A and Set B are identical. With -50% translateX, Set B moves to Set A's exact position.
-  const trackOrbsSet = [...orbs, ...orbs];
+  // Ensure enough orbs in the track so Set 1 spans >= 1200px (wider than any tablet/desktop container).
+  // This guarantees a mathematically 100% seamless infinite marquee loop on Safari and all browsers without empty gaps or jumping glitches!
+  const trackOrbsSet = React.useMemo(() => {
+    if (!orbs || orbs.length === 0) return [];
+    let list = [...orbs];
+    while (list.length < 12) {
+      list = [...list, ...orbs];
+    }
+    return list;
+  }, [orbs]);
 
   // Helper to render an individual orb button on the rail
   const renderOrbItem = (orb: MemoryOrb, itemKey: string, orbIndex: number) => {
@@ -506,11 +544,19 @@ export const HomeView: React.FC<HomeViewProps> = ({
           }`}
           title={`${orb.title} - แตะเพื่อเปิดลูกแก้ว`}
         >
-          {/* Completely Soft Feathered Ambient Glow - Zero Stroke, Zero Hard Edges */}
+          {/* Living Emotional Aura Glow: Soft, luminous colored mist breathing around the orb */}
           <div
-            className="absolute -inset-3 sm:-inset-4 rounded-full pointer-events-none filter blur-md opacity-45 group-hover:opacity-75 transition-opacity duration-300"
+            className="absolute -inset-3 sm:-inset-3.5 rounded-full pointer-events-none filter blur-[8px] sm:blur-[10px] animate-aura-breathe-soft"
             style={{
-              background: style.radialGradient,
+              background: `radial-gradient(circle, ${style.auraColor} 30%, ${style.glowHex} 65%, transparent 95%)`,
+            }}
+          />
+
+          {/* Secondary Soft Outer Atmospheric Halo */}
+          <div
+            className="absolute -inset-5 sm:-inset-6 rounded-full pointer-events-none filter blur-[14px] sm:blur-[16px] animate-mystic-pulse opacity-85"
+            style={{
+              background: `radial-gradient(circle, ${style.glowHex} 25%, ${style.auraColor} 60%, transparent 90%)`,
             }}
           />
 
@@ -527,11 +573,16 @@ export const HomeView: React.FC<HomeViewProps> = ({
           )}
 
           {/* Spherical 3D Glass Memory Orb with Color Driven by Emotion */}
-          <div className="w-full h-full rounded-full relative glass-memory-orb-light flex items-center justify-center shadow-lg p-1 overflow-hidden">
+          <div 
+            className="w-full h-full rounded-full relative glass-memory-orb-light flex items-center justify-center shadow-lg p-1 overflow-hidden"
+            style={{
+              boxShadow: `0 0 18px 3px ${style.auraColor}`,
+            }}
+          >
             <div
               className={`w-full h-full rounded-full bg-gradient-to-tr ${style.gradient} animate-mist-swirl opacity-90 filter blur-[0.6px] shadow-inner`}
             />
-            <div className="absolute inset-1 aspect-square rounded-full overflow-hidden opacity-35 mix-blend-overlay pointer-events-none">
+            <div className="absolute inset-1 aspect-square rounded-full overflow-hidden opacity-40 pointer-events-none">
               <img
                 src={orb.photoUrl}
                 alt=""
@@ -579,15 +630,19 @@ export const HomeView: React.FC<HomeViewProps> = ({
       <div 
         ref={railContainerRef}
         data-rail-container
-        className="relative w-full h-24 sm:h-26 flex items-center overflow-hidden"
+        className="relative w-full h-28 sm:h-30 flex items-center overflow-hidden"
         style={{
-          WebkitMaskImage: 'linear-gradient(to bottom, transparent 0%, black 12%, black 88%, transparent 100%)',
-          maskImage: 'linear-gradient(to bottom, transparent 0%, black 12%, black 88%, transparent 100%)',
+          isolation: 'isolate',
+          WebkitMaskImage: '-webkit-radial-gradient(white, black)',
         }}
       >
         {/* Soft Left & Right fade masks so orbs glide smoothly into view without box edges */}
         <div className="pointer-events-none absolute left-0 top-0 bottom-0 w-12 sm:w-24 bg-gradient-to-r from-[#F8FAFC] to-transparent z-10" />
         <div className="pointer-events-none absolute right-0 top-0 bottom-0 w-12 sm:w-24 bg-gradient-to-l from-[#F8FAFC] to-transparent z-10" />
+
+        {/* Soft Top & Bottom fade masks (High-performance GPU-friendly alternative to mask-image) */}
+        <div className="pointer-events-none absolute left-0 right-0 top-0 h-2 sm:h-2.5 bg-gradient-to-b from-[#F8FAFC] to-transparent z-10" />
+        <div className="pointer-events-none absolute left-0 right-0 bottom-0 h-2 sm:h-2.5 bg-gradient-to-t from-[#F8FAFC] to-transparent z-10" />
 
         {/* Floating Illuminated Rails Track line */}
         <div className="absolute left-0 right-0 top-1/2 -translate-y-1/2 h-1.5 bg-gradient-to-r from-transparent via-amber-200/50 via-sky-200/50 to-transparent rounded-full pointer-events-none" />
@@ -617,6 +672,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
         expandedOrb &&
         createPortal(
           <div
+            data-modal-portal
             className="fixed inset-0 z-[9999] overflow-hidden select-none"
             style={{
               position: 'fixed',
@@ -630,6 +686,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
           >
             {/* Dimmed Backdrop covering screen with 50% reduced opacity & blur; smoothly fades out on exit so tray is visible */}
             <motion.div
+              data-modal-backdrop
               initial={{ opacity: 0, backdropFilter: 'blur(0px)', backgroundColor: 'rgba(15, 23, 42, 0)' }}
               animate={
                 animationPhase === 'gliding-in' || animationPhase === 'morphed'
@@ -782,144 +839,195 @@ export const HomeView: React.FC<HomeViewProps> = ({
                 isolation: 'isolate',
               }}
             >
-              {/* Layer 1: Ethereal Celestial Shimmering Corona (Rotating Multi-angle Dispersion) */}
+              {/* Primary Living Aura Halo - Feathered Radial Glow that stays active on return flight and gracefully fades out in socket! */}
               <motion.div
                 animate={{
                   opacity:
                     animationPhase === 'morphed'
-                      ? 0.28
-                      : animationPhase === 'gliding-out' || animationPhase === 'docked'
+                      ? 0.45
+                      : animationPhase === 'docked'
                       ? 0
-                      : 0.85,
+                      : 0.9,
+                  scale:
+                    animationPhase === 'morphed'
+                      ? 1.08
+                      : animationPhase === 'docked'
+                      ? 1
+                      : 1.15,
                 }}
                 transition={{
-                  duration: animationPhase === 'gliding-out' ? 0.52 : 0.45,
-                  ease: [0.2, 0.9, 0.25, 1],
+                  opacity: {
+                    duration: animationPhase === 'docked' ? 0.45 : 0.5,
+                    ease: 'easeOut',
+                  },
+                  scale: {
+                    duration: 0.5,
+                    ease: [0.2, 0.9, 0.25, 1],
+                  },
                 }}
-                className="absolute -inset-9 sm:-inset-12 rounded-full pointer-events-none animate-mystic-shimmer"
+                className="absolute -inset-6 sm:-inset-8 rounded-full pointer-events-none"
                 style={{
-                  background: activeStyle.mysticCorona,
-                  filter: 'blur(22px)',
+                  background: activeStyle.radialGradient,
+                  filter: 'blur(16px)',
                 }}
               />
 
-              {/* Layer 2: Ethereal Multi-Spectrum Mystic Halo (Radiant Chromatic Core) */}
+              {/* Secondary Soft Atmospheric Ethereal Mist */}
               <motion.div
                 animate={{
                   opacity:
                     animationPhase === 'morphed'
                       ? 0.35
-                      : animationPhase === 'gliding-out' || animationPhase === 'docked'
+                      : animationPhase === 'docked'
                       ? 0
-                      : 0.9,
+                      : 0.75,
                 }}
                 transition={{
-                  duration: animationPhase === 'gliding-out' ? 0.52 : 0.45,
-                  ease: [0.2, 0.9, 0.25, 1],
+                  duration: animationPhase === 'docked' ? 0.45 : 0.5,
+                  ease: 'easeOut',
                 }}
-                className="absolute -inset-6 sm:-inset-8 rounded-full pointer-events-none animate-mystic-pulse"
+                className="absolute -inset-10 sm:-inset-12 rounded-full pointer-events-none"
                 style={{
                   background: activeStyle.mysticGradient,
-                  filter: 'blur(13px)',
+                  filter: 'blur(24px)',
                 }}
               />
 
-              {/* Layer 3: Concentrated Luminous White-Hot & Emotional Core Hugging Orb */}
+              {/* The Inner Box: Morphing from Rectangle Photo into Colored 3D Glass Memory Orb with Safari WebKit Mask Clipping */}
               <motion.div
+                initial={{
+                  borderRadius: `${orbSize / 2}px`,
+                }}
                 animate={{
-                  opacity:
-                    animationPhase === 'morphed' || animationPhase === 'gliding-out' || animationPhase === 'docked'
-                      ? 0
-                      : 0.95,
+                  borderRadius:
+                    animationPhase === 'gliding-in'
+                      ? '44px'
+                      : animationPhase === 'morphed'
+                      ? '24px'
+                      : `${orbSize / 2}px`,
                 }}
                 transition={{
-                  duration: animationPhase === 'gliding-out' ? 0.48 : 0.4,
+                  duration:
+                    animationPhase === 'gliding-in'
+                      ? 0.55
+                      : animationPhase === 'morphed'
+                      ? 0.5
+                      : 0.25,
                   ease: [0.2, 0.9, 0.25, 1],
                 }}
-                className="absolute -inset-3 sm:-inset-4 rounded-full pointer-events-none"
-                style={{
-                  background: `radial-gradient(circle, rgba(255,255,255,0.98) 0%, ${activeStyle.auraColor} 50%, transparent 100%)`,
-                  filter: 'blur(6px)',
-                }}
-              />
-
-              {/* Layer 4: Celestial Stardust Shimmer Ring with Brilliant Rim Lights */}
-              <motion.div
-                animate={{
-                  opacity:
-                    animationPhase === 'morphed' || animationPhase === 'gliding-out' || animationPhase === 'docked'
-                      ? 0
-                      : 0.85,
-                }}
-                transition={{
-                  duration: animationPhase === 'gliding-out' ? 0.48 : 0.4,
-                  ease: [0.2, 0.9, 0.25, 1],
-                }}
-                className="absolute -inset-1.5 sm:-inset-2 rounded-full pointer-events-none"
-                style={{
-                  boxShadow: `0 0 24px 5px ${activeStyle.glowHex}, inset 0 0 16px rgba(255,255,255,0.8)`,
-                  borderRadius: '9999px',
-                }}
-              />
-
-              {/* The Inner Box (Photo + Glass Mist + Flash) */}
-              <div
-                className="w-full h-full rounded-[inherit] overflow-hidden relative border border-white/50 bg-slate-900 flex items-center justify-center transition-shadow duration-500 ease-out"
+                className={`w-full h-full overflow-hidden relative border border-white/60 bg-slate-900 flex items-center justify-center transition-shadow duration-500 ease-out ${
+                  animationPhase !== 'morphed' ? 'glass-memory-orb-light' : ''
+                }`}
                 style={{
                   boxShadow:
                     animationPhase === 'morphed'
-                      ? `0 0 45px 4px ${activeStyle.auraColor}, 0 25px 60px -15px rgba(0,0,0,0.6)`
-                      : animationPhase === 'docked' || animationPhase === 'gliding-out'
-                      ? '0 0 0px 0px transparent'
-                      : `0 0 28px 4px ${activeStyle.auraColor}`,
-                  transition: 'box-shadow 0.52s cubic-bezier(0.2, 0.9, 0.25, 1)',
-                  transform: 'translateZ(0)',
+                      ? `0 0 40px 4px ${activeStyle.auraColor}, 0 20px 50px -10px rgba(0,0,0,0.55)`
+                      : animationPhase === 'docked'
+                      ? `0 0 18px 3px ${activeStyle.auraColor}`
+                      : `0 0 26px 3px ${activeStyle.auraColor}`,
+                  transition: 'box-shadow 0.45s cubic-bezier(0.2, 0.9, 0.25, 1)',
+                  WebkitMaskImage: '-webkit-radial-gradient(white, black)',
+                  isolation: 'isolate',
                 }}
               >
-                {/* Standalone Memory Photograph */}
-                <img
+                {/* Standalone Memory Photograph: Morphing smoothly from spherical to rectangular */}
+                <motion.img
                   src={expandedOrb.photoUrl}
                   alt={expandedOrb.title}
-                  className="w-full h-full object-cover transition-opacity duration-400"
-                  style={{
+                  initial={{
+                    borderRadius: `${orbSize / 2}px`,
+                    opacity: 0.4,
+                  }}
+                  animate={{
                     opacity: animationPhase === 'morphed' ? 1 : 0.35,
-                    filter: animationPhase === 'morphed' ? 'none' : 'blur(0.5px)',
-                    willChange: 'opacity, filter',
+                    borderRadius:
+                      animationPhase === 'gliding-in'
+                        ? '44px'
+                        : animationPhase === 'morphed'
+                        ? '24px'
+                        : `${orbSize / 2}px`,
+                  }}
+                  transition={{
+                    opacity: {
+                      duration: animationPhase === 'morphed' ? 0.35 : 0.2,
+                      ease: animationPhase === 'morphed' ? 'easeInOut' : 'easeOut',
+                    },
+                    borderRadius: {
+                      duration:
+                        animationPhase === 'gliding-in'
+                          ? 0.55
+                          : animationPhase === 'morphed'
+                          ? 0.5
+                          : 0.25,
+                      ease: [0.2, 0.9, 0.25, 1],
+                    },
+                  }}
+                  className="w-full h-full object-cover"
+                  style={{
+                    willChange: 'transform, opacity, border-radius',
+                    WebkitMaskImage: '-webkit-radial-gradient(white, black)',
                   }}
                 />
 
-                {/* Inside Out 3D Glass & Swirling Mist Overlays matching orb emotion */}
-                <div
-                  className="absolute inset-0 rounded-[inherit] transition-opacity duration-300 pointer-events-none"
-                  style={{
+                {/* Emotion Gradient & Glass Orb Overlays:
+                    Rapidly transforms BACK into the colored glass memory orb as it returns to the rail! */}
+                <motion.div
+                  initial={{
+                    borderRadius: `${orbSize / 2}px`,
+                    opacity: 0.95,
+                  }}
+                  animate={{
                     opacity: animationPhase === 'morphed' ? 0 : 0.95,
+                    borderRadius:
+                      animationPhase === 'gliding-in'
+                        ? '44px'
+                        : animationPhase === 'morphed'
+                        ? '24px'
+                        : `${orbSize / 2}px`,
+                  }}
+                  transition={{
+                    opacity: {
+                      duration: animationPhase === 'morphed' ? 0.3 : 0.2,
+                      ease: animationPhase === 'morphed' ? 'easeInOut' : 'easeOut',
+                    },
+                    borderRadius: {
+                      duration:
+                        animationPhase === 'gliding-in'
+                          ? 0.55
+                          : animationPhase === 'morphed'
+                          ? 0.5
+                          : 0.25,
+                      ease: [0.2, 0.9, 0.25, 1],
+                    },
+                  }}
+                  className="absolute inset-0 pointer-events-none overflow-hidden"
+                  style={{
+                    WebkitMaskImage: '-webkit-radial-gradient(white, black)',
                   }}
                 >
+                  {/* Colored Emotion Gradient matching the orb on the rail 100% */}
                   <div
                     className={`w-full h-full rounded-[inherit] bg-gradient-to-tr ${activeStyle.gradient} animate-mist-swirl filter blur-[0.6px] shadow-inner`}
                   />
-                  <div className="orb-shine-light" />
-                  <div className="orb-bottom-rim-light" />
-                </div>
 
-                {/* Luminous Flash Burst: Flashes brightly as orb blooms into rectangle */}
-                <motion.div
-                  initial={{ opacity: 0 }}
-                  animate={
-                    animationPhase === 'morphed'
-                      ? { opacity: [0, 0.85, 0], scale: [0.96, 1.02, 1] }
-                      : { opacity: 0 }
-                  }
-                  transition={{ duration: 0.45, times: [0, 0.25, 1], ease: 'easeOut' }}
-                  className="absolute inset-0 rounded-[inherit] pointer-events-none z-30"
-                  style={{
-                    background:
-                      'radial-gradient(circle, rgba(255,255,255,1) 0%, rgba(255,255,255,0.85) 35%, rgba(251,191,36,0.45) 70%, transparent 100%)',
-                    mixBlendMode: 'screen',
-                    willChange: 'opacity, transform',
-                  }}
-                />
-              </div>
+                  {/* 3D Glass Highlights (Top shine and bottom rim) - ONLY visible when spherical */}
+                  <motion.div
+                    animate={{
+                      opacity: animationPhase === 'morphed' ? 0 : 1,
+                    }}
+                    transition={{ duration: 0.18 }}
+                    className="absolute inset-0 pointer-events-none"
+                  >
+                    <div className="orb-shine-light" />
+                    <div className="orb-bottom-rim-light" />
+                  </motion.div>
+
+                  {/* Unlocked Inner Glow Ring */}
+                  {expandedOrb.isUnlocked && (
+                    <div className="absolute inset-0 rounded-[inherit] shadow-[inset_0_0_8px_rgba(255,255,255,0.7)] pointer-events-none" />
+                  )}
+                </motion.div>
+              </motion.div>
             </motion.div>
 
             {/* =========================================================================
@@ -1021,22 +1129,24 @@ export const HomeView: React.FC<HomeViewProps> = ({
                   >
                     <svg
                       className="w-full h-full pointer-events-none overflow-visible"
-                      style={{ overflow: 'visible' }}
+                      style={{
+                        overflow: 'visible',
+                        willChange: 'transform, opacity',
+                      }}
                     >
                       <defs>
                         {/* Soft Natural Spotlight Gradient (calm ambient light) */}
                         <linearGradient id={`soft-spotlight-grad-${miniPreviewOrb.id}`} x1="0%" y1="0%" x2="0%" y2="100%">
-                          <stop offset="0%" stopColor="#FFFFFF" stopOpacity="0.8" />
+                          <stop offset="0%" stopColor="#FFFFFF" stopOpacity="0.85" />
                           <stop offset="15%" stopColor={miniStyle.glowHex} stopOpacity="0.45" />
                           <stop offset="65%" stopColor={miniStyle.glowHex} stopOpacity="0.18" />
                           <stop offset="100%" stopColor={miniStyle.glowHex} stopOpacity="0.03" />
                         </linearGradient>
 
-                        {/* Soft Feathering Blur Filter */}
+                        {/* Safari-safe SVG Gaussian Blur Feathering Filter */}
                         <filter id={`spotlight-feather-${miniPreviewOrb.id}`} x="-20%" y="-20%" width="140%" height="140%">
                           <feGaussianBlur stdDeviation="3.5" />
                         </filter>
-
                         <filter id={`spotlight-wide-${miniPreviewOrb.id}`} x="-30%" y="-30%" width="160%" height="160%">
                           <feGaussianBlur stdDeviation="7" />
                         </filter>
@@ -1075,7 +1185,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
                         y2={spotlightBeam.photoTopY}
                         stroke={miniStyle.glowHex}
                         strokeWidth="2.5"
-                        opacity="0.45"
+                        opacity="0.5"
                         filter={`url(#spotlight-feather-${miniPreviewOrb.id})`}
                       />
                     </svg>
@@ -1106,21 +1216,29 @@ export const HomeView: React.FC<HomeViewProps> = ({
                     className="w-full h-full rounded-2xl overflow-hidden relative border border-white/60 bg-slate-900 shadow-md group-hover:scale-102 transition-transform duration-300"
                     style={{
                       boxShadow: `0 0 16px 2px ${miniStyle.auraColor}, 0 8px 20px -6px rgba(0,0,0,0.25)`,
+                      WebkitMaskImage: '-webkit-radial-gradient(white, black)',
+                      isolation: 'isolate',
                     }}
                   >
                     <img
                       src={miniPreviewOrb.photoUrl}
                       alt={miniPreviewOrb.title}
-                      className="w-full h-full object-cover"
+                      className="w-full h-full object-cover rounded-2xl"
                     />
 
-                    {/* Subtle top rim light where spotlight lands */}
-                    <div className="absolute inset-x-0 top-0 h-6 bg-gradient-to-b from-white/25 via-white/10 to-transparent pointer-events-none" />
+                    {/* Pure Date/Year text directly on photo - NO badge, NO location */}
+                    <div className="absolute top-2.5 right-3 z-10 text-xs font-bold text-white/95 drop-shadow-[0_1px_3px_rgba(0,0,0,0.85)] pointer-events-none tracking-tight">
+                      {(() => {
+                        const rawDate =
+                          lang === 'en'
+                            ? miniPreviewOrb.memoryYearEn || miniPreviewOrb.uploadDateEn || miniPreviewOrb.memoryYear || ''
+                            : miniPreviewOrb.memoryYear || miniPreviewOrb.uploadDate || miniPreviewOrb.memoryYearEn || '';
+                        return rawDate.replace(/\s*\([^)]*\)/g, '').trim();
+                      })()}
+                    </div>
 
-                    {/* 3D Glass & Swirling Mist Overlays */}
-                    <div className="absolute inset-0 bg-gradient-to-tr from-black/15 via-transparent to-white/20 pointer-events-none" />
-                    <div className="orb-shine-light" />
-                    <div className="orb-bottom-rim-light" />
+                    {/* Subtle top rim light where spotlight lands */}
+                    <div className="absolute inset-x-0 top-0 h-4 bg-gradient-to-b from-white/20 to-transparent pointer-events-none" />
                   </div>
                 </motion.div>
 
@@ -1128,7 +1246,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
                 <motion.div
                   initial={{ opacity: 0, y: 3 }}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.28, duration: 0.4, ease: 'easeOut' }}
+                  transition={{ delay: 0.1, duration: 0.4, ease: 'easeOut' }}
                   className="mt-3.5 sm:mt-4 text-center space-y-1.5 max-w-[320px] sm:max-w-[360px] pointer-events-auto select-none flex flex-col items-center px-2"
                 >
                   <h4 className="text-base sm:text-lg font-extrabold text-slate-900 tracking-tight leading-snug drop-shadow-xs line-clamp-1">

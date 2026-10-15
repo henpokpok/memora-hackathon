@@ -20,49 +20,49 @@
 /* Living, Dynamic Organic Aura Mist for Top Bar (Rounded, Dynamic Size, Swirling Vapor, Contained within Top Bar) */
 @keyframes auraMistSwirlA {
   0% {
-    transform: scale(0.9) translate(0px, 0px) rotate(0deg);
+    transform: scale(0.9) translate3d(0px, 0px, 0) rotate(0deg);
     opacity: 0.65;
   }
   33% {
-    transform: scale(1.15) translate(3px, -2px) rotate(15deg);
+    transform: scale(1.15) translate3d(3px, -2px, 0) rotate(15deg);
     opacity: 0.85;
   }
   66% {
-    transform: scale(0.95) translate(-2px, 2px) rotate(-10deg);
+    transform: scale(0.95) translate3d(-2px, 2px, 0) rotate(-10deg);
     opacity: 0.6;
   }
   100% {
-    transform: scale(0.9) translate(0px, 0px) rotate(0deg);
+    transform: scale(0.9) translate3d(0px, 0px, 0) rotate(0deg);
     opacity: 0.65;
   }
 }
 
 @keyframes auraMistSwirlB {
   0% {
-    transform: scale(1.12) translate(0px, 0px) rotate(0deg);
+    transform: scale(1.12) translate3d(0px, 0px, 0) rotate(0deg);
     opacity: 0.6;
   }
   40% {
-    transform: scale(0.88) translate(-3px, -2px) rotate(-20deg);
+    transform: scale(0.88) translate3d(-3px, -2px, 0) rotate(-20deg);
     opacity: 0.8;
   }
   75% {
-    transform: scale(1.14) translate(2px, 2px) rotate(10deg);
+    transform: scale(1.14) translate3d(2px, 2px, 0) rotate(10deg);
     opacity: 0.65;
   }
   100% {
-    transform: scale(1.12) translate(0px, 0px) rotate(0deg);
+    transform: scale(1.12) translate3d(0px, 0px, 0) rotate(0deg);
     opacity: 0.6;
   }
 }
 
 @keyframes auraMistCoreGlow {
   0%, 100% {
-    transform: scale(0.92);
+    transform: scale(0.92) translateZ(0);
     opacity: 0.75;
   }
   50% {
-    transform: scale(1.14);
+    transform: scale(1.14) translateZ(0);
     opacity: 0.95;
   }
 }
@@ -80,6 +80,10 @@
   transform-origin: center center;
   filter: blur(8px);
   will-change: transform, opacity;
+  transform: translateZ(0);
+  -webkit-transform: translateZ(0);
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
 }
 
 .animate-aura-mist-glow {
@@ -95,6 +99,10 @@
   transform-origin: center center;
   filter: blur(10px);
   will-change: transform, opacity;
+  transform: translateZ(0);
+  -webkit-transform: translateZ(0);
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
 }
 
 .animate-aura-mist-core {
@@ -110,121 +118,137 @@
   transform-origin: center center;
   filter: blur(6px);
   will-change: transform, opacity;
+  transform: translateZ(0);
+  -webkit-transform: translateZ(0);
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
 }
 
 /* Mystic Ethereal Aura for Memory Orbs */
 @keyframes mysticAuraPulse {
   0%, 100% {
-    transform: scale(1);
+    transform: scale(1) translateZ(0);
     opacity: 0.85;
   }
   50% {
-    transform: scale(1.15);
+    transform: scale(1.15) translateZ(0);
     opacity: 1;
   }
 }
 
 @keyframes mysticShimmerRotate {
   0% {
-    transform: rotate(0deg) scale(1);
+    transform: rotate(0deg) scale(1) translateZ(0);
   }
   50% {
-    transform: rotate(180deg) scale(1.08);
+    transform: rotate(180deg) scale(1.08) translateZ(0);
   }
   100% {
-    transform: rotate(360deg) scale(1);
+    transform: rotate(360deg) scale(1) translateZ(0);
   }
 }
 
 .animate-mystic-pulse {
   animation: mysticAuraPulse 2.8s ease-in-out infinite;
   will-change: transform, opacity;
+  transform: translateZ(0);
+  -webkit-transform: translateZ(0);
 }
 
 .animate-mystic-shimmer {
   animation: mysticShimmerRotate 8s linear infinite;
   will-change: transform;
+  transform: translateZ(0);
+  -webkit-transform: translateZ(0);
 }
 
 /* Swirling mist inside cloudy memory balls */
 @keyframes swirlInsideOrb {
   0% {
-    transform: rotate(0deg) scale(1);
+    transform: rotate(0deg) scale(1) translateZ(0);
     opacity: 0.7;
   }
   50% {
-    transform: rotate(180deg) scale(1.18);
+    transform: rotate(180deg) scale(1.18) translateZ(0);
     opacity: 0.95;
   }
   100% {
-    transform: rotate(360deg) scale(1);
+    transform: rotate(360deg) scale(1) translateZ(0);
     opacity: 0.7;
   }
 }
 
 .animate-mist-swirl {
   animation: swirlInsideOrb 9s linear infinite;
+  transform: translateZ(0);
+  -webkit-transform: translateZ(0);
 }
 
 /* Floating orb animation */
 @keyframes floatOrb {
   0%, 100% {
-    transform: translateY(0px) rotate(0deg);
+    transform: translate3d(0, 0px, 0) rotate(0deg);
   }
   50% {
-    transform: translateY(-8px) rotate(1deg);
+    transform: translate3d(0, -8px, 0) rotate(1deg);
   }
 }
 
 @keyframes pulseHalo {
   0%, 100% {
     opacity: 0.45;
-    transform: scale(1);
+    transform: scale(1) translateZ(0);
   }
   50% {
     opacity: 0.75;
-    transform: scale(1.08);
+    transform: scale(1.08) translateZ(0);
   }
 }
 
-/* Breathing Aura Glow - Dimming and Brightening organically like a living spirit */
+/* Breathing Aura Glow - Static blur with GPU opacity/scale transforms for buttery 60-120fps on iOS */
 @keyframes auraBreathe {
   0%, 100% {
-    opacity: 0.35;
-    transform: scale(0.95);
-    filter: blur(4px);
+    opacity: 0.7;
+    transform: scale(0.96) translateZ(0);
   }
   50% {
-    opacity: 0.88;
-    transform: scale(1.12);
-    filter: blur(8px);
+    opacity: 1;
+    transform: scale(1.12) translateZ(0);
   }
 }
 
 .animate-aura-breathe {
+  filter: blur(5px);
   animation: auraBreathe 3.6s ease-in-out infinite;
-  will-change: transform, opacity, filter;
+  will-change: transform, opacity;
+  transform: translateZ(0);
+  -webkit-transform: translateZ(0);
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
 }
 
 @keyframes auraBreatheSoft {
   0%, 100% {
-    opacity: 0.28;
-    transform: scale(0.96);
-    filter: blur(6px);
+    opacity: 0.78;
+    transform: scale(0.96) translateZ(0);
   }
   50% {
-    opacity: 0.78;
-    transform: scale(1.1);
-    filter: blur(12px);
+    opacity: 1;
+    transform: scale(1.14) translateZ(0);
   }
 }
 
 .animate-aura-breathe-soft {
+  filter: blur(8px);
   animation: auraBreatheSoft 4.2s ease-in-out infinite;
-  will-change: transform, opacity, filter;
+  will-change: transform, opacity;
+  transform: translateZ(0);
+  -webkit-transform: translateZ(0);
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
 }
 
-/* Infinite Memory Shelf Marquee Scroll */
+/* Infinite Memory Shelf Marquee Scroll (Smooth subpixel-free scroll for Safari and Chromium) */
 @keyframes scrollShelfLeft {
   0% {
     transform: translateX(0);
@@ -236,16 +260,23 @@
 
 .animate-float-slow {
   animation: floatOrb 5s ease-in-out infinite;
+  transform: translateZ(0);
+  -webkit-transform: translateZ(0);
 }
 
 .animate-pulse-halo {
   animation: pulseHalo 4s ease-in-out infinite;
+  transform: translateZ(0);
+  -webkit-transform: translateZ(0);
 }
 
 .animate-shelf-scroll {
   display: flex;
   width: max-content;
   animation: scrollShelfLeft 36s linear infinite;
+  will-change: transform;
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
 }
 
 .animate-shelf-scroll:hover {
@@ -263,9 +294,10 @@
     inset 0 -12px 28px rgba(15, 23, 42, 0.25),
     0 16px 35px -8px rgba(0, 0, 0, 0.1),
     0 8px 20px -4px rgba(99, 102, 241, 0.12);
-  backdrop-filter: blur(12px);
   border: 1px solid rgba(255, 255, 255, 0.9);
   flex-shrink: 0;
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
 }
 
 .orb-shine-light {

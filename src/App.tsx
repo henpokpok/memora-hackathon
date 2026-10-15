@@ -6,13 +6,15 @@ import { translations } from './data/translations';
 import { TopHeader } from './components/TopHeader';
 import { BottomNav } from './components/BottomNav';
 import { HomeView } from './components/views/HomeView';
-import { TestView } from './components/views/TestView';
-import { VaultView } from './components/views/VaultView';
-import { SettingsView } from './components/views/SettingsView';
-import { ChildPortalView } from './components/views/ChildPortalView';
-import { SessionReviewView } from './components/views/SessionReviewView';
-import { TodayRecapView } from './components/views/TodayRecapView';
-import { LineCapsuleModal } from './components/LineCapsuleModal';
+
+// Dynamic code splitting for non-initial views to optimize bundle size and LCP
+const TestView = React.lazy(() => import('./components/views/TestView').then((m) => ({ default: m.TestView })));
+const VaultView = React.lazy(() => import('./components/views/VaultView').then((m) => ({ default: m.VaultView })));
+const SettingsView = React.lazy(() => import('./components/views/SettingsView').then((m) => ({ default: m.SettingsView })));
+const ChildPortalView = React.lazy(() => import('./components/views/ChildPortalView').then((m) => ({ default: m.ChildPortalView })));
+const SessionReviewView = React.lazy(() => import('./components/views/SessionReviewView').then((m) => ({ default: m.SessionReviewView })));
+const TodayRecapView = React.lazy(() => import('./components/views/TodayRecapView').then((m) => ({ default: m.TodayRecapView })));
+const LineCapsuleModal = React.lazy(() => import('./components/LineCapsuleModal').then((m) => ({ default: m.LineCapsuleModal })));
 import { stopSpeech } from './services/elevenlabs';
 import { familyApi, orbsApi } from './services/api';
 
@@ -114,93 +116,108 @@ export const App: React.FC = () => {
 
       {/* Main Multi-Page Content Area with Bottom Padding for Tablet Floating Bar */}
       <main className="flex-1 max-w-5xl w-full mx-auto px-4 sm:px-6 py-4 pb-32 sm:pb-36">
-        {currentPage === 'home' && (
-          <HomeView
-            orbs={orbs}
-            unlockedCount={unlockedCount}
-            onNavigate={handleNavigate}
-            onSelectOrbForTest={handleSelectOrbForTest}
-            lang={lang}
-            activeSenior={activeSenior}
-          />
-        )}
+        <React.Suspense
+          fallback={
+            <div className="flex flex-col items-center justify-center min-h-[45vh] space-y-3">
+              <div className="w-9 h-9 rounded-full border-3 border-amber-400 border-t-transparent animate-spin" />
+              <p className="text-xs font-semibold text-slate-400">
+                {lang === 'en' ? 'Loading view...' : 'กำลังเปิดหน้าจอ...'}
+              </p>
+            </div>
+          }
+        >
+          {currentPage === 'home' && (
+            <HomeView
+              orbs={orbs}
+              unlockedCount={unlockedCount}
+              onNavigate={handleNavigate}
+              onSelectOrbForTest={handleSelectOrbForTest}
+              lang={lang}
+              activeSenior={activeSenior}
+            />
+          )}
 
-        {currentPage === 'test' && (
-          <TestView
-            orbs={orbs}
-            activeOrbId={activeOrbId}
-            onSelectOrb={(id) => {
-              stopSpeech();
-              setActiveOrbId(id);
-            }}
-            onCorrectAnswer={handleCorrectAnswer}
-            onFinishSession={handleFinishSession}
-            lang={lang}
-          />
-        )}
+          {currentPage === 'test' && (
+            <TestView
+              orbs={orbs}
+              activeOrbId={activeOrbId}
+              onSelectOrb={(id) => {
+                stopSpeech();
+                setActiveOrbId(id);
+              }}
+              onCorrectAnswer={handleCorrectAnswer}
+              onFinishSession={handleFinishSession}
+              lang={lang}
+            />
+          )}
 
-        {/* Dedicated Session Review & Daily Milestone Celebration Page */}
-        {currentPage === 'session-review' && (
-          <SessionReviewView
-            orbs={orbs}
-            activeSenior={activeSenior}
-            onNavigate={handleNavigate}
-            onOpenLineModal={() => setIsLineModalOpen(true)}
-            lang={lang}
-          />
-        )}
+          {/* Dedicated Session Review & Daily Milestone Celebration Page */}
+          {currentPage === 'session-review' && (
+            <SessionReviewView
+              orbs={orbs}
+              activeSenior={activeSenior}
+              onNavigate={handleNavigate}
+              onOpenLineModal={() => setIsLineModalOpen(true)}
+              lang={lang}
+            />
+          )}
 
-        {currentPage === 'vault' && (
-          <VaultView
-            orbs={orbs}
-            onSelectOrbForTest={handleSelectOrbForTest}
-            lang={lang}
-            onNavigate={handleNavigate}
-          />
-        )}
+          {currentPage === 'vault' && (
+            <VaultView
+              orbs={orbs}
+              onSelectOrbForTest={handleSelectOrbForTest}
+              lang={lang}
+              onNavigate={handleNavigate}
+            />
+          )}
 
-        {/* Dedicated Today's Storytelling Recap View */}
-        {currentPage === 'today-recap' && (
-          <TodayRecapView
-            onNavigate={handleNavigate}
-            lang={lang}
-          />
-        )}
+          {/* Dedicated Today's Storytelling Recap View */}
+          {currentPage === 'today-recap' && (
+            <TodayRecapView
+              onNavigate={handleNavigate}
+              lang={lang}
+            />
+          )}
 
-        {/* Dedicated Full Page for Settings (No popup modal!) */}
-        {currentPage === 'settings' && (
-          <SettingsView
-            onNavigate={handleNavigate}
-            lang={lang}
-            onToggleLang={handleToggleLang}
-            onResetOrbs={() => setOrbs((prev) => prev.map((o) => ({ ...o, isUnlocked: false })))}
-            onUnlockAllOrbs={() => setOrbs((prev) => prev.map((o) => ({ ...o, isUnlocked: true })))}
-          />
-        )}
+          {/* Dedicated Full Page for Settings (No popup modal!) */}
+          {currentPage === 'settings' && (
+            <SettingsView
+              onNavigate={handleNavigate}
+              lang={lang}
+              onToggleLang={handleToggleLang}
+              onResetOrbs={() => setOrbs((prev) => prev.map((o) => ({ ...o, isUnlocked: false })))}
+              onUnlockAllOrbs={() => setOrbs((prev) => prev.map((o) => ({ ...o, isUnlocked: true })))}
+            />
+          )}
 
-        {/* Dedicated Caregiver & Family Console (Separated for safety) */}
-        {currentPage === 'child-portal' && (
-          <ChildPortalView
-            onNavigate={handleNavigate}
-            orbs={orbs}
-            unlockedCount={unlockedCount}
-            familyGroup={familyGroup}
-            onUpdateFamily={(updated) => setFamilyGroup(updated)}
-            activeSenior={activeSenior}
-            onSwitchActiveSenior={handleSwitchSenior}
-            onAddNewOrb={handleAddNewOrb}
-            lang={lang}
-          />
-        )}
+          {/* Dedicated Caregiver & Family Console (Separated for safety) */}
+          {currentPage === 'child-portal' && (
+            <ChildPortalView
+              onNavigate={handleNavigate}
+              orbs={orbs}
+              unlockedCount={unlockedCount}
+              familyGroup={familyGroup}
+              onUpdateFamily={(updated) => setFamilyGroup(updated)}
+              activeSenior={activeSenior}
+              onSwitchActiveSenior={handleSwitchSenior}
+              onAddNewOrb={handleAddNewOrb}
+              lang={lang}
+            />
+          )}
+        </React.Suspense>
       </main>
 
       {/* LINE Memory Capsule Push Preview Modal */}
-      <LineCapsuleModal
-        isOpen={isLineModalOpen}
-        onClose={() => setIsLineModalOpen(false)}
-        orbs={orbs}
-        unlockedCount={unlockedCount}
-      />
+      {isLineModalOpen && (
+        <React.Suspense fallback={null}>
+          <LineCapsuleModal
+            isOpen={isLineModalOpen}
+            onClose={() => setIsLineModalOpen(false)}
+            orbs={orbs}
+            unlockedCount={unlockedCount}
+          />
+        </React.Suspense>
+      )}
 
       {/* Plain Minimal Bottom Navigation Bar with Selected Dot Indicator */}
       <BottomNav
