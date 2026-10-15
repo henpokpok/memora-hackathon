@@ -21,6 +21,7 @@ import {
 } from 'lucide-react';
 import { speakWithElevenLabs, stopSpeech } from '../../services/elevenlabs';
 import { getDailyRecaps, deleteDailyRecap } from '../../services/recapStorage';
+import { isImagePreloaded } from '../../services/imagePreloader';
 
 interface VaultViewProps {
   orbs: MemoryOrb[];
@@ -104,32 +105,30 @@ const emotionCategoryList: {
   labelTh: string;
   labelEn: string;
   emoji: string;
-  descTh: string;
-  descEn: string;
   gradient: string;
   auraColor: string;
   glowHex: string;
+  rainbowAura?: string;
+  secondaryRainbowAura?: string;
 }[] = [
   {
     id: 'all',
-    labelTh: 'ลูกแก้วทั้งหมด',
-    labelEn: 'All Orbs',
+    labelTh: 'ทั้งหมด',
+    labelEn: 'All',
     emoji: '🔮',
-    descTh: 'รวมทุกความทรงจำ',
-    descEn: 'All Memories',
-    gradient: 'from-amber-300 via-rose-400 to-indigo-600',
-    auraColor: 'rgba(245, 158, 11, 0.7)',
-    glowHex: '#F59E0B',
+    gradient: 'from-rose-400 via-amber-300 via-emerald-400 via-sky-400 to-purple-500',
+    auraColor: 'rgba(236, 72, 153, 0.45)',
+    glowHex: '#EC4899',
+    rainbowAura: 'conic-gradient(from 0deg, rgba(244,63,94,0.65), rgba(245,158,11,0.65), rgba(16,185,129,0.65), rgba(14,165,233,0.65), rgba(139,92,246,0.65), rgba(236,72,153,0.65), rgba(244,63,94,0.65))',
+    secondaryRainbowAura: 'radial-gradient(circle, rgba(251,191,36,0.25) 0%, rgba(16,185,129,0.2) 35%, rgba(14,165,233,0.2) 60%, rgba(139,92,246,0.18) 80%, transparent 95%)',
   },
   {
     id: 'joy',
     labelTh: 'ความสุข',
     labelEn: 'Joy',
     emoji: '☀️',
-    descTh: 'รอยยิ้มเสียงหัวเราะ',
-    descEn: 'Smiles & Laughter',
     gradient: 'from-amber-300 via-amber-500 to-yellow-600',
-    auraColor: 'rgba(251, 191, 36, 0.85)',
+    auraColor: 'rgba(251, 191, 36, 0.65)',
     glowHex: '#FBBF24',
   },
   {
@@ -137,10 +136,8 @@ const emotionCategoryList: {
     labelTh: 'คิดถึงวันวาน',
     labelEn: 'Nostalgia',
     emoji: '🌊',
-    descTh: 'สถานที่และความหลัง',
-    descEn: 'Trips & Places',
     gradient: 'from-sky-300 via-cyan-500 to-blue-600',
-    auraColor: 'rgba(14, 165, 233, 0.85)',
+    auraColor: 'rgba(14, 165, 233, 0.65)',
     glowHex: '#0EA5E9',
   },
   {
@@ -148,10 +145,8 @@ const emotionCategoryList: {
     labelTh: 'ความรัก',
     labelEn: 'Love',
     emoji: '💖',
-    descTh: 'ความอบอุ่นครอบครัว',
-    descEn: 'Family Warmth',
     gradient: 'from-rose-300 via-pink-500 to-rose-600',
-    auraColor: 'rgba(244, 63, 94, 0.85)',
+    auraColor: 'rgba(244, 63, 94, 0.65)',
     glowHex: '#F43F5E',
   },
   {
@@ -159,10 +154,8 @@ const emotionCategoryList: {
     labelTh: 'สดชื่น',
     labelEn: 'Vitality',
     emoji: '🌿',
-    descTh: 'ธรรมชาติและชีวิตชีวา',
-    descEn: 'Nature & Life',
     gradient: 'from-emerald-300 via-teal-500 to-green-600',
-    auraColor: 'rgba(16, 185, 129, 0.85)',
+    auraColor: 'rgba(16, 185, 129, 0.65)',
     glowHex: '#10B981',
   },
   {
@@ -170,13 +163,115 @@ const emotionCategoryList: {
     labelTh: 'ภาคภูมิใจ',
     labelEn: 'Pride',
     emoji: '🎉',
-    descTh: 'วันสำคัญและความสำเร็จ',
-    descEn: 'Milestones',
     gradient: 'from-purple-300 via-violet-500 to-indigo-600',
-    auraColor: 'rgba(139, 92, 246, 0.85)',
+    auraColor: 'rgba(139, 92, 246, 0.65)',
     glowHex: '#8B5CF6',
   },
 ];
+
+const OrbCardPhoto: React.FC<{
+  photoUrl: string;
+  title: string;
+  style: CategoryStyle;
+  year: string;
+  lang: Language;
+  isPriority?: boolean;
+}> = ({ photoUrl, title, style, year, lang, isPriority = false }) => {
+  const [isLoaded, setIsLoaded] = useState(() => isImagePreloaded(photoUrl));
+  const [hasError, setHasError] = useState(false);
+  const imgRef = useRef<HTMLImageElement | null>(null);
+
+  // Instantly detect preloaded/cached images so they render without any skeleton flash
+  useEffect(() => {
+    if (isImagePreloaded(photoUrl) || (imgRef.current && imgRef.current.complete && imgRef.current.naturalWidth > 0)) {
+      setIsLoaded(true);
+    }
+  }, [photoUrl]);
+
+  return (
+    <div className="relative shrink-0 w-full md:w-76 lg:w-84 group/photo">
+      {/* 1. Atmospheric Radial Aura Glow behind the photo */}
+      <div
+        className="absolute -inset-1.5 sm:-inset-2 rounded-2xl pointer-events-none filter blur-md opacity-60 group-hover/photo:opacity-85 transition-all duration-500"
+        style={{
+          background: style.radialGradient,
+        }}
+      />
+
+      {/* 2. Secondary Colored Aura Edge */}
+      <div
+        className="absolute -inset-0.5 rounded-xl pointer-events-none filter blur-xs opacity-40"
+        style={{
+          backgroundColor: style.auraColor,
+        }}
+      />
+
+      {/* 3. The Photo Box Container */}
+      <div
+        className="relative aspect-4/3 w-full rounded-2xl overflow-hidden bg-slate-900 transition-all duration-300"
+        style={{
+          boxShadow: `0 0 16px 2px ${style.auraColor}, 0 8px 20px -4px rgba(0,0,0,0.22)`,
+          border: `2px solid ${style.auraColor}`,
+        }}
+      >
+        {/* Shimmer Loading Skeleton with smooth cross-fade (no jarring snap-off) */}
+        <div
+          className={`absolute inset-0 bg-gradient-to-tr from-slate-900 via-slate-800 to-slate-900 flex flex-col items-center justify-center space-y-2 z-10 transition-opacity duration-500 pointer-events-none ${
+            isLoaded && !hasError ? 'opacity-0' : 'opacity-100 animate-pulse'
+          }`}
+        >
+          <Sparkles className="w-6 h-6 text-amber-400 animate-spin" style={{ animationDuration: '3s' }} />
+          <span className="text-[11px] font-bold text-amber-200/90 tracking-wide">
+            {lang === 'en' ? 'Opening memory...' : 'กำลังเปิดภาพความทรงจำ...'}
+          </span>
+        </div>
+
+        {/* Fallback if image fails to load */}
+        {hasError ? (
+          <div className="absolute inset-0 bg-slate-900 flex flex-col items-center justify-center p-4 text-center z-10">
+            <span className="text-3xl mb-1">{style.emoji}</span>
+            <span className="text-xs font-bold text-slate-300">{title}</span>
+          </div>
+        ) : (
+          <img
+            ref={imgRef}
+            src={photoUrl}
+            alt={title}
+            decoding="async"
+            // @ts-ignore - fetchPriority is supported in modern browsers
+            fetchPriority={isPriority ? 'high' : 'auto'}
+            onLoad={() => setIsLoaded(true)}
+            onError={() => setHasError(true)}
+            className={`w-full h-full object-cover transition-all duration-500 group-hover/photo:scale-105 ${
+              isLoaded ? 'opacity-100 scale-100' : 'opacity-0 scale-98'
+            }`}
+          />
+        )}
+
+        <div className="absolute inset-0 bg-gradient-to-t from-slate-950/70 via-transparent to-black/20 pointer-events-none" />
+
+        {/* Top-Left: Emotion Badge on Photo */}
+        <div
+          className="absolute top-3 left-3 px-3 py-1 rounded-full text-xs font-black shadow-md flex items-center space-x-1.5 backdrop-blur-md z-20"
+          style={{
+            backgroundColor: 'rgba(255, 255, 255, 0.94)',
+            border: `1.5px solid ${style.glowHex}`,
+            color: '#0f172a',
+          }}
+        >
+          <span>{style.emoji}</span>
+          <span className="font-extrabold">{lang === 'en' ? style.labelEn : style.labelTh}</span>
+        </div>
+
+        {/* Top-Right: Memory Year Badge on Photo */}
+        <div className="absolute top-3 right-3 bg-black/65 backdrop-blur-md px-3 py-1 rounded-full text-xs font-bold text-white shadow-sm border border-white/20 flex items-center space-x-1 z-20">
+          <Calendar className="w-3.5 h-3.5 text-amber-300" />
+          <span>{year}</span>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 export const VaultView: React.FC<VaultViewProps> = ({
   orbs,
@@ -187,8 +282,8 @@ export const VaultView: React.FC<VaultViewProps> = ({
   // Main view segment: 'recaps' (Daily Stories) or 'orbs' (Inside Out Orbs)
   const [activeTab, setActiveTab] = useState<'recaps' | 'orbs'>('recaps');
 
-  // Daily recaps state
-  const [recaps, setRecaps] = useState<DailyRecapMemory[]>([]);
+  // Daily recaps state (Synchronously initialized to eliminate Frame-0 empty flash)
+  const [recaps, setRecaps] = useState<DailyRecapMemory[]>(() => getDailyRecaps());
   const [selectedRecap, setSelectedRecap] = useState<DailyRecapMemory | null>(null);
   const [expandedOrb, setExpandedOrb] = useState<MemoryOrb | null>(null);
 
@@ -692,18 +787,15 @@ export const VaultView: React.FC<VaultViewProps> = ({
                 </div>
 
                 <div className="space-y-4">
-                  {recaps.map((recap, index) => {
+                  {recaps.map((recap) => {
                     const dateLabel = lang === 'en' ? recap.displayDateEn : recap.displayDateTh;
                     const isPlayingThis = playingRecapId === recap.id;
 
                     return (
-                      <motion.div
+                      <div
                         key={recap.id}
-                        initial={{ opacity: 0, y: 12 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: index * 0.08 }}
                         onClick={() => setSelectedRecap(recap)}
-                        className="group bg-white rounded-3xl border border-slate-200/90 hover:border-amber-300/90 p-5 sm:p-6 shadow-xs hover:shadow-md transition-all cursor-pointer text-left relative"
+                        className="group bg-white rounded-3xl border border-slate-200/90 hover:border-amber-300/90 p-5 sm:p-6 shadow-xs hover:shadow-md transition-all cursor-pointer text-left relative scroll-card-contained"
                       >
                         {/* Top Bar: Date on Left, Emotion + ดูบันทึกฉบับเต็ม + 3 จุด on Right (ขวาบน) */}
                         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-3">
@@ -842,7 +934,7 @@ export const VaultView: React.FC<VaultViewProps> = ({
                             </div>
                           </div>
                         </div>
-                      </motion.div>
+                      </div>
                     );
                   })}
                 </div>
@@ -999,18 +1091,20 @@ export const VaultView: React.FC<VaultViewProps> = ({
           </div>
 
           {/* 3D Glass Memory Orb Category Selector (เลื่อนเพื่อเลือก) */}
-          <div className="relative bg-gradient-to-b from-slate-100/90 via-slate-50/70 to-white/95 rounded-[36px] border border-slate-200/90 p-4 sm:p-6 shadow-sm overflow-hidden">
-            {/* Soft edge fade masks for smooth horizontal scroll indicator */}
-            <div className="pointer-events-none absolute left-0 top-0 bottom-0 w-8 bg-gradient-to-r from-slate-100/90 to-transparent z-10" />
-            <div className="pointer-events-none absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-slate-100/90 to-transparent z-10" />
+          <div
+            className="relative bg-gradient-to-b from-slate-100/80 via-slate-50/60 to-white/95 rounded-[32px] border border-slate-200/90 px-1 sm:px-3 shadow-xs overflow-hidden"
+            style={{ isolation: 'isolate' }}
+          >
+            {/* Subtle edge fade masks for smooth horizontal scroll indicator without obscuring aura */}
+            <div className="pointer-events-none absolute left-0 top-0 bottom-0 w-5 bg-gradient-to-r from-slate-100/50 to-transparent z-20" />
+            <div className="pointer-events-none absolute right-0 top-0 bottom-0 w-5 bg-gradient-to-l from-slate-100/50 to-transparent z-20" />
 
-            <div className="flex items-start space-x-4 sm:space-x-8 overflow-x-auto pb-4 pt-2 px-4 no-scrollbar scroll-smooth">
+            {/* Illuminated Glass Rail Track running behind the orbs */}
+            <div className="absolute left-6 right-6 top-[60px] sm:top-[72px] -translate-y-1/2 h-1 bg-gradient-to-r from-transparent via-amber-200/50 via-sky-200/50 to-transparent rounded-full pointer-events-none" />
+
+            <div className="flex items-center justify-start sm:justify-center space-x-6 sm:space-x-8 overflow-x-auto pt-7 pb-6 px-8 sm:px-10 no-scrollbar scroll-smooth">
               {emotionCategoryList.map((cat) => {
                 const isSelected = activeFilter === cat.id;
-                const catCount =
-                  cat.id === 'all'
-                    ? orbs.length
-                    : orbs.filter((o) => o.emotion === cat.id).length;
 
                 // Pick representative orb photo for inside orb glass reflection
                 const repOrb =
@@ -1026,95 +1120,120 @@ export const VaultView: React.FC<VaultViewProps> = ({
                       stopAllAudio();
                       setActiveFilter(cat.id);
                     }}
-                    className={`group relative flex flex-col items-center focus:outline-none transition-all duration-300 cursor-pointer shrink-0 ${
-                      isSelected ? 'scale-108' : 'hover:scale-105 opacity-85 hover:opacity-100'
-                    }`}
-                    style={{ minWidth: '100px' }}
+                    className="group relative flex flex-col items-center focus:outline-none transition-all duration-300 cursor-pointer shrink-0"
                     title={`${lang === 'en' ? cat.labelEn : cat.labelTh} - แตะเพื่อเลือกหมวดนี้`}
                   >
-                    {/* Glowing Radial Halo Aura radiating behind category orb */}
+                    {/* Multi-layered Spherical Glass Memory Orb (ลูกแก้ว Inside Out) */}
                     <div
-                      className={`absolute -inset-3 sm:-inset-4 rounded-full filter blur-lg transition-all duration-500 pointer-events-none ${
-                        isSelected ? 'opacity-95 scale-120' : 'opacity-40 group-hover:opacity-80'
+                      className={`w-16 h-16 sm:w-20 sm:h-20 aspect-square rounded-full shrink-0 relative flex items-center justify-center transition-all duration-300 ${
+                        isSelected ? 'scale-110' : 'hover:scale-108 active:scale-95'
                       }`}
-                      style={{
-                        background: `radial-gradient(circle, ${cat.auraColor} 20%, ${cat.glowHex} 55%, transparent 80%)`,
-                      }}
-                    />
-
-                    {/* Spherical 3D Glass Memory Orb (HomeView design) */}
-                    <div
-                      className={`w-18 h-18 sm:w-22 sm:h-22 aspect-square rounded-full relative glass-memory-orb-light flex items-center justify-center p-1 transition-all duration-300 overflow-hidden ${
-                        isSelected
-                          ? 'ring-3 ring-amber-400 shadow-[0_0_24px_rgba(251,191,36,0.85)]'
-                          : 'group-hover:shadow-[0_0_20px_rgba(251,191,36,0.5)]'
-                      }`}
-                      style={{
-                        boxShadow: isSelected
-                          ? `0 0 24px 4px ${cat.auraColor}`
-                          : `0 0 12px 1px ${cat.auraColor}`,
-                      }}
                     >
+                      {/* Living Atmospheric Aura Glow breathing behind the orb */}
                       <div
-                        className={`w-full h-full rounded-full bg-gradient-to-tr ${cat.gradient} animate-mist-swirl opacity-90 filter blur-[0.6px] shadow-inner`}
+                        className={`absolute -inset-1 sm:-inset-1.5 rounded-full pointer-events-none filter blur-[6px] animate-aura-breathe-soft transition-all duration-500 ${
+                          isSelected ? 'opacity-85 scale-105' : 'opacity-35 group-hover:opacity-60'
+                        }`}
+                        style={{
+                          background: cat.rainbowAura
+                            ? cat.rainbowAura
+                            : `radial-gradient(circle, ${cat.auraColor} 30%, ${cat.glowHex} 65%, transparent 85%)`,
+                        }}
+                      />
+                      <div
+                        className={`absolute -inset-2 sm:-inset-2.5 rounded-full pointer-events-none filter blur-[10px] transition-opacity duration-500 ${
+                          isSelected ? 'opacity-60 animate-pulse' : 'opacity-20 group-hover:opacity-35'
+                        }`}
+                        style={{
+                          background: cat.secondaryRainbowAura
+                            ? cat.secondaryRainbowAura
+                            : `radial-gradient(circle, ${cat.glowHex} 25%, ${cat.auraColor} 50%, transparent 80%)`,
+                        }}
                       />
 
-                      {repPhoto && (
-                        <div className="absolute inset-1.5 aspect-square rounded-full overflow-hidden opacity-35 mix-blend-overlay pointer-events-none">
-                          <img
-                            src={repPhoto}
-                            alt=""
-                            className="w-full h-full aspect-square rounded-full object-cover"
-                          />
-                        </div>
-                      )}
-
-                      <div className="orb-shine-light" />
-                      <div className="orb-bottom-rim-light" />
-
-                      {isSelected && (
-                        <div className="absolute inset-0 rounded-full ring-2 ring-white/90 shadow-[inset_0_0_12px_rgba(255,255,255,0.8)] pointer-events-none" />
-                      )}
-                    </div>
-
-                    {/* Pedestal Base Under Orb */}
-                    <div
-                      className={`w-14 sm:w-16 h-2 rounded-full border shadow-xs -mt-1 z-10 transition-all ${
-                        isSelected
-                          ? 'bg-gradient-to-r from-amber-200 via-white to-amber-200 border-amber-400 shadow-amber-300/50 scale-110'
-                          : 'bg-gradient-to-r from-slate-200 via-white to-slate-200 border-slate-300/60'
-                      }`}
-                    />
-
-                    {/* Title with Emoji */}
-                    <div className="mt-2.5 flex items-center space-x-1">
-                      <span
-                        className={`text-xs sm:text-sm font-black whitespace-nowrap transition-colors ${
+                      {/* Glass Orb Sphere (Real 3D Glass Surface + Inside Out Swirling Core) */}
+                      <div
+                        className={`w-full h-full rounded-full relative glass-memory-orb-light flex items-center justify-center p-0.5 overflow-hidden transition-all duration-300 ${
                           isSelected
-                            ? 'text-slate-950 underline decoration-amber-500 decoration-2 underline-offset-4'
-                            : 'text-slate-700 group-hover:text-slate-950'
+                            ? 'ring-2 ring-amber-400/90 shadow-[0_0_16px_rgba(251,191,36,0.7)]'
+                            : 'group-hover:shadow-[0_0_12px_rgba(251,191,36,0.4)]'
                         }`}
+                        style={{
+                          boxShadow: isSelected
+                            ? `0 0 14px 2px ${cat.auraColor}, inset 0 3px 10px rgba(255,255,255,0.9), inset 0 -6px 14px rgba(15,23,42,0.3)`
+                            : `0 0 6px 1px ${cat.auraColor}, inset 0 2px 7px rgba(255,255,255,0.85), inset 0 -4px 8px rgba(15,23,42,0.2)`,
+                          border: '1.5px solid rgba(255, 255, 255, 0.85)',
+                        }}
                       >
-                        {lang === 'en' ? cat.labelEn : cat.labelTh}
-                      </span>
-                      <span className="text-xs">{cat.emoji}</span>
+                        {/* Swirling Emotion Core inside the glass marble */}
+                        <div
+                          className={`w-full h-full rounded-full bg-gradient-to-tr ${cat.gradient} animate-mist-swirl opacity-95 filter blur-[0.4px] shadow-inner`}
+                        />
+
+                        {/* Representative memory image suspended inside the sphere */}
+                        {repPhoto && (
+                          <div className="absolute inset-1 aspect-square rounded-full overflow-hidden opacity-40 mix-blend-overlay pointer-events-none">
+                            <img
+                              src={repPhoto}
+                              alt=""
+                              className="w-full h-full aspect-square rounded-full object-cover"
+                            />
+                          </div>
+                        )}
+
+                        {/* Photorealistic 3D Spherical Light Refraction Overlay */}
+                        <div
+                          className="absolute inset-0 rounded-full pointer-events-none"
+                          style={{
+                            background:
+                              'radial-gradient(circle at 35% 28%, rgba(255,255,255,0.8) 0%, rgba(255,255,255,0.2) 28%, transparent 52%, rgba(15,23,42,0.25) 80%, rgba(15,23,42,0.6) 100%)',
+                          }}
+                        />
+
+                        {/* Specular Highlight (Hotspot Glare at top-left) */}
+                        <div className="orb-shine-light" />
+
+                        {/* Caustic Bottom Light (Bounce reflection at bottom-rim) */}
+                        <div className="orb-bottom-rim-light" />
+
+                        {/* Inner Glass Glow Ring */}
+                        <div
+                          className="absolute inset-0 rounded-full pointer-events-none"
+                          style={{
+                            boxShadow: 'inset 0 0 8px 1px rgba(255,255,255,0.65)',
+                          }}
+                        />
+
+                        {/* Active Selection Golden/White Core Ring */}
+                        {isSelected && (
+                          <div className="absolute inset-0 rounded-full ring-2 ring-white/90 shadow-[inset_0_0_12px_rgba(255,255,255,0.85)] pointer-events-none" />
+                        )}
+                      </div>
                     </div>
 
-                    {/* Description */}
-                    <span className="text-[11px] sm:text-xs text-slate-500 font-medium text-center whitespace-nowrap leading-tight max-w-[125px] mt-0.5">
-                      {lang === 'en' ? cat.descEn : cat.descTh}
-                    </span>
-
-                    {/* Count Badge */}
+                    {/* Label: Only category title (ความสุข, คิดถึงวันวาน, ความรัก, etc.) */}
                     <span
-                      className={`mt-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-extrabold transition-all ${
+                      className={`mt-2.5 text-xs sm:text-sm font-extrabold whitespace-nowrap transition-colors ${
                         isSelected
-                          ? 'bg-slate-900 text-white shadow-xs'
-                          : 'bg-slate-200/80 text-slate-600 group-hover:bg-slate-300'
+                          ? 'text-slate-950 font-black'
+                          : 'text-slate-600 group-hover:text-slate-900'
                       }`}
                     >
-                      {lang === 'en' ? `${catCount} orbs` : `${catCount} ลูก`}
+                      {lang === 'en' ? cat.labelEn : cat.labelTh}
                     </span>
+
+                    {/* Active Focus Light Pill under selected orb */}
+                    {isSelected ? (
+                      <div
+                        className="w-3.5 h-1 rounded-full mt-1 transition-all"
+                        style={{
+                          backgroundColor: cat.glowHex,
+                          boxShadow: `0 0 8px 2px ${cat.auraColor}`,
+                        }}
+                      />
+                    ) : (
+                      <div className="w-3.5 h-1 rounded-full mt-1 opacity-0 pointer-events-none" />
+                    )}
                   </button>
                 );
               })}
@@ -1123,230 +1242,204 @@ export const VaultView: React.FC<VaultViewProps> = ({
 
           {/* List of Memories with Aura Matching Category Color */}
           <div className="space-y-6">
-            {filteredOrbs.length === 0 ? (
-              <div className="bg-white rounded-[32px] border border-slate-200/90 p-10 text-center space-y-4 shadow-sm">
-                <div className="w-16 h-16 rounded-full bg-slate-100 flex items-center justify-center mx-auto text-2xl">
-                  🔮
-                </div>
-                <div className="space-y-1">
-                  <h4 className="text-lg font-black text-slate-800">
-                    {lang === 'en' ? 'No memories in this emotion yet' : 'ยังไม่มีลูกแก้วความทรงจำในหมวดนี้'}
-                  </h4>
-                  <p className="text-sm text-slate-500">
-                    {lang === 'en'
-                      ? 'Select another emotion orb or view all memories.'
-                      : 'แตะเลือกลูกแก้วหมวดอื่น หรือเลือกลูกแก้วทั้งหมดเพื่อชมความทรงจำ'}
-                  </p>
-                </div>
-                <button
-                  onClick={() => {
-                    stopAllAudio();
-                    setActiveFilter('all');
-                  }}
-                  className="px-5 py-2.5 rounded-full bg-slate-900 text-white font-bold text-xs sm:text-sm hover:bg-slate-800 transition-transform active:scale-95 cursor-pointer"
+            <AnimatePresence mode="wait">
+              {filteredOrbs.length === 0 ? (
+                <motion.div
+                  key="empty-state"
+                  initial={{ opacity: 0, y: 15 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+                  transition={{ duration: 0.25 }}
+                  className="bg-white rounded-[32px] border border-slate-200/90 p-10 text-center space-y-4 shadow-sm"
                 >
-                  {lang === 'en' ? 'View All Memories' : 'ดูลูกแก้วทั้งหมด'}
-                </button>
-              </div>
-            ) : (
-              filteredOrbs.map((orb) => {
-                const style = emotionStyles[orb.emotion] || emotionStyles.joy;
-                const orbTitle = lang === 'en' && orb.titleEn ? orb.titleEn : orb.title;
-                const orbDesc =
-                  lang === 'en' && orb.descriptionEn
-                    ? orb.descriptionEn
-                    : orb.description || orb.voicePrompt;
-                const orbYear =
-                  lang === 'en' && orb.memoryYearEn ? orb.memoryYearEn : orb.memoryYear;
-                const isPlayingThis = playingOrbId === orb.id;
-
-                return (
-                  <motion.div
-                    key={orb.id}
-                    initial={{ opacity: 0, y: 15 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.35 }}
-                    className="relative bg-white rounded-[32px] border border-slate-200/90 p-5 sm:p-7 shadow-md hover:shadow-xl transition-all duration-300 text-left overflow-hidden group"
+                  <div className="w-16 h-16 rounded-full bg-slate-100 flex items-center justify-center mx-auto text-2xl">
+                    🔮
+                  </div>
+                  <div className="space-y-1">
+                    <h4 className="text-lg font-black text-slate-800">
+                      {lang === 'en' ? 'No memories in this emotion yet' : 'ยังไม่มีลูกแก้วความทรงจำในหมวดนี้'}
+                    </h4>
+                    <p className="text-sm text-slate-500">
+                      {lang === 'en'
+                        ? 'Select another emotion orb or view all memories.'
+                        : 'แตะเลือกลูกแก้วหมวดอื่น หรือเลือกลูกแก้วทั้งหมดเพื่อชมความทรงจำ'}
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => {
+                      stopAllAudio();
+                      setActiveFilter('all');
+                    }}
+                    className="px-5 py-2.5 rounded-full bg-slate-900 text-white font-bold text-xs sm:text-sm hover:bg-slate-800 transition-transform active:scale-95 cursor-pointer"
                   >
-                    {/* Subtle Top Border Gradient matching Emotion */}
-                    <div
-                      className="absolute top-0 left-0 right-0 h-1.5 opacity-90"
-                      style={{
-                        background: `linear-gradient(90deg, transparent, ${style.glowHex}, transparent)`,
-                      }}
-                    />
+                    {lang === 'en' ? 'View All Memories' : 'ดูลูกแก้วทั้งหมด'}
+                  </button>
+                </motion.div>
+              ) : (
+                <motion.div
+                  key={activeFilter}
+                  initial={{ opacity: 0, y: 12 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -8 }}
+                  transition={{ duration: 0.28, ease: 'easeOut' }}
+                  className="space-y-6"
+                >
+                  {filteredOrbs.map((orb, index) => {
+                    const style = emotionStyles[orb.emotion] || emotionStyles.joy;
+                    const orbTitle = lang === 'en' && orb.titleEn ? orb.titleEn : orb.title;
+                    const orbDesc =
+                      lang === 'en' && orb.descriptionEn
+                        ? orb.descriptionEn
+                        : orb.description || orb.voicePrompt;
+                    const orbYear =
+                      lang === 'en' && orb.memoryYearEn ? orb.memoryYearEn : orb.memoryYear;
+                    const isPlayingThis = playingOrbId === orb.id;
 
-                    <div className="flex flex-col md:flex-row items-stretch md:items-start gap-6 sm:gap-7">
-                      {/* Photo Box with Prominent Colored Aura Glow */}
-                      <div className="relative shrink-0 w-full md:w-76 lg:w-84 group/photo">
-                        {/* 1. Deep Atmospheric Radial Aura Glow radiating behind the photo */}
+                    return (
+                      <div
+                        key={orb.id}
+                        className="relative bg-white rounded-[32px] border border-slate-200/90 p-6 sm:p-7 shadow-md hover:shadow-xl transition-all duration-300 text-left group scroll-card-contained"
+                        style={{
+                          background: `radial-gradient(circle at 95% 5%, ${style.auraColor.replace('0.65', '0.08').replace('0.85', '0.08')}, transparent 45%), #FFFFFF`,
+                        }}
+                      >
+                        {/* Subtle Top Border Gradient matching Emotion */}
                         <div
-                          className="absolute -inset-3 sm:-inset-4 rounded-3xl pointer-events-none filter blur-xl opacity-80 group-hover/photo:opacity-100 group-hover/photo:scale-105 transition-all duration-500"
+                          className="absolute top-0 left-0 right-0 h-1.5 opacity-90 rounded-t-[32px]"
                           style={{
-                            background: style.radialGradient,
+                            background: `linear-gradient(90deg, transparent, ${style.glowHex}, transparent)`,
                           }}
                         />
 
-                        {/* 2. Secondary Intense Colored Aura Edge */}
-                        <div
-                          className="absolute -inset-1 rounded-2xl pointer-events-none filter blur-md opacity-60"
-                          style={{
-                            backgroundColor: style.auraColor,
-                          }}
-                        />
-
-                        {/* 3. The Photo Box Container */}
-                        <div
-                          className="relative aspect-4/3 w-full rounded-2xl overflow-hidden bg-slate-950 transition-all duration-300"
-                          style={{
-                            boxShadow: `0 0 26px 4px ${style.auraColor}, 0 10px 25px -4px rgba(0,0,0,0.25)`,
-                            border: `2px solid ${style.auraColor}`,
-                          }}
-                        >
-                          <img
-                            src={orb.photoUrl}
-                            alt={orbTitle}
-                            className="w-full h-full object-cover transition-transform duration-700 group-hover/photo:scale-105"
+                        <div className="flex flex-col md:flex-row items-stretch md:items-start gap-6 sm:gap-7">
+                          {/* Photo Box with Shimmer Loading & Aura */}
+                          <OrbCardPhoto
+                            photoUrl={orb.photoUrl}
+                            title={orbTitle}
+                            style={style}
+                            year={orbYear}
+                            lang={lang}
+                            isPriority={index < 2}
                           />
-                          <div className="absolute inset-0 bg-gradient-to-t from-slate-950/70 via-transparent to-black/20 pointer-events-none" />
 
-                          {/* Top-Left: Emotion Badge on Photo */}
-                          <div
-                            className="absolute top-3 left-3 px-3 py-1 rounded-full text-xs font-black shadow-md flex items-center space-x-1.5 backdrop-blur-md"
-                            style={{
-                              backgroundColor: 'rgba(255, 255, 255, 0.94)',
-                              border: `1.5px solid ${style.glowHex}`,
-                              color: '#0f172a',
-                            }}
-                          >
-                            <span>{style.emoji}</span>
-                            <span className="font-extrabold">
-                              {lang === 'en' ? style.labelEn : style.labelTh}
-                            </span>
-                          </div>
+                          {/* Content Section: Title, Description, Voice Prompt, Action Buttons */}
+                          <div className="flex-1 flex flex-col justify-between space-y-4 text-left">
+                            <div className="space-y-2.5">
+                              <div className="flex items-start justify-between gap-2">
+                                <h4 className="text-xl sm:text-2xl font-black text-slate-900 leading-snug">
+                                  {orbTitle}
+                                </h4>
+                              </div>
 
-                          {/* Top-Right: Memory Year Badge on Photo */}
-                          <div className="absolute top-3 right-3 bg-black/65 backdrop-blur-md px-3 py-1 rounded-full text-xs font-bold text-white shadow-sm border border-white/20 flex items-center space-x-1">
-                            <Calendar className="w-3.5 h-3.5 text-amber-300" />
-                            <span>{orbYear}</span>
-                          </div>
-                        </div>
-                      </div>
+                              <p className="text-sm sm:text-base text-slate-700 leading-relaxed font-medium">
+                                {orbDesc}
+                              </p>
 
-                      {/* Content Section: Title, Description, Voice Prompt, Action Buttons */}
-                      <div className="flex-1 flex flex-col justify-between space-y-4 text-left">
-                        <div className="space-y-2.5">
-                          <div className="flex items-start justify-between gap-2">
-                            <h4 className="text-xl sm:text-2xl font-black text-slate-900 leading-snug">
-                              {orbTitle}
-                            </h4>
-                          </div>
-
-                          <p className="text-sm sm:text-base text-slate-700 leading-relaxed font-medium">
-                            {orbDesc}
-                          </p>
-
-                          {/* Warm Storytelling Cue / Doctor Memory Prompt Box */}
-                          {orb.voicePrompt && (
-                            <div
-                              className="p-3.5 sm:p-4 rounded-2xl border text-sm sm:text-base leading-relaxed font-medium flex items-start space-x-3 mt-2"
-                              style={{
-                                backgroundColor: style.auraColor
-                                  .replace('0.85', '0.08')
-                                  .replace('0.7', '0.08'),
-                                borderColor: style.auraColor
-                                  .replace('0.85', '0.35')
-                                  .replace('0.7', '0.35'),
-                              }}
-                            >
-                              <Sparkles
-                                className="w-5 h-5 shrink-0 mt-0.5"
-                                style={{ color: style.glowHex }}
-                              />
-                              <div className="space-y-1">
-                                <span
-                                  className="text-xs font-black uppercase tracking-wider block"
-                                  style={{ color: style.glowHex }}
+                              {/* Warm Storytelling Cue / Doctor Memory Prompt Box */}
+                              {orb.voicePrompt && (
+                                <div
+                                  className="p-3.5 sm:p-4 rounded-2xl border text-sm sm:text-base leading-relaxed font-medium flex items-start space-x-3 mt-2"
+                                  style={{
+                                    backgroundColor: style.auraColor
+                                      .replace('0.85', '0.08')
+                                      .replace('0.65', '0.08')
+                                      .replace('0.7', '0.08'),
+                                    borderColor: style.auraColor
+                                      .replace('0.85', '0.35')
+                                      .replace('0.65', '0.35')
+                                      .replace('0.7', '0.35'),
+                                  }}
                                 >
-                                  {lang === 'en'
-                                    ? 'Story Voice Prompt & Memory Words'
-                                    : 'เรื่องเล่าและความทรงจำ'}
-                                </span>
-                                <p className="text-slate-800 italic">
-                                  "{lang === 'en' && orb.voicePromptEn ? orb.voicePromptEn : orb.voicePrompt}"
-                                </p>
+                                  <Sparkles
+                                    className="w-5 h-5 shrink-0 mt-0.5"
+                                    style={{ color: style.glowHex }}
+                                  />
+                                  <div className="space-y-1">
+                                    <span
+                                      className="text-xs font-black uppercase tracking-wider block"
+                                      style={{ color: style.glowHex }}
+                                    >
+                                      {lang === 'en'
+                                        ? 'Story Voice Prompt & Memory Words'
+                                        : 'เรื่องเล่าและความทรงจำ'}
+                                    </span>
+                                    <p className="text-slate-800 italic">
+                                      "{lang === 'en' && orb.voicePromptEn ? orb.voicePromptEn : orb.voicePrompt}"
+                                    </p>
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+
+                            {/* Attribution & Interactive Actions */}
+                            <div className="pt-3 border-t border-slate-100 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+                              <span className="text-xs text-slate-500 font-medium">
+                                {lang === 'en' ? 'Recorded by: ' : 'บันทึกโดย: '}
+                                <strong className="text-slate-700 font-semibold">
+                                  {lang === 'en' && orb.uploadedByEn
+                                    ? orb.uploadedByEn
+                                    : orb.uploadedBy || 'ครอบครัว'}
+                                </strong>
+                              </span>
+
+                              <div className="flex flex-wrap items-center gap-2.5">
+                                {/* Big Speaker Voice Narration Button */}
+                                <button
+                                  onClick={(e) => handleToggleOrbAudio(orb, e)}
+                                  aria-label={
+                                    isPlayingThis
+                                      ? (lang === 'en' ? 'Pause story voice' : 'พักเสียงเล่า')
+                                      : (lang === 'en' ? 'Listen to story voice' : 'ฟังเสียงเล่าเรื่องราว')
+                                  }
+                                  className={`inline-flex items-center space-x-2 px-4 py-2.5 rounded-2xl text-xs sm:text-sm font-extrabold transition-all shadow-xs active:scale-95 cursor-pointer border ${
+                                    isPlayingThis
+                                      ? 'bg-rose-500 hover:bg-rose-600 text-white border-rose-400 animate-pulse'
+                                      : 'bg-amber-50 hover:bg-amber-100 text-amber-950 border-amber-300'
+                                  }`}
+                                >
+                                  {isPlayingThis ? (
+                                    <>
+                                      <Pause className="w-5 h-5 fill-current text-white shrink-0" />
+                                      <span>
+                                        {lang === 'en' ? 'Playing voice...' : 'กำลังเล่นเสียงที่คุณเล่า...'}
+                                      </span>
+                                    </>
+                                  ) : (
+                                    <>
+                                      <Volume2 className="w-5 h-5 text-amber-800 shrink-0 stroke-[2.3]" />
+                                      <span>
+                                        {lang === 'en'
+                                          ? 'Listen to your recorded story'
+                                          : 'ฟังเสียงเล่าเรื่องราว'}
+                                      </span>
+                                    </>
+                                  )}
+                                </button>
+
+                                {/* Play Recall Memory Quiz Button */}
+                                <button
+                                  onClick={() => {
+                                    stopAllAudio();
+                                    onSelectOrbForTest(orb.id);
+                                  }}
+                                  className="inline-flex items-center space-x-2 px-5 py-2.5 rounded-2xl bg-slate-900 hover:bg-slate-800 text-white font-extrabold text-xs sm:text-sm shadow-sm transition-transform active:scale-95 cursor-pointer"
+                                >
+                                  <Play className="w-4 h-4 fill-white" />
+                                  <span>
+                                    {lang === 'en' ? 'Play this Memory' : 'เล่นทบทวนความทรงจำนี้'}
+                                  </span>
+                                  <ArrowRight className="w-3.5 h-3.5 ml-1" />
+                                </button>
                               </div>
                             </div>
-                          )}
-                        </div>
-
-                        {/* Attribution & Interactive Actions */}
-                        <div className="pt-3 border-t border-slate-100 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
-                          <span className="text-xs text-slate-500 font-medium">
-                            {lang === 'en' ? 'Recorded by: ' : 'บันทึกโดย: '}
-                            <strong className="text-slate-700 font-semibold">
-                              {lang === 'en' && orb.uploadedByEn
-                                ? orb.uploadedByEn
-                                : orb.uploadedBy || 'ครอบครัว'}
-                            </strong>
-                          </span>
-
-                          <div className="flex flex-wrap items-center gap-2.5">
-                            {/* Big Speaker Voice Narration Button */}
-                            <button
-                              onClick={(e) => handleToggleOrbAudio(orb, e)}
-                              aria-label={
-                                isPlayingThis
-                                  ? (lang === 'en' ? 'Pause story voice' : 'พักเสียงเล่า')
-                                  : (lang === 'en' ? 'Listen to story voice' : 'ฟังเสียงเล่าเรื่องราว')
-                              }
-                              className={`inline-flex items-center space-x-2 px-4 py-2.5 rounded-2xl text-xs sm:text-sm font-extrabold transition-all shadow-xs active:scale-95 cursor-pointer border ${
-                                isPlayingThis
-                                  ? 'bg-rose-500 hover:bg-rose-600 text-white border-rose-400 animate-pulse'
-                                  : 'bg-amber-50 hover:bg-amber-100 text-amber-950 border-amber-300'
-                              }`}
-                            >
-                              {isPlayingThis ? (
-                                <>
-                                  <Pause className="w-5 h-5 fill-current text-white shrink-0" />
-                                  <span>
-                                    {lang === 'en' ? 'Playing voice...' : 'กำลังเล่นเสียงที่คุณเล่า...'}
-                                  </span>
-                                </>
-                              ) : (
-                                <>
-                                  <Volume2 className="w-5 h-5 text-amber-800 shrink-0 stroke-[2.3]" />
-                                  <span>
-                                    {lang === 'en'
-                                      ? 'Listen to your recorded story'
-                                      : 'ฟังเสียงเล่าเรื่องราว'}
-                                  </span>
-                                </>
-                              )}
-                            </button>
-
-                            {/* Play Recall Memory Quiz Button */}
-                            <button
-                              onClick={() => {
-                                stopAllAudio();
-                                onSelectOrbForTest(orb.id);
-                              }}
-                              className="inline-flex items-center space-x-2 px-5 py-2.5 rounded-2xl bg-slate-900 hover:bg-slate-800 text-white font-extrabold text-xs sm:text-sm shadow-sm transition-transform active:scale-95 cursor-pointer"
-                            >
-                              <Play className="w-4 h-4 fill-white" />
-                              <span>
-                                {lang === 'en' ? 'Play this Memory' : 'เล่นทบทวนความทรงจำนี้'}
-                              </span>
-                              <ArrowRight className="w-3.5 h-3.5 ml-1" />
-                            </button>
                           </div>
                         </div>
                       </div>
-                    </div>
-                  </motion.div>
-                );
-              })
-            )}
+                    );
+                  })}
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
         </div>
       )}

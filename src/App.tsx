@@ -17,9 +17,17 @@ const TodayRecapView = React.lazy(() => import('./components/views/TodayRecapVie
 const LineCapsuleModal = React.lazy(() => import('./components/LineCapsuleModal').then((m) => ({ default: m.LineCapsuleModal })));
 import { stopSpeech } from './services/elevenlabs';
 import { familyApi, orbsApi } from './services/api';
+import { preloadAppMedia } from './services/imagePreloader';
+import { initialDailyRecaps } from './services/recapStorage';
 
 export const App: React.FC = () => {
-  const [lang, setLang] = useState<Language>('th');
+  const [lang, setLang] = useState<Language>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('memora_language');
+      if (saved === 'th' || saved === 'en') return saved;
+    }
+    return 'th';
+  });
   const [currentPage, setCurrentPage] = useState<NavigationPage>('home');
   const [orbs, setOrbs] = useState<MemoryOrb[]>(initialMemoryOrbs);
   const [activeOrbId, setActiveOrbId] = useState<string>(initialMemoryOrbs[0].id);
@@ -29,8 +37,12 @@ export const App: React.FC = () => {
   const [familyGroup, setFamilyGroup] = useState<FamilyGroup>(initialFamilyGroup);
   const [activeSeniorId, setActiveSeniorId] = useState<string>('elder-1');
 
-  // Hydrate from SQLite / Prisma Backend Database on Mount
+  // Hydrate from SQLite / Prisma Backend Database on Mount & Warm Image Cache
   React.useEffect(() => {
+    // 1. Proactively warm all 15 memory orbs & recap photos in background
+    preloadAppMedia(initialMemoryOrbs, initialDailyRecaps);
+
+    // 2. Fetch family configuration
     familyApi.getCurrentFamily().then((family) => {
       if (family && family.members.length > 0) {
         setFamilyGroup(family);
@@ -44,10 +56,12 @@ export const App: React.FC = () => {
       }
     });
 
+    // 3. Fetch backend orbs and warm any new database additions
     orbsApi.getOrbs().then((dbOrbs) => {
       if (dbOrbs && dbOrbs.length > 0) {
         setOrbs(dbOrbs);
         setActiveOrbId(dbOrbs[0].id);
+        preloadAppMedia(dbOrbs);
       }
     });
   }, []);
@@ -65,7 +79,13 @@ export const App: React.FC = () => {
   // Language toggle
   const handleToggleLang = () => {
     stopSpeech();
-    setLang((prev) => (prev === 'th' ? 'en' : 'th'));
+    setLang((prev) => {
+      const next = prev === 'th' ? 'en' : 'th';
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('memora_language', next);
+      }
+      return next;
+    });
   };
 
   // Navigation handlers
@@ -115,7 +135,9 @@ export const App: React.FC = () => {
       <TopHeader onOpenSettings={() => handleNavigate('settings')} />
 
       {/* Main Multi-Page Content Area with Bottom Padding for Tablet Floating Bar */}
-      <main className="flex-1 max-w-5xl w-full mx-auto px-4 sm:px-6 py-4 pb-32 sm:pb-36">
+      <main className={`flex-1 max-w-5xl w-full mx-auto px-4 sm:px-6 ${
+        currentPage === 'test' ? 'pt-2 sm:pt-2.5 pb-14 sm:pb-15' : 'py-4 pb-32 sm:pb-36'
+      }`}>
         <React.Suspense
           fallback={
             <div className="flex flex-col items-center justify-center min-h-[45vh] space-y-3">

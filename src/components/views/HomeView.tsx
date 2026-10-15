@@ -2,9 +2,9 @@ import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { MemoryOrb, NavigationPage, Language, FamilyMember, OrbEmotion } from '../../types';
-import { translations } from '../../data/translations';
-import { Play, ArrowRight, Sparkles, X, Mic, Calendar } from 'lucide-react';
+import { Play, ArrowRight, Sparkles, X, Mic } from 'lucide-react';
 import { speakWithElevenLabs, stopSpeech } from '../../services/elevenlabs';
+import { translations } from '../../data/translations';
 
 interface HomeViewProps {
   orbs: MemoryOrb[];
@@ -20,10 +20,7 @@ interface EmotionStyle {
   gradient: string;
   auraColor: string;
   glowHex: string;
-  borderDashed: string;
   radialGradient: string;
-  mysticGradient: string;
-  mysticCorona: string;
   labelTh: string;
   labelEn: string;
   emoji: string;
@@ -32,67 +29,52 @@ interface EmotionStyle {
 const emotionStyles: Record<OrbEmotion, EmotionStyle> = {
   joy: {
     gradient: 'from-amber-300 via-amber-500 to-yellow-600',
-    auraColor: 'rgba(251, 191, 36, 0.9)',
+    auraColor: 'rgba(251, 191, 36, 0.55)',
     glowHex: '#FBBF24',
-    borderDashed: 'border-amber-400/70 bg-amber-200/10',
     radialGradient: 'radial-gradient(circle, rgba(251,191,36,0.55) 0%, rgba(245,158,11,0.18) 55%, transparent 100%)',
-    mysticGradient: 'radial-gradient(circle, rgba(255,255,255,0.95) 0%, rgba(251,191,36,0.85) 30%, rgba(245,158,11,0.6) 55%, rgba(168,85,247,0.3) 75%, transparent 100%)',
-    mysticCorona: 'conic-gradient(from 0deg, #FBBF24, #F59E0B, #EC4899, #8B5CF6, #38BDF8, #FBBF24)',
     labelTh: 'ความสุข',
     labelEn: 'Joy',
     emoji: '☀️',
   },
   nostalgia: {
     gradient: 'from-sky-300 via-cyan-500 to-blue-600',
-    auraColor: 'rgba(14, 165, 233, 0.9)',
+    auraColor: 'rgba(14, 165, 233, 0.55)',
     glowHex: '#0EA5E9',
-    borderDashed: 'border-sky-400/70 bg-sky-200/10',
     radialGradient: 'radial-gradient(circle, rgba(14,165,233,0.55) 0%, rgba(2,132,199,0.18) 55%, transparent 100%)',
-    mysticGradient: 'radial-gradient(circle, rgba(255,255,255,0.95) 0%, rgba(14,165,233,0.85) 30%, rgba(2,132,199,0.6) 55%, rgba(139,92,246,0.3) 75%, transparent 100%)',
-    mysticCorona: 'conic-gradient(from 0deg, #0EA5E9, #38BDF8, #818CF8, #A855F7, #06B6D4, #0EA5E9)',
     labelTh: 'คิดถึงวันวาน',
     labelEn: 'Nostalgia',
     emoji: '🌊',
   },
   love: {
     gradient: 'from-rose-300 via-pink-500 to-rose-600',
-    auraColor: 'rgba(244, 63, 94, 0.9)',
+    auraColor: 'rgba(244, 63, 94, 0.55)',
     glowHex: '#F43F5E',
-    borderDashed: 'border-rose-400/70 bg-rose-200/10',
     radialGradient: 'radial-gradient(circle, rgba(244,63,94,0.55) 0%, rgba(225,29,72,0.18) 55%, transparent 100%)',
-    mysticGradient: 'radial-gradient(circle, rgba(255,255,255,0.95) 0%, rgba(244,63,94,0.85) 30%, rgba(225,29,72,0.6) 55%, rgba(251,191,36,0.3) 75%, transparent 100%)',
-    mysticCorona: 'conic-gradient(from 0deg, #F43F5E, #FB7185, #F472B6, #C084FC, #FBBF24, #F43F5E)',
     labelTh: 'ความรัก',
     labelEn: 'Love',
     emoji: '💖',
   },
   vitality: {
     gradient: 'from-emerald-300 via-teal-500 to-green-600',
-    auraColor: 'rgba(16, 185, 129, 0.9)',
+    auraColor: 'rgba(16, 185, 129, 0.55)',
     glowHex: '#10B981',
-    borderDashed: 'border-emerald-400/70 bg-emerald-200/10',
     radialGradient: 'radial-gradient(circle, rgba(16,185,129,0.55) 0%, rgba(5,150,105,0.18) 55%, transparent 100%)',
-    mysticGradient: 'radial-gradient(circle, rgba(255,255,255,0.95) 0%, rgba(16,185,129,0.85) 30%, rgba(5,150,105,0.6) 55%, rgba(56,189,248,0.3) 75%, transparent 100%)',
-    mysticCorona: 'conic-gradient(from 0deg, #10B981, #34D399, #38BDF8, #818CF8, #FBBF24, #10B981)',
     labelTh: 'สดชื่น',
     labelEn: 'Vitality',
     emoji: '🌿',
   },
   celebration: {
     gradient: 'from-purple-300 via-violet-500 to-indigo-600',
-    auraColor: 'rgba(139, 92, 246, 0.9)',
+    auraColor: 'rgba(139, 92, 246, 0.55)',
     glowHex: '#8B5CF6',
-    borderDashed: 'border-purple-400/70 bg-purple-200/10',
     radialGradient: 'radial-gradient(circle, rgba(139,92,246,0.55) 0%, rgba(124,58,237,0.18) 55%, transparent 100%)',
-    mysticGradient: 'radial-gradient(circle, rgba(255,255,255,0.95) 0%, rgba(139,92,246,0.85) 30%, rgba(124,58,237,0.6) 55%, rgba(244,63,94,0.3) 75%, transparent 100%)',
-    mysticCorona: 'conic-gradient(from 0deg, #8B5CF6, #A78BFA, #EC4899, #F59E0B, #6366F1, #8B5CF6)',
     labelTh: 'ภาคภูมิใจ',
     labelEn: 'Pride',
     emoji: '🎉',
   },
 };
 
-type AnimationPhase = 'idle' | 'gliding-in' | 'morphed' | 'morphing-back' | 'gliding-out' | 'docked';
+type AnimationPhase = 'idle' | 'floating-to-center' | 'morphed' | 'closing';
 
 export const HomeView: React.FC<HomeViewProps> = ({
   orbs,
@@ -102,12 +84,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
   lang,
   activeSenior,
 }) => {
-  const t = translations[lang];
-
-  // Active expanded orb state & Choreography stage:
-  // 'idle' -> 'gliding-in' (orb glides to center as sphere with glowing aura) -> 'morphed' (blooms into rectangle with flash)
-  // On close: 'morphing-back' (photo morphs back into sphere at center) -> 'gliding-out' (sphere glides back to rail socket)
-  // -> 'docked' (orb stays rested in tray for a beat) -> 'idle' (rail unpauses and scrolls)
+  // Active expanded orb state & Direct fluid morphing
   const [expandedOrb, setExpandedOrb] = useState<MemoryOrb | null>(null);
   const [selectedKey, setSelectedKey] = useState<string | null>(null);
   const [animationPhase, setAnimationPhase] = useState<AnimationPhase>('idle');
@@ -117,7 +94,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
   const [isPlayingAudio, setIsPlayingAudio] = useState<boolean>(false);
 
   // Auto Mini-Preview Feature:
-  // When idle for 5s (rail slides), an orb moves to center and descends to preview stage for 10s.
+  // When idle for 3s (rail slides), an orb moves to center and descends to preview stage for 10s.
   // Then returns to rail and rail resumes. Tapping it or any orb immediately opens full-screen!
   const [autoPreviewIndex, setAutoPreviewIndex] = useState<number>(0);
   const [miniPreviewOrb, setMiniPreviewOrb] = useState<MemoryOrb | null>(null);
@@ -130,8 +107,26 @@ export const HomeView: React.FC<HomeViewProps> = ({
     photoRightX: number;
     photoTopY: number;
   } | null>(null);
+
   const railContainerRef = useRef<HTMLDivElement>(null);
   const previewContainerRef = useRef<HTMLDivElement>(null);
+  const idleTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const dismissTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const dockTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const morphTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const closeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Clean up all pending animation & auto-preview timers on component unmount
+  useEffect(() => {
+    return () => {
+      if (idleTimerRef.current) clearTimeout(idleTimerRef.current);
+      if (dismissTimerRef.current) clearTimeout(dismissTimerRef.current);
+      if (dockTimerRef.current) clearTimeout(dockTimerRef.current);
+      if (morphTimerRef.current) clearTimeout(morphTimerRef.current);
+      if (closeTimerRef.current) clearTimeout(closeTimerRef.current);
+      stopSpeech();
+    };
+  }, []);
 
   // Exact proportional dimensions for manual click full-screen morphing photograph (16:10 aspect ratio)
   const [targetDims, setTargetDims] = useState<{ width: number; height: number }>({ width: 460, height: 288 });
@@ -144,7 +139,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
       setTargetDims({ width: w, height: h });
     };
     updateDims();
-    window.addEventListener('resize', updateDims);
+    window.addEventListener('resize', updateDims, { passive: true });
     return () => window.removeEventListener('resize', updateDims);
   }, []);
 
@@ -164,21 +159,21 @@ export const HomeView: React.FC<HomeViewProps> = ({
     }
   };
 
-  // Auto-cycle mini preview: 5s idle running -> choose the real orb closest to rail center -> beam spotlight -> 10s display -> unpause
+  // Auto-cycle mini preview: 3s idle running -> choose the real orb closest to rail center -> beam spotlight -> 10s display -> unpause
   useEffect(() => {
     if (expandedOrb !== null || animationPhase !== 'idle' || orbs.length === 0) {
       setIsMiniPreviewVisible(false);
       setMiniPreviewOrb(null);
       setActiveOrbKey(null);
       setSpotlightBeam(null);
+      if (idleTimerRef.current) clearTimeout(idleTimerRef.current);
+      if (dismissTimerRef.current) clearTimeout(dismissTimerRef.current);
+      if (dockTimerRef.current) clearTimeout(dockTimerRef.current);
       return;
     }
 
-    let dismissTimer: ReturnType<typeof setTimeout>;
-    let dockTimer: ReturnType<typeof setTimeout>;
-
-    // 1. Wait 5s while rail slides
-    const idleTimer = setTimeout(() => {
+    // 1. Wait 3s while rail slides
+    idleTimerRef.current = setTimeout(() => {
       const railEl = railContainerRef.current;
       const previewEl = previewContainerRef.current;
 
@@ -278,24 +273,24 @@ export const HomeView: React.FC<HomeViewProps> = ({
       }, 40);
 
       // 2. Display mini preview for 10s
-      dismissTimer = setTimeout(() => {
+      dismissTimerRef.current = setTimeout(() => {
         setIsMiniPreviewVisible(false); // Animate spotlight and photo fading
         setSpotlightBeam(null);
 
         // 3. Resume rail after smooth fade
-        dockTimer = setTimeout(() => {
+        dockTimerRef.current = setTimeout(() => {
           setMiniPreviewOrb(null);
           setActiveOrbKey(null);
           setIsTrayPaused(false);
           setAutoPreviewIndex((prev) => (prev + 1) % orbs.length);
         }, 350);
       }, 10000);
-    }, 5000);
+    }, 3000);
 
     return () => {
-      clearTimeout(idleTimer);
-      clearTimeout(dismissTimer);
-      clearTimeout(dockTimer);
+      if (idleTimerRef.current) clearTimeout(idleTimerRef.current);
+      if (dismissTimerRef.current) clearTimeout(dismissTimerRef.current);
+      if (dockTimerRef.current) clearTimeout(dockTimerRef.current);
     };
   }, [expandedOrb, animationPhase, autoPreviewIndex, orbs]);
 
@@ -332,7 +327,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
         photoTopY: pTop,
       });
     };
-    window.addEventListener('resize', handleResize);
+    window.addEventListener('resize', handleResize, { passive: true });
     return () => window.removeEventListener('resize', handleResize);
   }, [isMiniPreviewVisible, activeOrbKey]);
 
@@ -354,7 +349,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
         clearTimeout(timer);
         stopSpeech();
       };
-    } else if (!expandedOrb || animationPhase === 'morphing-back') {
+    } else if (!expandedOrb || animationPhase === 'closing') {
       stopSpeech();
       setIsPlayingAudio(false);
     }
@@ -364,18 +359,58 @@ export const HomeView: React.FC<HomeViewProps> = ({
   useEffect(() => {
     if (expandedOrb) {
       document.body.style.overflow = 'hidden';
+      document.documentElement.style.overflow = 'hidden';
     } else {
       document.body.style.overflow = '';
+      document.documentElement.style.overflow = '';
     }
     return () => {
       document.body.style.overflow = '';
+      document.documentElement.style.overflow = '';
     };
   }, [expandedOrb]);
 
-  // Manual click on an orb in the rail
+  // Open full-screen when clicking the auto mini preview
+  const handleOpenFromMiniPreview = (orb: MemoryOrb, event: React.MouseEvent<HTMLDivElement>) => {
+    if (animationPhase !== 'idle') return;
+    const photoEl = event.currentTarget.querySelector<HTMLElement>('[data-mini-photo]');
+    const rect = photoEl ? photoEl.getBoundingClientRect() : event.currentTarget.getBoundingClientRect();
+
+    if (idleTimerRef.current) clearTimeout(idleTimerRef.current);
+    if (dismissTimerRef.current) clearTimeout(dismissTimerRef.current);
+    if (dockTimerRef.current) clearTimeout(dockTimerRef.current);
+
+    const targetKey = activeOrbKey;
+
+    setOriginPos({
+      x: rect.left + rect.width / 2,
+      y: rect.top + rect.height / 2,
+    });
+    setOrbSize(Math.min(rect.width, rect.height));
+    setSelectedKey(targetKey || `s1-${orb.id}-0`);
+    setExpandedOrb(orb);
+    setIsTrayPaused(true);
+    setIsMiniPreviewVisible(false);
+    setActiveOrbKey(null);
+    setSpotlightBeam(null);
+    setAnimationPhase('floating-to-center');
+
+    if (morphTimerRef.current) clearTimeout(morphTimerRef.current);
+    morphTimerRef.current = setTimeout(() => {
+      setAnimationPhase('morphed');
+    }, 360);
+  };
+
+  // Two-stage Choreographed Morphing:
+  // 1. Orb detaches from rail, floats up to center as glowing 3D sphere (360ms)
+  // 2. Once centered, blooms smoothly into rectangle photo (420ms)
   const handleOrbClick = (orb: MemoryOrb, itemKey: string, event: React.MouseEvent<HTMLButtonElement>) => {
     if (animationPhase !== 'idle') return;
-    // Dismiss ambient mini preview immediately
+
+    // Immediately cancel pending auto preview
+    if (idleTimerRef.current) clearTimeout(idleTimerRef.current);
+    if (dismissTimerRef.current) clearTimeout(dismissTimerRef.current);
+    if (dockTimerRef.current) clearTimeout(dockTimerRef.current);
     setIsMiniPreviewVisible(false);
     setMiniPreviewOrb(null);
     setActiveOrbKey(null);
@@ -390,58 +425,27 @@ export const HomeView: React.FC<HomeViewProps> = ({
     setOrbSize(size);
     setSelectedKey(itemKey);
     setExpandedOrb(orb);
-    setIsTrayPaused(true); // Tray pauses immediately!
-    setAnimationPhase('gliding-in');
-
-    // Stage 1: Glides smoothly to center as 3D sphere with mystic glow (550ms)
-    // Stage 2: Transforms smoothly into large rectangle with silky morphing (500ms)
-    setTimeout(() => {
-      setAnimationPhase('morphed');
-    }, 550);
-  };
-
-  // Clicking the auto mini-preview card immediately expands into full-screen memory modal
-  const handleOpenFromMiniPreview = (orb: MemoryOrb, event: React.MouseEvent<HTMLDivElement>) => {
-    if (animationPhase !== 'idle') return;
-    const photoEl = event.currentTarget.querySelector<HTMLElement>('[data-mini-photo]');
-    const rect = photoEl ? photoEl.getBoundingClientRect() : event.currentTarget.getBoundingClientRect();
-    
-    // Remember the active orb key on the rail if mini preview was open
-    const targetKey = activeOrbKey;
-
-    setOriginPos({
-      x: rect.left + rect.width / 2,
-      y: rect.top + rect.height / 2,
-    });
-    setOrbSize(Math.min(rect.width, rect.height));
-    setSelectedKey(targetKey || `orb-${orb.id}`);
-    setExpandedOrb(orb);
     setIsTrayPaused(true);
-    setIsMiniPreviewVisible(false);
-    setActiveOrbKey(null);
-    setSpotlightBeam(null);
-    setAnimationPhase('gliding-in');
+    setAnimationPhase('floating-to-center');
 
-    setTimeout(() => {
+    if (morphTimerRef.current) clearTimeout(morphTimerRef.current);
+    morphTimerRef.current = setTimeout(() => {
       setAnimationPhase('morphed');
-    }, 500);
+    }, 360);
   };
 
-  // Exit Animation Choreography:
-  // Simultaneous: Rectangle morphs directly into sphere WHILE gliding back into socket in tray!
-  // Single fluid, continuous 520ms motion with aura staying active on the flight and fading out in socket.
+  // Exit Animation: Single fluid reverse morph back to the orb on the rail
   const handleCloseOrb = () => {
     if (animationPhase !== 'morphed') return;
     stopSpeech();
     setIsPlayingAudio(false);
 
-    // Re-read exact live position of visible socket on the paused shelf immediately before gliding
+    // Re-read live position of the orb on the rail
     let socketEl: Element | null = null;
     if (selectedKey) {
       socketEl = document.querySelector(`[data-orb-key="${selectedKey}"]`);
     }
 
-    // If not found or if off-screen, find the best visible matching orb socket in the center of the rail
     if (!socketEl || socketEl.getBoundingClientRect().right < 0 || socketEl.getBoundingClientRect().left > window.innerWidth) {
       const railEl = railContainerRef.current;
       if (railEl && expandedOrb) {
@@ -462,11 +466,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
             }
           }
         }
-        if (bestEl) {
-          socketEl = bestEl;
-          const k = bestEl.getAttribute('data-orb-key');
-          if (k) setSelectedKey(k);
-        }
+        if (bestEl) socketEl = bestEl;
       }
     }
 
@@ -479,25 +479,18 @@ export const HomeView: React.FC<HomeViewProps> = ({
       setOrbSize(rect.width);
     }
 
-    // Launch simultaneous morph & return glide directly towards tray socket!
-    setAnimationPhase('gliding-out');
+    setAnimationPhase('closing');
 
-    setTimeout(() => {
-      // Arrived at tray socket! Dock in tray and gracefully fade out aura over 450ms!
-      setAnimationPhase('docked');
-
-      // Let the orb rest docked in the tray FIRST while aura gently and smoothly fades to zero!
-      setTimeout(() => {
-        setIsTrayPaused(false);
-        setAnimationPhase('idle');
-        setExpandedOrb(null);
-        setSelectedKey(null);
-      }, 450);
-    }, 520);
+    if (closeTimerRef.current) clearTimeout(closeTimerRef.current);
+    closeTimerRef.current = setTimeout(() => {
+      setIsTrayPaused(false);
+      setAnimationPhase('idle');
+      setExpandedOrb(null);
+      setSelectedKey(null);
+    }, 440);
   };
 
-  // Ensure enough orbs in the track so Set 1 spans >= 1200px (wider than any tablet/desktop container).
-  // This guarantees a mathematically 100% seamless infinite marquee loop on Safari and all browsers without empty gaps or jumping glitches!
+  // Ensure enough orbs in the track so Set 1 spans >= 1200px (wider than any tablet/desktop container)
   const trackOrbsSet = React.useMemo(() => {
     if (!orbs || orbs.length === 0) return [];
     let list = [...orbs];
@@ -507,11 +500,11 @@ export const HomeView: React.FC<HomeViewProps> = ({
     return list;
   }, [orbs]);
 
-  // Helper to render an individual orb button on the rail
+  // Helper to render an individual orb button on the rail with 100% consistent, uniform styling
   const renderOrbItem = (orb: MemoryOrb, itemKey: string, orbIndex: number) => {
     const style = emotionStyles[orb.emotion] || emotionStyles.joy;
-    const isVacated = selectedKey === itemKey && animationPhase !== 'idle' && animationPhase !== 'docked';
-    const isAutoTarget = isMiniPreviewVisible && activeOrbKey === itemKey;
+    const isSelected = selectedKey === itemKey && animationPhase !== 'idle';
+    const isAutoTarget = activeOrbKey === itemKey && isMiniPreviewVisible;
 
     return (
       <div
@@ -520,46 +513,15 @@ export const HomeView: React.FC<HomeViewProps> = ({
         data-orb-id={orb.id}
         className="relative w-14 h-14 sm:w-16 sm:h-16 aspect-square shrink-0 flex items-center justify-center"
       >
-        {/* Empty gap socket indicator on rail matching orb emotion color:
-            Renders strictly inside the cell while orb is away; hides when docked */}
-        {isVacated && (
-          <div className={`absolute inset-0 rounded-full border-2 border-dashed ${style.borderDashed} flex items-center justify-center pointer-events-none animate-aura-breathe`}>
-            <div 
-              className="w-5 h-5 rounded-full blur-[2px]" 
-              style={{ background: style.auraColor }} 
-            />
-          </div>
-        )}
-
-        {/* The button on the rail:
-            Vacates cleanly when tapped */}
         <button
           onClick={(e) => handleOrbClick(orb, itemKey, e)}
-          className={`group/ball absolute inset-0 w-full h-full rounded-full flex items-center justify-center focus:outline-none transition-[transform,filter,opacity] duration-300 ${
-            isVacated
+          className={`group/ball absolute inset-0 w-full h-full rounded-full flex items-center justify-center focus:outline-none transition-transform duration-200 ${
+            isSelected
               ? 'opacity-0 pointer-events-none'
-              : isAutoTarget
-              ? 'opacity-100'
               : 'opacity-100 hover:scale-115 active:scale-95'
           }`}
           title={`${orb.title} - แตะเพื่อเปิดลูกแก้ว`}
         >
-          {/* Living Emotional Aura Glow: Soft, luminous colored mist breathing around the orb */}
-          <div
-            className="absolute -inset-3 sm:-inset-3.5 rounded-full pointer-events-none filter blur-[8px] sm:blur-[10px] animate-aura-breathe-soft"
-            style={{
-              background: `radial-gradient(circle, ${style.auraColor} 30%, ${style.glowHex} 65%, transparent 95%)`,
-            }}
-          />
-
-          {/* Secondary Soft Outer Atmospheric Halo */}
-          <div
-            className="absolute -inset-5 sm:-inset-6 rounded-full pointer-events-none filter blur-[14px] sm:blur-[16px] animate-mystic-pulse opacity-85"
-            style={{
-              background: `radial-gradient(circle, ${style.glowHex} 25%, ${style.auraColor} 60%, transparent 90%)`,
-            }}
-          />
-
           {/* Subtle Projector Origin Focus at bottom contour of the orb */}
           {isAutoTarget && (
             <div
@@ -572,25 +534,45 @@ export const HomeView: React.FC<HomeViewProps> = ({
             />
           )}
 
-          {/* Spherical 3D Glass Memory Orb with Color Driven by Emotion */}
-          <div 
-            className="w-full h-full rounded-full relative glass-memory-orb-light flex items-center justify-center shadow-lg p-1 overflow-hidden"
+          {/* Living Emotional Aura Glow: Balanced, soft colored mist */}
+          <div
+            className="absolute -inset-2 rounded-full pointer-events-none filter blur-[6px] animate-aura-breathe-soft opacity-60"
             style={{
-              boxShadow: `0 0 18px 3px ${style.auraColor}`,
+              background: style.radialGradient,
+            }}
+          />
+
+          {/* Spherical 3D Glass Memory Orb with Color Driven by Emotion (Soft, rounded & 3D) */}
+          <div 
+            className="w-full h-full rounded-full relative glass-memory-orb-light flex items-center justify-center p-1 overflow-hidden"
+            style={{
+              boxShadow: `
+                inset 0 4px 14px rgba(255, 255, 255, 0.95),
+                inset 0 -10px 22px rgba(15, 23, 42, 0.25),
+                0 8px 20px -4px rgba(0, 0, 0, 0.12),
+                0 0 12px 2px ${style.auraColor}
+              `,
             }}
           >
+            {/* Swirling Inner Mist Gradient */}
             <div
               className={`w-full h-full rounded-full bg-gradient-to-tr ${style.gradient} animate-mist-swirl opacity-90 filter blur-[0.6px] shadow-inner`}
             />
-            <div className="absolute inset-1 aspect-square rounded-full overflow-hidden opacity-40 pointer-events-none">
+
+            {/* Faint, dreamy memory image inside the glass (soft & hazy reflection, not sharp) */}
+            <div className="absolute inset-1 aspect-square rounded-full overflow-hidden opacity-30 mix-blend-overlay pointer-events-none filter blur-[0.6px]">
               <img
                 src={orb.photoUrl}
                 alt=""
+                decoding="async"
                 className="w-full h-full aspect-square rounded-full object-cover"
               />
             </div>
+
+            {/* 3D Glass Sphere Highlights */}
             <div className="orb-shine-light" />
             <div className="orb-bottom-rim-light" />
+
             {orb.isUnlocked && (
               <div 
                 className="absolute inset-0 rounded-full shadow-[inset_0_0_8px_rgba(255,255,255,0.7)] pointer-events-none"
@@ -633,6 +615,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
         className="relative w-full h-28 sm:h-30 flex items-center overflow-hidden"
         style={{
           isolation: 'isolate',
+          maskImage: '-webkit-radial-gradient(white, black)',
           WebkitMaskImage: '-webkit-radial-gradient(white, black)',
         }}
       >
@@ -684,35 +667,19 @@ export const HomeView: React.FC<HomeViewProps> = ({
               height: '100dvh',
             }}
           >
-            {/* Dimmed Backdrop covering screen with 50% reduced opacity & blur; smoothly fades out on exit so tray is visible */}
+            {/* Dimmed Backdrop */}
             <motion.div
               data-modal-backdrop
-              initial={{ opacity: 0, backdropFilter: 'blur(0px)', backgroundColor: 'rgba(15, 23, 42, 0)' }}
-              animate={
-                animationPhase === 'gliding-in' || animationPhase === 'morphed'
-                  ? {
-                      opacity: 1,
-                      backdropFilter: 'blur(5px)',
-                      backgroundColor: 'rgba(15, 23, 42, 0.36)',
-                    }
-                  : animationPhase === 'morphing-back'
-                  ? {
-                      opacity: 0.35,
-                      backdropFilter: 'blur(1.5px)',
-                      backgroundColor: 'rgba(15, 23, 42, 0.12)',
-                    }
-                  : {
-                      opacity: 0,
-                      backdropFilter: 'blur(0px)',
-                      backgroundColor: 'rgba(15, 23, 42, 0)',
-                    }
-              }
+              initial={{ opacity: 0 }}
+              animate={{
+                opacity: animationPhase === 'closing' ? 0 : 1,
+              }}
               transition={{
-                duration: animationPhase === 'morphing-back' ? 0.38 : 0.48,
-                ease: [0.2, 0.9, 0.25, 1],
+                duration: 0.35,
+                ease: 'easeOut',
               }}
               onClick={handleCloseOrb}
-              className="absolute inset-0 w-full h-full cursor-pointer z-40"
+              className="absolute inset-0 w-full h-full cursor-pointer z-40 bg-slate-950/45 backdrop-blur-sm"
               style={{
                 position: 'absolute',
                 top: 0,
@@ -721,24 +688,46 @@ export const HomeView: React.FC<HomeViewProps> = ({
                 bottom: 0,
                 width: '100%',
                 height: '100%',
-                pointerEvents: (animationPhase === 'gliding-out' || animationPhase === 'docked') ? 'none' : 'auto',
+                pointerEvents: animationPhase === 'closing' ? 'none' : 'auto',
               }}
             />
+
+            {/* Top-right close button */}
+            <AnimatePresence>
+              {animationPhase === 'morphed' && (
+                <motion.button
+                  initial={{ opacity: 0, scale: 0.8 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.8 }}
+                  transition={{ duration: 0.2 }}
+                  onClick={handleCloseOrb}
+                  className="absolute top-5 right-5 z-50 p-2.5 rounded-full bg-slate-900/60 hover:bg-slate-900/80 text-white/90 transition-all cursor-pointer border border-white/20 shadow-lg"
+                  aria-label="Close"
+                >
+                  <X className="w-5 h-5" />
+                </motion.button>
+              )}
+            </AnimatePresence>
 
             {/* Ambient Colored Projection Beam Glow behind floating photo matching orb emotion */}
             <motion.div
               initial={{ opacity: 0 }}
               animate={{
-                opacity:
-                  animationPhase === 'gliding-in' || animationPhase === 'morphed'
-                    ? 0.5
-                    : 0,
+                opacity: animationPhase === 'closing' ? 0 : animationPhase === 'morphed' ? 0.6 : 0.45,
               }}
               transition={{ duration: 0.35, ease: 'easeOut' }}
-              className="absolute inset-0 pointer-events-none z-45 flex items-center justify-center overflow-hidden"
+              className="pointer-events-none z-45 overflow-hidden flex items-center justify-center"
+              style={{
+                position: 'fixed',
+                left: '50%',
+                top: '36%',
+                transform: 'translate(-50%, -50%)',
+                width: targetDims.width + 100,
+                height: targetDims.height + 100,
+              }}
             >
               <div
-                className="w-[460px] sm:w-[560px] h-[460px] sm:h-[560px] rounded-full filter blur-[70px] transition-all duration-500"
+                className="w-full h-full rounded-3xl filter blur-[45px] pointer-events-none"
                 style={{
                   background: activeStyle.radialGradient,
                 }}
@@ -746,8 +735,10 @@ export const HomeView: React.FC<HomeViewProps> = ({
             </motion.div>
 
             {/* =========================================================================
-                THE MORPHING ACTOR (Sphere ➔ Luminous Flash ➔ Rectangle ➔ Sphere)
-                GPU-accelerated with multi-layered ethereal mystic glow!
+                THE MORPHING ACTOR (Sphere ➔ Float to Center ➔ Bloom into Rectangle ➔ Sphere)
+                2-Stage Choreographed Morph:
+                1. Sphere detaches from rail and floats up to center (360ms)
+                2. Sphere blooms smoothly into rectangle photograph (420ms)
                ========================================================================= */}
             <motion.div
               initial={{
@@ -763,21 +754,21 @@ export const HomeView: React.FC<HomeViewProps> = ({
                 scale: 1,
               }}
               animate={
-                animationPhase === 'gliding-in'
+                animationPhase === 'floating-to-center'
                   ? {
                       position: 'fixed',
                       left: '50%',
                       top: '36%',
                       x: '-50%',
                       y: '-50%',
-                      width: 88,
-                      height: 88,
-                      borderRadius: '44px',
+                      width: 84,
+                      height: 84,
+                      borderRadius: '42px',
                       zIndex: 50,
                       scale: 1,
                       transition: {
-                        duration: 0.55,
-                        ease: [0.2, 0.9, 0.25, 1],
+                        duration: 0.36,
+                        ease: [0.22, 1, 0.36, 1],
                       },
                     }
                   : animationPhase === 'morphed'
@@ -793,12 +784,11 @@ export const HomeView: React.FC<HomeViewProps> = ({
                       zIndex: 50,
                       scale: 1,
                       transition: {
-                        duration: 0.5,
-                        ease: [0.2, 0.9, 0.25, 1],
+                        duration: 0.42,
+                        ease: [0.16, 1, 0.3, 1],
                       },
                     }
-                  : animationPhase === 'gliding-out'
-                  ? {
+                  : {
                       position: 'fixed',
                       left: originPos.x,
                       top: originPos.y,
@@ -810,25 +800,8 @@ export const HomeView: React.FC<HomeViewProps> = ({
                       zIndex: 50,
                       scale: 1,
                       transition: {
-                        duration: 0.52,
-                        ease: [0.2, 0.9, 0.25, 1],
-                      },
-                    }
-                  : {
-                      // 'docked': nestled safely into tray socket with native Framer Motion pulse!
-                      position: 'fixed',
-                      left: originPos.x,
-                      top: originPos.y,
-                      x: '-50%',
-                      y: '-50%',
-                      width: orbSize,
-                      height: orbSize,
-                      borderRadius: `${orbSize / 2}px`,
-                      zIndex: 50,
-                      scale: [1, 1.06, 0.98, 1],
-                      transition: {
-                        duration: 0.3,
-                        ease: [0.16, 1, 0.3, 1],
+                        duration: 0.44,
+                        ease: [0.22, 1, 0.36, 1],
                       },
                     }
               }
@@ -839,192 +812,117 @@ export const HomeView: React.FC<HomeViewProps> = ({
                 isolation: 'isolate',
               }}
             >
-              {/* Primary Living Aura Halo - Feathered Radial Glow that stays active on return flight and gracefully fades out in socket! */}
+              {/* Primary soft aura glow emanating directly from the photo frame in the orb color */}
               <motion.div
                 animate={{
-                  opacity:
-                    animationPhase === 'morphed'
-                      ? 0.45
-                      : animationPhase === 'docked'
-                      ? 0
-                      : 0.9,
-                  scale:
-                    animationPhase === 'morphed'
-                      ? 1.08
-                      : animationPhase === 'docked'
-                      ? 1
-                      : 1.15,
+                  opacity: animationPhase === 'closing' ? 0.6 : animationPhase === 'morphed' ? 0.95 : 0.7,
+                  borderRadius: animationPhase === 'morphed' ? '24px' : '9999px',
                 }}
-                transition={{
-                  opacity: {
-                    duration: animationPhase === 'docked' ? 0.45 : 0.5,
-                    ease: 'easeOut',
-                  },
-                  scale: {
-                    duration: 0.5,
-                    ease: [0.2, 0.9, 0.25, 1],
-                  },
-                }}
-                className="absolute -inset-6 sm:-inset-8 rounded-full pointer-events-none"
+                transition={{ duration: animationPhase === 'closing' ? 0.44 : 0.35, ease: 'easeOut' }}
+                className="absolute inset-0 pointer-events-none"
                 style={{
-                  background: activeStyle.radialGradient,
-                  filter: 'blur(16px)',
+                  borderRadius: animationPhase === 'morphed' ? '24px' : '9999px',
+                  boxShadow:
+                    animationPhase === 'morphed'
+                      ? `0 0 32px 8px ${activeStyle.auraColor}, 0 0 14px 3px ${activeStyle.glowHex}88, 0 20px 45px -8px rgba(0,0,0,0.55)`
+                      : `0 0 12px 2px ${activeStyle.auraColor}`,
                 }}
               />
 
-              {/* Secondary Soft Atmospheric Ethereal Mist */}
+              {/* Secondary wider soft halo layer */}
               <motion.div
                 animate={{
-                  opacity:
-                    animationPhase === 'morphed'
-                      ? 0.35
-                      : animationPhase === 'docked'
-                      ? 0
-                      : 0.75,
+                  opacity: animationPhase === 'closing' ? 0 : animationPhase === 'morphed' ? 0.55 : 0,
+                  borderRadius: animationPhase === 'morphed' ? '28px' : '9999px',
                 }}
-                transition={{
-                  duration: animationPhase === 'docked' ? 0.45 : 0.5,
-                  ease: 'easeOut',
-                }}
-                className="absolute -inset-10 sm:-inset-12 rounded-full pointer-events-none"
+                transition={{ duration: animationPhase === 'closing' ? 0.44 : 0.35, ease: 'easeOut' }}
+                className="absolute -inset-2.5 sm:-inset-3.5 pointer-events-none"
                 style={{
-                  background: activeStyle.mysticGradient,
-                  filter: 'blur(24px)',
+                  borderRadius: animationPhase === 'morphed' ? '28px' : '9999px',
+                  boxShadow: animationPhase === 'morphed' ? `0 0 45px 12px ${activeStyle.auraColor}` : undefined,
+                  filter: 'blur(4px)',
                 }}
               />
 
-              {/* The Inner Box: Morphing from Rectangle Photo into Colored 3D Glass Memory Orb with Safari WebKit Mask Clipping */}
+              {/* The Photo Container: Morphs smoothly between circle and rounded rectangle */}
               <motion.div
-                initial={{
-                  borderRadius: `${orbSize / 2}px`,
-                }}
                 animate={{
-                  borderRadius:
-                    animationPhase === 'gliding-in'
-                      ? '44px'
-                      : animationPhase === 'morphed'
-                      ? '24px'
-                      : `${orbSize / 2}px`,
+                  borderRadius: animationPhase === 'morphed' ? '24px' : '9999px',
                 }}
                 transition={{
-                  duration:
-                    animationPhase === 'gliding-in'
-                      ? 0.55
-                      : animationPhase === 'morphed'
-                      ? 0.5
-                      : 0.25,
-                  ease: [0.2, 0.9, 0.25, 1],
+                  duration: animationPhase === 'closing' ? 0.44 : animationPhase === 'morphed' ? 0.42 : 0.36,
+                  ease: [0.16, 1, 0.3, 1],
                 }}
-                className={`w-full h-full overflow-hidden relative border border-white/60 bg-slate-900 flex items-center justify-center transition-shadow duration-500 ease-out ${
-                  animationPhase !== 'morphed' ? 'glass-memory-orb-light' : ''
+                className={`w-full h-full overflow-hidden relative bg-slate-900 flex items-center justify-center ${
+                  animationPhase !== 'morphed' ? 'glass-memory-orb-light' : 'shadow-2xl'
                 }`}
                 style={{
                   boxShadow:
                     animationPhase === 'morphed'
-                      ? `0 0 40px 4px ${activeStyle.auraColor}, 0 20px 50px -10px rgba(0,0,0,0.55)`
-                      : animationPhase === 'docked'
-                      ? `0 0 18px 3px ${activeStyle.auraColor}`
-                      : `0 0 26px 3px ${activeStyle.auraColor}`,
-                  transition: 'box-shadow 0.45s cubic-bezier(0.2, 0.9, 0.25, 1)',
+                      ? undefined
+                      : `inset 0 4px 14px rgba(255, 255, 255, 0.95), inset 0 -10px 22px rgba(15, 23, 42, 0.25), 0 8px 20px -4px rgba(0, 0, 0, 0.12), 0 0 12px 2px ${activeStyle.auraColor}`,
+                  maskImage: '-webkit-radial-gradient(white, black)',
                   WebkitMaskImage: '-webkit-radial-gradient(white, black)',
                   isolation: 'isolate',
+                  WebkitBackfaceVisibility: 'hidden',
+                  backfaceVisibility: 'hidden',
                 }}
               >
-                {/* Standalone Memory Photograph: Morphing smoothly from spherical to rectangular */}
-                <motion.img
-                  src={expandedOrb.photoUrl}
-                  alt={expandedOrb.title}
-                  initial={{
-                    borderRadius: `${orbSize / 2}px`,
-                    opacity: 0.4,
-                  }}
-                  animate={{
-                    opacity: animationPhase === 'morphed' ? 1 : 0.35,
-                    borderRadius:
-                      animationPhase === 'gliding-in'
-                        ? '44px'
-                        : animationPhase === 'morphed'
-                        ? '24px'
-                        : `${orbSize / 2}px`,
-                  }}
-                  transition={{
-                    opacity: {
-                      duration: animationPhase === 'morphed' ? 0.35 : 0.2,
-                      ease: animationPhase === 'morphed' ? 'easeInOut' : 'easeOut',
-                    },
-                    borderRadius: {
-                      duration:
-                        animationPhase === 'gliding-in'
-                          ? 0.55
-                          : animationPhase === 'morphed'
-                          ? 0.5
-                          : 0.25,
-                      ease: [0.2, 0.9, 0.25, 1],
-                    },
-                  }}
-                  className="w-full h-full object-cover"
-                  style={{
-                    willChange: 'transform, opacity, border-radius',
-                    WebkitMaskImage: '-webkit-radial-gradient(white, black)',
-                  }}
-                />
-
-                {/* Emotion Gradient & Glass Orb Overlays:
-                    Rapidly transforms BACK into the colored glass memory orb as it returns to the rail! */}
+                {/* 1. Swirling Inner Mist Gradient (fades out when morphed, fades in over 0.44s during closing) */}
                 <motion.div
-                  initial={{
-                    borderRadius: `${orbSize / 2}px`,
-                    opacity: 0.95,
-                  }}
                   animate={{
-                    opacity: animationPhase === 'morphed' ? 0 : 0.95,
-                    borderRadius:
-                      animationPhase === 'gliding-in'
-                        ? '44px'
-                        : animationPhase === 'morphed'
-                        ? '24px'
-                        : `${orbSize / 2}px`,
+                    opacity: animationPhase === 'morphed' ? 0 : 0.9,
+                    borderRadius: animationPhase === 'morphed' ? '24px' : '9999px',
                   }}
                   transition={{
-                    opacity: {
-                      duration: animationPhase === 'morphed' ? 0.3 : 0.2,
-                      ease: animationPhase === 'morphed' ? 'easeInOut' : 'easeOut',
-                    },
-                    borderRadius: {
-                      duration:
-                        animationPhase === 'gliding-in'
-                          ? 0.55
-                          : animationPhase === 'morphed'
-                          ? 0.5
-                          : 0.25,
-                      ease: [0.2, 0.9, 0.25, 1],
-                    },
+                    duration: animationPhase === 'closing' ? 0.44 : 0.35,
+                    ease: 'easeOut',
                   }}
-                  className="absolute inset-0 pointer-events-none overflow-hidden"
-                  style={{
-                    WebkitMaskImage: '-webkit-radial-gradient(white, black)',
-                  }}
+                  className="absolute inset-0 w-full h-full overflow-hidden pointer-events-none rounded-[inherit]"
                 >
-                  {/* Colored Emotion Gradient matching the orb on the rail 100% */}
                   <div
-                    className={`w-full h-full rounded-[inherit] bg-gradient-to-tr ${activeStyle.gradient} animate-mist-swirl filter blur-[0.6px] shadow-inner`}
+                    className={`w-full h-full bg-gradient-to-tr ${activeStyle.gradient} animate-mist-swirl filter blur-[0.6px] shadow-inner`}
                   />
+                </motion.div>
 
-                  {/* 3D Glass Highlights (Top shine and bottom rim) - ONLY visible when spherical */}
-                  <motion.div
-                    animate={{
-                      opacity: animationPhase === 'morphed' ? 0 : 1,
-                    }}
-                    transition={{ duration: 0.18 }}
-                    className="absolute inset-0 pointer-events-none"
-                  >
-                    <div className="orb-shine-light" />
-                    <div className="orb-bottom-rim-light" />
-                  </motion.div>
+                {/* 2. Memory Photograph: crisp when morphed; soft, dreamy & blended when orb */}
+                <motion.div
+                  animate={{
+                    opacity: animationPhase === 'morphed' ? 1 : 0.3,
+                    borderRadius: animationPhase === 'morphed' ? '24px' : '9999px',
+                    filter: animationPhase === 'morphed' ? 'blur(0px)' : 'blur(0.6px)',
+                  }}
+                  transition={{
+                    duration: animationPhase === 'closing' ? 0.44 : 0.35,
+                    ease: 'easeOut',
+                  }}
+                  className={`absolute inset-0 w-full h-full pointer-events-none ${
+                    animationPhase === 'morphed' ? '' : 'mix-blend-overlay'
+                  }`}
+                >
+                  <img
+                    src={expandedOrb.photoUrl}
+                    alt={expandedOrb.title}
+                    decoding="async"
+                    className="w-full h-full object-cover"
+                  />
+                </motion.div>
 
-                  {/* Unlocked Inner Glow Ring */}
+                {/* 3. 3D Glass Highlights (top shine & bottom rim) */}
+                <motion.div
+                  animate={{
+                    opacity: animationPhase === 'morphed' ? 0 : 1,
+                  }}
+                  transition={{
+                    duration: animationPhase === 'closing' ? 0.44 : 0.32,
+                    ease: 'easeOut',
+                  }}
+                  className="absolute inset-0 pointer-events-none rounded-[inherit] overflow-hidden z-20"
+                >
+                  <div className="orb-shine-light" />
+                  <div className="orb-bottom-rim-light" />
                   {expandedOrb.isUnlocked && (
-                    <div className="absolute inset-0 rounded-[inherit] shadow-[inset_0_0_8px_rgba(255,255,255,0.7)] pointer-events-none" />
+                    <div className="absolute inset-0 rounded-full shadow-[inset_0_0_8px_rgba(255,255,255,0.7)] pointer-events-none" />
                   )}
                 </motion.div>
               </motion.div>
@@ -1032,7 +930,6 @@ export const HomeView: React.FC<HomeViewProps> = ({
 
             {/* =========================================================================
                 FLOATING DESCRIPTION & RECALL BUTTON (Centered directly beneath the photo)
-                Uses Framer Motion x: '-50%' so it is 100% mathematically centered!
                ========================================================================= */}
             <AnimatePresence>
               {animationPhase === 'morphed' && (
@@ -1055,7 +952,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
                     {lang === 'en' && expandedOrb.titleEn ? expandedOrb.titleEn : expandedOrb.title}
                   </h3>
 
-                  {/* Story description explaining what they did */}
+                  {/* Story description */}
                   <p className="text-sm sm:text-base text-slate-100 font-medium leading-relaxed drop-shadow-sm px-1 max-w-md mx-auto text-center">
                     {lang === 'en' && expandedOrb.descriptionEn
                       ? expandedOrb.descriptionEn
@@ -1086,7 +983,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
                   </div>
 
                   <p className="text-[11px] text-slate-300/80 pt-1 pointer-events-none text-center">
-                    {lang === 'en' ? 'Tap anywhere outside to return orb to tray' : 'แตะที่ว่างเพื่อวางลูกแก้วกลับบนราง'}
+                    {lang === 'en' ? 'Tap photo or outside to close' : 'แตะที่รูปภาพหรือพื้นที่ว่างเพื่อปิด'}
                   </p>
                 </motion.div>
               )}
@@ -1098,7 +995,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
       {/* =========================================================================
           3. AMBIENT AUTO MINI-PREVIEW (SPOTLIGHT PROJECTED MEMORY PREVIEW)
              Soft projector spotlight connects paused ball on rail to rectangular photo!
-             Subtle, calm ambient presence ("normal feature that's not highlighted").
+             Subtle, calm ambient presence ("every 3s idle, preview for 10s").
          ========================================================================= */}
       <div ref={previewContainerRef} className="relative w-full h-[235px] overflow-visible flex flex-col items-center justify-start -mt-4 sm:-mt-5">
         <AnimatePresence mode="wait">
@@ -1217,6 +1114,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
                     style={{
                       boxShadow: `0 0 16px 2px ${miniStyle.auraColor}, 0 8px 20px -6px rgba(0,0,0,0.25)`,
                       WebkitMaskImage: '-webkit-radial-gradient(white, black)',
+                      maskImage: '-webkit-radial-gradient(white, black)',
                       isolation: 'isolate',
                     }}
                   >
@@ -1226,7 +1124,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
                       className="w-full h-full object-cover rounded-2xl"
                     />
 
-                    {/* Pure Date/Year text directly on photo - NO badge, NO location */}
+                    {/* Pure Date/Year text directly on photo */}
                     <div className="absolute top-2.5 right-3 z-10 text-xs font-bold text-white/95 drop-shadow-[0_1px_3px_rgba(0,0,0,0.85)] pointer-events-none tracking-tight">
                       {(() => {
                         const rawDate =
@@ -1278,19 +1176,19 @@ export const HomeView: React.FC<HomeViewProps> = ({
       {/* =========================================================================
           3.5 TODAY'S RECAP WIDGET (บันทึกเรื่องราววันนี้)
          ========================================================================= */}
-      <div className="mt-10 sm:mt-12 flex flex-col sm:flex-row items-center justify-between gap-5 bg-gradient-to-r from-amber-500/10 via-orange-500/10 to-rose-500/10 rounded-[32px] border border-amber-200/90 p-5 sm:p-6 shadow-sm relative overflow-hidden backdrop-blur-xs">
+      <div className="mt-10 sm:mt-12 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-5 bg-gradient-to-r from-amber-500/10 via-orange-500/10 to-rose-500/10 rounded-[32px] border border-amber-200/90 p-5 sm:p-6 shadow-sm relative overflow-hidden backdrop-blur-xs">
         {/* Ambient warm radial glow */}
         <div className="absolute -top-10 -right-10 w-40 h-40 bg-amber-400/20 rounded-full blur-2xl pointer-events-none" />
 
-        <div className="text-left space-y-1.5 relative z-10">
+        <div className="w-full sm:w-auto text-left space-y-1.5 relative z-10 flex flex-col items-start">
           <div className="inline-flex items-center space-x-1.5 px-3 py-1 rounded-full bg-amber-100/90 border border-amber-300/70 text-amber-900 text-xs font-bold tracking-wide shadow-2xs">
             <Sparkles className="w-3.5 h-3.5 text-amber-600 animate-pulse" />
             <span>{lang === 'en' ? "Today's Recap" : 'บันทึกเรื่องราววันนี้'}</span>
           </div>
-          <h3 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
+          <h3 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight text-left">
             {lang === 'en' ? 'How are you feeling today?' : 'วันนี้คุณเป็นยังไงบ้าง'}
           </h3>
-          <p className="text-sm sm:text-base text-slate-600 font-medium">
+          <p className="text-sm sm:text-base text-slate-600 font-medium text-left">
             {lang === 'en' ? 'Tell us your story, we’d love to listen.' : 'เล่าให้พวกเราฟังหน่อยสิ'}
           </p>
         </div>
@@ -1310,16 +1208,17 @@ export const HomeView: React.FC<HomeViewProps> = ({
       {/* =========================================================================
           4. PRIMARY INTERACTIVE PLAY BUTTON (SPACED DOWN FOR BREATHING ROOM)
          ========================================================================= */}
-      <div className="mt-5 sm:mt-6 flex flex-col sm:flex-row items-center justify-between gap-4 bg-gradient-to-r from-amber-50/70 via-rose-50/40 to-indigo-50/60 rounded-[32px] border border-slate-200/80 p-5 sm:p-6 shadow-xs">
-        <div className="text-left space-y-1">
-          <span className="text-xs font-bold uppercase tracking-wider text-amber-800">
-            {lang === 'en' ? 'Daily Brain Routine' : 'โปรแกรมฟื้นฟูความจำประจำวัน'}
-          </span>
-          <h3 className="text-lg sm:text-xl font-bold text-slate-900">
-            {lang === 'en' ? 'Recall 5 Family Memories' : 'ทบทวน 5 ความทรงจำของครอบครัว'}
+      <div className="mt-5 sm:mt-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-gradient-to-r from-amber-50/70 via-rose-50/40 to-indigo-50/60 rounded-[32px] border border-slate-200/80 p-5 sm:p-6 shadow-xs">
+        <div className="w-full sm:w-auto text-left space-y-1.5 flex flex-col items-start max-w-xl">
+          <h3 className="text-lg sm:text-xl font-extrabold text-slate-900 leading-snug text-left">
+            {lang === 'en'
+              ? 'Recall your heartwarming family memories'
+              : 'ย้อนดูความทรงจำดีๆที่ผ่านมาของคุณกัน'}
           </h3>
-          <p className="text-xs sm:text-sm text-slate-500 font-medium">
-            {lang === 'en' ? 'Takes only 10 peaceful minutes' : 'ใช้เวลาเพียง 10 นาที ฟังเสียงคุณหมอและดูรูป'}
+          <p className="text-xs sm:text-sm text-slate-500 font-medium text-left">
+            {lang === 'en'
+              ? 'With fun memory games, voice stories, and photos'
+              : 'พร้อมเกมความจำสนุกๆ ฟังเสียงและดูภาพประกอบ'}
           </p>
         </div>
 

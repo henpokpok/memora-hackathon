@@ -21,7 +21,7 @@ export const recentGalleryPhotos = [
   },
   {
     id: 'gallery-recent-3',
-    url: 'https://images.unsplash.com/photo-1543332164-6e82f355badc?auto=format&fit=crop&w=600&q=80',
+    url: 'https://images.unsplash.com/photo-1492562080023-ab3db95bfbce?auto=format&fit=crop&w=600&q=80',
     titleTh: 'หลานชายยิ้มสดใส',
     titleEn: 'Smiling Grandson',
     timeTh: '16:40 น.',
@@ -32,7 +32,7 @@ export const recentGalleryPhotos = [
 export const presetGalleryPhotos = [
   {
     id: 'preset-1',
-    url: 'https://images.unsplash.com/photo-1543332164-6e82f355badc?auto=format&fit=crop&w=600&q=80',
+    url: 'https://images.unsplash.com/photo-1492562080023-ab3db95bfbce?auto=format&fit=crop&w=600&q=80',
     titleTh: 'หลานชายวิ่งเล่น',
     titleEn: 'Grandson playing',
   },
@@ -84,7 +84,7 @@ export const initialDailyRecaps: DailyRecapMemory[] = [
     displayDateEn: 'Oct 13, 2026 (Sunday)',
     transcript: 'น้องภูมิหลานชายคนโปรดมาหา ช่วยคุณยายแกะถั่วฝักยาวและวาดรูปแมวสีส้มใส่กระดาษแผ่นใหญ่ หัวเราะร่าเริงกันทั้งบ่าย มีความสุขที่สุดเลย',
     photos: [
-      'https://images.unsplash.com/photo-1543332164-6e82f355badc?auto=format&fit=crop&w=600&q=80',
+      'https://images.unsplash.com/photo-1492562080023-ab3db95bfbce?auto=format&fit=crop&w=600&q=80',
     ],
     emotion: 'love',
     timestamp: Date.now() - 172800000,
@@ -112,7 +112,7 @@ export const initialDailyRecaps: DailyRecapMemory[] = [
     transcript: 'วันเกิดน้องพิม หลานสาวคนสวย ครอบครัวเรามาฉลองกันพร้อมหน้า คุณยายช่วยจัดดอกบัวถวายพระตอนเช้า พอตกเย็นเป่าเค้กวานิลลา หลานเข้ามากอดหอมแก้มชื่นใจที่สุด',
     photos: [
       'https://images.unsplash.com/photo-1511895426328-dc8714191300?auto=format&fit=crop&w=600&q=80',
-      'https://images.unsplash.com/photo-1543332164-6e82f355badc?auto=format&fit=crop&w=600&q=80',
+      'https://images.unsplash.com/photo-1492562080023-ab3db95bfbce?auto=format&fit=crop&w=600&q=80',
     ],
     emotion: 'love',
     timestamp: Date.now() - 90 * 86400000,

@@ -782,7 +782,7 @@ export const TodayRecapView: React.FC<TodayRecapViewProps> = ({ onNavigate, lang
                         src={photoUrl}
                         alt={`Memory photo ${index + 1}`}
                         className="w-full h-auto max-h-[380px] sm:max-h-[460px] object-cover block rounded-2xl"
-                        loading="lazy"
+                        decoding="async"
                       />
                     </div>
 

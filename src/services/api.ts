@@ -54,7 +54,16 @@ function saveLocalFamily(family: FamilyGroup) {
 function getLocalOrbs(): MemoryOrb[] {
   try {
     const saved = localStorage.getItem('memora_orbs');
-    if (saved) return JSON.parse(saved);
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        const existingIds = new Set(parsed.map((o: any) => o.id));
+        const missing = initialMemoryOrbs.filter((o) => !existingIds.has(o.id));
+        const merged = [...parsed, ...missing];
+        if (missing.length > 0) saveLocalOrbs(merged);
+        return merged;
+      }
+    }
   } catch (e) {
     // ignore
   }
@@ -471,8 +480,12 @@ export const orbsApi = {
       });
 
       if (Array.isArray(data.orbs) && data.orbs.length > 0) {
-        saveLocalOrbs(data.orbs);
-        return data.orbs;
+        // Merge with initialMemoryOrbs to ensure all rich family orbs are preserved without truncation
+        const existingTitles = new Set(data.orbs.map((o: any) => o.title));
+        const missing = initialMemoryOrbs.filter((o) => !existingTitles.has(o.title));
+        const combined = [...data.orbs, ...missing];
+        saveLocalOrbs(combined);
+        return combined;
       }
     } catch (err) {
       console.warn('Backend orbs fetch failed, using smart local storage:', err);

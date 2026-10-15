@@ -229,18 +229,18 @@
 
 @keyframes auraBreatheSoft {
   0%, 100% {
-    opacity: 0.78;
-    transform: scale(0.96) translateZ(0);
+    opacity: 0.55;
+    transform: scale(0.98) translateZ(0);
   }
   50% {
-    opacity: 1;
-    transform: scale(1.14) translateZ(0);
+    opacity: 0.82;
+    transform: scale(1.05) translateZ(0);
   }
 }
 
 .animate-aura-breathe-soft {
-  filter: blur(8px);
-  animation: auraBreatheSoft 4.2s ease-in-out infinite;
+  filter: blur(5.5px);
+  animation: auraBreatheSoft 4.5s ease-in-out infinite;
   will-change: transform, opacity;
   transform: translateZ(0);
   -webkit-transform: translateZ(0);
@@ -251,10 +251,12 @@
 /* Infinite Memory Shelf Marquee Scroll (Smooth subpixel-free scroll for Safari and Chromium) */
 @keyframes scrollShelfLeft {
   0% {
-    transform: translateX(0);
+    transform: translate3d(0, 0, 0);
+    -webkit-transform: translate3d(0, 0, 0);
   }
   100% {
-    transform: translateX(-50%);
+    transform: translate3d(-50%, 0, 0);
+    -webkit-transform: translate3d(-50%, 0, 0);
   }
 }
 
@@ -333,3 +335,11 @@
   -ms-overflow-style: none;
   scrollbar-width: none;
 }
+
+/* Modern High-Performance Scroll Containment:
+   Skips offscreen card layout and GPU paint calculations until near viewport, ensuring 60-120fps scrolling */
+.scroll-card-contained {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 320px;
+}
+
