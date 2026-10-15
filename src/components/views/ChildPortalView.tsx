@@ -417,7 +417,8 @@ export const ChildPortalView: React.FC<ChildPortalViewProps> = ({
 
             <button
               onClick={handleCopyCode}
-              className="flex items-center justify-center space-x-2 px-5 py-3 rounded-full bg-slate-950 text-white font-bold text-xs shadow-xs hover:bg-slate-900 active:scale-95 transition-all shrink-0"
+              aria-label={lang === 'en' ? 'Copy family code' : 'คัดลอกรหัสประจำครอบครัว'}
+              className="flex items-center justify-center space-x-2 px-5 py-3 rounded-full bg-slate-950 text-white font-bold text-xs shadow-xs hover:bg-slate-900 active:scale-95 transition-all shrink-0 cursor-pointer"
             >
               {copiedCode ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4" />}
               <span>{copiedCode ? (lang === 'en' ? 'Copied!' : 'คัดลอกแล้ว!') : (lang === 'en' ? 'Copy Code' : 'คัดลอกรหัส')}</span>
@@ -599,9 +600,10 @@ export const ChildPortalView: React.FC<ChildPortalViewProps> = ({
                     <button
                       onClick={() => handleDeleteMember(member.id)}
                       title={lang === 'en' ? 'Remove member' : 'ลบสมาชิกนี้'}
-                      className="w-7 h-7 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 flex items-center justify-center transition-colors cursor-pointer"
+                      aria-label={lang === 'en' ? `Remove member ${member.name}` : `ลบสมาชิก ${member.name}`}
+                      className="w-9 h-9 sm:w-8 sm:h-8 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 flex items-center justify-center transition-colors cursor-pointer"
                     >
-                      <Trash2 className="w-3.5 h-3.5" />
+                      <Trash2 className="w-4 h-4" />
                     </button>
                   </div>
                 </div>
@@ -769,9 +771,10 @@ export const ChildPortalView: React.FC<ChildPortalViewProps> = ({
                         <button
                           onClick={() => handleDeleteMedia(item.id)}
                           title={lang === 'en' ? 'Delete file' : 'ลบไฟล์'}
-                          className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer"
+                          aria-label={lang === 'en' ? `Delete file ${item.originalFilename}` : `ลบไฟล์ ${item.originalFilename}`}
+                          className="w-8 h-8 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 flex items-center justify-center transition-colors cursor-pointer"
                         >
-                          <Trash2 className="w-3.5 h-3.5" />
+                          <Trash2 className="w-4 h-4" />
                         </button>
                       </div>
                     </div>
@@ -860,7 +863,8 @@ export const ChildPortalView: React.FC<ChildPortalViewProps> = ({
 
               <button
                 onClick={handlePlayVoice}
-                className="w-12 h-12 rounded-full bg-rose-500 hover:bg-rose-600 text-white flex items-center justify-center shadow-md active:scale-95 transition-all shrink-0"
+                aria-label={isPlayingAudio ? (lang === 'en' ? 'Pause voice recording' : 'หยุดฟังบันทึกเสียง') : (lang === 'en' ? 'Play voice recording' : 'เล่นบันทึกเสียง')}
+                className="w-12 h-12 rounded-full bg-rose-500 hover:bg-rose-600 text-white flex items-center justify-center shadow-md active:scale-95 transition-all shrink-0 cursor-pointer"
               >
                 {isPlayingAudio ? <Pause className="w-5 h-5 fill-white" /> : <Play className="w-5 h-5 fill-white ml-0.5" />}
               </button>

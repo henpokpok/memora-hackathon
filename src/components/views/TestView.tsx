@@ -54,9 +54,9 @@ export const TestView: React.FC<TestViewProps> = ({
 }) => {
   const t = translations[lang];
   const currentOrbIndex = orbs.findIndex((o) => o.id === activeOrbId);
-  const orb = orbs[currentOrbIndex] || orbs[0];
-  const isAnswered = orb.isUnlocked;
-  const hasNextOrb = currentOrbIndex < orbs.length - 1;
+  const orb = (currentOrbIndex >= 0 ? orbs[currentOrbIndex] : null) || orbs[0];
+  const isAnswered = orb?.isUnlocked ?? false;
+  const hasNextOrb = currentOrbIndex >= 0 && currentOrbIndex < orbs.length - 1;
 
   const [isPlayingAudio, setIsPlayingAudio] = useState(false);
   const [showClue, setShowClue] = useState(false);
@@ -64,14 +64,34 @@ export const TestView: React.FC<TestViewProps> = ({
   const [isWrongAttempt, setIsWrongAttempt] = useState(false);
   const [isListeningMic, setIsListeningMic] = useState(false);
 
-  const voicePrompt = lang === 'en' && orb.voicePromptEn ? orb.voicePromptEn : orb.voicePrompt;
-  const voiceSuccess = lang === 'en' && orb.voiceSuccessEn ? orb.voiceSuccessEn : orb.voiceSuccess;
-  const gentleClue = lang === 'en' && orb.gentleClueEn ? orb.gentleClueEn : orb.gentleClue;
-  const orbTitle = lang === 'en' && orb.titleEn ? orb.titleEn : orb.title;
-  const memoryYear = lang === 'en' && orb.memoryYearEn ? orb.memoryYearEn : orb.memoryYear;
+  const voiceTimeoutRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Clear timeout timer and stop speech on unmount
+  useEffect(() => {
+    return () => {
+      if (voiceTimeoutRef.current) {
+        clearTimeout(voiceTimeoutRef.current);
+        voiceTimeoutRef.current = null;
+      }
+      stopSpeech();
+    };
+  }, []);
+
+  const voicePrompt = orb ? (lang === 'en' && orb.voicePromptEn ? orb.voicePromptEn : orb.voicePrompt) : '';
+  const voiceSuccess = orb ? (lang === 'en' && orb.voiceSuccessEn ? orb.voiceSuccessEn : orb.voiceSuccess) : '';
+  const gentleClue = orb ? (lang === 'en' && orb.gentleClueEn ? orb.gentleClueEn : orb.gentleClue) : '';
+  const orbTitle = orb ? (lang === 'en' && orb.titleEn ? orb.titleEn : orb.title) : '';
+  const memoryYear = orb ? (lang === 'en' && orb.memoryYearEn ? orb.memoryYearEn : orb.memoryYear) : '';
 
   // Play question audio on orb switch
   useEffect(() => {
+    if (!orb) return;
+
+    if (voiceTimeoutRef.current) {
+      clearTimeout(voiceTimeoutRef.current);
+      voiceTimeoutRef.current = null;
+    }
+
     setShowClue(false);
     setSelectedOptId(null);
     setIsWrongAttempt(false);
@@ -79,9 +99,13 @@ export const TestView: React.FC<TestViewProps> = ({
 
     handlePlayVoice();
     return () => {
+      if (voiceTimeoutRef.current) {
+        clearTimeout(voiceTimeoutRef.current);
+        voiceTimeoutRef.current = null;
+      }
       stopSpeech();
     };
-  }, [orb.id, lang]);
+  }, [orb?.id, lang]);
 
   const handlePlayVoice = () => {
     if (isPlayingAudio) {
@@ -98,6 +122,7 @@ export const TestView: React.FC<TestViewProps> = ({
   };
 
   const handleSelectOption = (option: MemoryOption) => {
+    if (!orb) return;
     setSelectedOptId(option.id);
 
     if (option.isCorrect) {
@@ -114,18 +139,23 @@ export const TestView: React.FC<TestViewProps> = ({
   };
 
   const handleTriggerClue = () => {
+    if (!orb) return;
     setShowClue(true);
     speakWithElevenLabs(gentleClue, undefined, undefined, lang);
   };
 
   const handleVoiceAnswer = () => {
+    if (!orb) return;
     setIsListeningMic(true);
     const promptMsg = lang === 'en'
       ? 'Go ahead and speak Grandma, I am listening...'
       : 'คุณยายพูดชื่อได้เลยค่ะ... หนูฟังอยู่นะคะ';
 
     speakWithElevenLabs(promptMsg, undefined, () => {
-      setTimeout(() => {
+      if (voiceTimeoutRef.current) {
+        clearTimeout(voiceTimeoutRef.current);
+      }
+      voiceTimeoutRef.current = setTimeout(() => {
         setIsListeningMic(false);
         onCorrectAnswer(orb.id);
         speakWithElevenLabs(voiceSuccess, undefined, undefined, lang);
@@ -134,6 +164,10 @@ export const TestView: React.FC<TestViewProps> = ({
   };
 
   const handleNext = () => {
+    if (voiceTimeoutRef.current) {
+      clearTimeout(voiceTimeoutRef.current);
+      voiceTimeoutRef.current = null;
+    }
     stopSpeech();
     if (hasNextOrb) {
       onSelectOrb(orbs[currentOrbIndex + 1].id);
@@ -141,6 +175,16 @@ export const TestView: React.FC<TestViewProps> = ({
       onFinishSession();
     }
   };
+
+  if (!orbs || orbs.length === 0 || !orb) {
+    return (
+      <div className="max-w-4xl mx-auto py-12 px-4 text-center">
+        <p className="text-base text-slate-500 font-medium">
+          {lang === 'en' ? 'No memory orbs available.' : 'ไม่มีข้อมูลลูกแก้วความทรงจำ'}
+        </p>
+      </div>
+    );
+  }
 
   const emotionMeta = emotionLabels[orb.emotion]?.[lang] || emotionLabels.joy[lang];
 

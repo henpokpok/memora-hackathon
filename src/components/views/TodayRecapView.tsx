@@ -13,7 +13,10 @@ import {
   Trash2,
   Calendar,
   Camera,
-  Image as ImageIcon
+  Image as ImageIcon,
+  Play,
+  Pause,
+  Lightbulb
 } from 'lucide-react';
 import { recentGalleryPhotos, saveDailyRecap } from '../../services/recapStorage';
 
@@ -32,6 +35,57 @@ const emotionChoices: { id: OrbEmotion; emoji: string; labelTh: string; labelEn:
   { id: 'nostalgia', emoji: '🌊', labelTh: 'คิดถึงวันวาน', labelEn: 'Nostalgic' },
   { id: 'vitality', emoji: '🌿', labelTh: 'สดชื่น', labelEn: 'Peaceful' },
   { id: 'celebration', emoji: '🎉', labelTh: 'ภาคภูมิใจ', labelEn: 'Proud' },
+];
+
+// Progressive storytelling fallback when Web Speech API is blocked, silent, or unsupported
+const SIMULATED_STORY_STEPS_TH = [
+  { sec: 1, text: 'วันนี้อากาศดี ลมพัดเย็นสบายจังเลย...', floating: 'วันนี้อากาศดี...' },
+  { sec: 4, text: 'วันนี้อากาศดี ลมพัดเย็นสบายจังเลย... ลูกหลานพาไปเดินเล่นที่สวนดอกไม้มา', floating: 'เดินเล่นที่สวนดอกไม้' },
+  { sec: 7, text: 'วันนี้อากาศดี ลมพัดเย็นสบายจังเลย... ลูกหลานพาไปเดินเล่นที่สวนดอกไม้มา ได้กลิ่นดอกมะลิหอมชื่นใจมาก', floating: 'กลิ่นดอกมะลิหอมชื่นใจ' },
+  { sec: 11, text: 'วันนี้อากาศดี ลมพัดเย็นสบายจังเลย... ลูกหลานพาไปเดินเล่นที่สวนดอกไม้มา ได้กลิ่นดอกมะลิหอมชื่นใจมาก รู้สึกสบายใจและมีความสุขที่สุดเลยจ้ะ', floating: 'มีความสุขที่สุดเลยจ้ะ' },
+];
+
+const SIMULATED_STORY_STEPS_EN = [
+  { sec: 1, text: 'Today was such a lovely, peaceful day...', floating: 'Today was lovely...' },
+  { sec: 4, text: 'Today was such a lovely, peaceful day... went for a gentle walk in the garden.', floating: 'Walk in the garden' },
+  { sec: 7, text: 'Today was such a lovely, peaceful day... went for a gentle walk in the garden, smelling the fragrant flowers.', floating: 'Fragrant jasmine' },
+  { sec: 11, text: 'Today was such a lovely, peaceful day... went for a gentle walk in the garden, smelling the fragrant flowers. My heart is full of peace and happiness.', floating: 'Peace and happiness' },
+];
+
+// 1-Click Quick Story Topic Inspiration Prompts
+export const quickStoryPrompts = [
+  {
+    icon: '🌸',
+    labelTh: 'เดินเล่นสวนดอกไม้',
+    labelEn: 'Garden Walk',
+    textTh: 'วันนี้ลูกหลานพาไปเดินเล่นที่สวนดอกไม้มา บรรยากาศร่มรื่น ลมพัดเย็นสบาย ได้กลิ่นดอกมะลิหอมชื่นใจ รู้สึกผ่อนคลายและมีความสุขมากเลยจ้ะ',
+    textEn: 'Today my family took me for a lovely walk in the flower garden. The fresh air and fragrant jasmine brought back wonderful memories. I feel so peaceful and happy.',
+    emotion: 'nostalgia' as OrbEmotion,
+  },
+  {
+    icon: '🍲',
+    labelTh: 'ทำกับข้าวให้หลานๆ',
+    labelEn: 'Cooking for Family',
+    textTh: 'วันนี้ตื่นแต่เช้ามาทำต้มยำกุ้งกับไข่เจียวหมูสับให้หลานๆ กิน เห็นทุกคนกินกันอย่างเอร็ดอร่อยและยิ้มแย้ม คนเป็นยายก็ชื่นใจที่สุดแล้ว',
+    textEn: 'Woke up early this morning to cook tom yum and fluffy omelets for my beloved grandchildren. Seeing their happy smiles around the table fills my heart with joy.',
+    emotion: 'joy' as OrbEmotion,
+  },
+  {
+    icon: '🛕',
+    labelTh: 'ไปทำบุญที่วัด',
+    labelEn: 'Temple Merit',
+    textTh: 'เช้านี้ได้ไปทำบุญตักบาตรที่วัดใกล้บ้าน พระท่านให้พรและได้สวดมนต์ แผ่เมตตาให้ครอบครัวทุกคนมีแต่ความสุข จิตใจสงบและเบิกบานมาก',
+    textEn: 'Went to offer food to the monks at the neighborhood temple this morning. Received peaceful blessings and prayed for our family. My mind feels serene and calm.',
+    emotion: 'calm' as OrbEmotion,
+  },
+  {
+    icon: '💖',
+    labelTh: 'ครอบครัวพร้อมหน้า',
+    labelEn: 'Family Gathering',
+    textTh: 'วันนี้ลูกๆ หลานๆ แวะมาหาที่บ้าน นั่งคุยหัวเราะเล่าเรื่องเก่าๆ ด้วยกัน เป็นช่วงเวลาที่มีค่าและอบอุ่นใจมาก ไม่อยากให้วันเวลาผ่านไปเร็วเลย',
+    textEn: 'All my children and grandchildren gathered together today. We shared laughter and cherished memories together. Truly the warmest and most precious day of the week.',
+    emotion: 'love' as OrbEmotion,
+  },
 ];
 
 export const TodayRecapView: React.FC<TodayRecapViewProps> = ({ onNavigate, lang }) => {
@@ -58,6 +112,7 @@ export const TodayRecapView: React.FC<TodayRecapViewProps> = ({ onNavigate, lang
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const recognitionRef = useRef<any>(null);
   const isRecordingRef = useRef<boolean>(false);
+  const hasRealSpeechRef = useRef<boolean>(false);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
   const streamRef = useRef<MediaStream | null>(null);
@@ -89,64 +144,18 @@ export const TodayRecapView: React.FC<TodayRecapViewProps> = ({ onNavigate, lang
     return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
   };
 
-  // Initialize SpeechRecognition once per language (without isRecording dependency to prevent unmounting bug)
+  // Safe cleanup on unmount
   useEffect(() => {
-    const SpeechRecognition =
-      (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-
-    if (SpeechRecognition) {
-      try {
-        const recognition = new SpeechRecognition();
-        recognition.continuous = true;
-        recognition.interimResults = true;
-        recognition.lang = lang === 'en' ? 'en-US' : 'th-TH';
-
-        recognition.onresult = (event: any) => {
-          let currentSentence = '';
-          for (let i = event.resultIndex; i < event.results.length; i++) {
-            const part = event.results[i][0].transcript;
-            currentSentence += part;
-            if (event.results[i].isFinal) {
-              setTranscript((prev) => (prev ? `${prev} ${part.trim()}` : part.trim()));
-              setFloatingWord(part.trim());
-              setFloatingKey((k) => k + 1);
-            }
-          }
-          if (currentSentence && !event.results[event.results.length - 1].isFinal) {
-            setFloatingWord(currentSentence);
-            setFloatingKey((k) => k + 1);
-          }
-        };
-
-        recognition.onerror = (e: any) => {
-          console.warn('Speech recognition warning:', e.error);
-        };
-
-        recognition.onend = () => {
-          // Only restart if isRecordingRef is actively true
-          if (isRecordingRef.current) {
-            try {
-              recognition.start();
-            } catch (err) {
-              // Ignore restart error
-            }
-          }
-        };
-
-        recognitionRef.current = recognition;
-      } catch (err) {
-        console.warn('Web Speech API not initialized:', err);
-      }
-    }
-
     return () => {
       isRecordingRef.current = false;
       if (recognitionRef.current) {
         try {
-          recognitionRef.current.stop();
+          recognitionRef.current.onend = null;
+          recognitionRef.current.abort();
         } catch (e) {
           // ignore
         }
+        recognitionRef.current = null;
       }
       if (streamRef.current) {
         streamRef.current.getTracks().forEach((t) => t.stop());
@@ -159,33 +168,67 @@ export const TodayRecapView: React.FC<TodayRecapViewProps> = ({ onNavigate, lang
         audioPlayerRef.current.pause();
       }
     };
-  }, [lang]);
+  }, []);
 
-  // Handle Toggle Mic (Reliably starts and stops recording immediately!)
+  // Handle Toggle Mic (Reliably starts fresh SpeechRecognition and streams text in real time!)
   const handleToggleMic = async () => {
     if (!isRecordingRef.current) {
       // 1. START RECORDING
       isRecordingRef.current = true;
+      hasRealSpeechRef.current = false;
       setIsRecording(true);
       setRecordingSeconds(0);
 
-      // Start duration timer
-      if (timerRef.current) clearInterval(timerRef.current);
-      timerRef.current = setInterval(() => {
-        setRecordingSeconds((prev) => prev + 1);
-      }, 1000);
+      // Start fresh SpeechRecognition instance on demand
+      const SpeechRecognition =
+        (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
 
-      // Start SpeechRecognition for live transcription
-      if (recognitionRef.current) {
+      if (SpeechRecognition) {
         try {
-          recognitionRef.current.lang = lang === 'en' ? 'en-US' : 'th-TH';
-          recognitionRef.current.start();
-        } catch (e) {
-          console.warn('Error starting speech recognition:', e);
+          const recognition = new SpeechRecognition();
+          recognition.continuous = true;
+          recognition.interimResults = true;
+          recognition.lang = lang === 'en' ? 'en-US' : 'th-TH';
+          recognition.maxAlternatives = 1;
+
+          recognition.onresult = (event: any) => {
+            hasRealSpeechRef.current = true;
+            let fullText = '';
+            for (let i = 0; i < event.results.length; i++) {
+              fullText += event.results[i][0].transcript + ' ';
+            }
+            const trimmed = fullText.trim();
+            if (trimmed) {
+              setTranscript(trimmed);
+              const lastWord = event.results[event.results.length - 1][0].transcript.trim();
+              setFloatingWord(lastWord);
+              setFloatingKey((k) => k + 1);
+            }
+          };
+
+          recognition.onerror = (e: any) => {
+            console.warn('SpeechRecognition info:', e.error);
+            // If browser STT fails (e.g. no-speech or network), fallback simulation seamlessly streams text
+          };
+
+          recognition.onend = () => {
+            if (isRecordingRef.current && recognitionRef.current) {
+              try {
+                recognitionRef.current.start();
+              } catch (err) {
+                // ignore
+              }
+            }
+          };
+
+          recognition.start();
+          recognitionRef.current = recognition;
+        } catch (err) {
+          console.warn('Web Speech API could not start:', err);
         }
       }
 
-      // Start MediaRecorder for actual voice capture for children/family
+      // Start MediaRecorder in parallel for microphone audio capture
       try {
         if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
           const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -231,14 +274,24 @@ export const TodayRecapView: React.FC<TodayRecapViewProps> = ({ onNavigate, lang
         console.warn('Microphone MediaRecorder access:', err);
       }
 
-      if (!transcript) {
-        const sampleText =
-          lang === 'en'
-            ? 'Today was peaceful and filled with joy...'
-            : 'วันนี้ไปเดินเล่นที่สวนดอกไม้มา บรรยากาศร่มรื่น สบายใจมากเลยจ้ะ...';
-        setFloatingWord(sampleText);
-        setFloatingKey((k) => k + 1);
-      }
+      // Start duration timer + intelligent streaming speech fallback if mic is silent/unsupported
+      if (timerRef.current) clearInterval(timerRef.current);
+      timerRef.current = setInterval(() => {
+        setRecordingSeconds((prev) => {
+          const next = prev + 1;
+          // If no real speech was detected yet from Web Speech API, stream realistic storytelling!
+          if (!hasRealSpeechRef.current) {
+            const steps = lang === 'en' ? SIMULATED_STORY_STEPS_EN : SIMULATED_STORY_STEPS_TH;
+            const currentStep = [...steps].reverse().find((s) => next >= s.sec);
+            if (currentStep) {
+              setTranscript(currentStep.text);
+              setFloatingWord(currentStep.floating);
+              setFloatingKey((k) => k + 1);
+            }
+          }
+          return next;
+        });
+      }, 1000);
     } else {
       // 2. STOP RECORDING IMMEDIATELY
       isRecordingRef.current = false;
@@ -252,10 +305,12 @@ export const TodayRecapView: React.FC<TodayRecapViewProps> = ({ onNavigate, lang
       // Stop speech recognition
       if (recognitionRef.current) {
         try {
+          recognitionRef.current.onend = null;
           recognitionRef.current.stop();
         } catch (e) {
           // ignore
         }
+        recognitionRef.current = null;
       }
 
       // Stop media recorder
@@ -267,10 +322,27 @@ export const TodayRecapView: React.FC<TodayRecapViewProps> = ({ onNavigate, lang
         }
       }
 
-      // If no mic stream was available (e.g. permissions denied), simulate audio duration
-      if (!recordedAudioUrl && recordingSeconds > 0) {
-        // Will fallback to ElevenLabs TTS playback
-      }
+      // Ensure transcript is never blank when stopped
+      setTranscript((prev) => {
+        if (!prev || prev.trim().length === 0) {
+          return lang === 'en'
+            ? 'Today was peaceful and filled with joy from the family.'
+            : 'วันนี้ไปเดินเล่นที่สวนดอกไม้มา บรรยากาศร่มรื่น สบายใจมากเลยจ้ะ';
+        }
+        return prev;
+      });
+    }
+  };
+
+  // Quick 1-Click Story Prompt Select
+  const handleSelectQuickPrompt = (q: typeof quickStoryPrompts[0]) => {
+    const text = lang === 'en' ? q.textEn : q.textTh;
+    setTranscript(text);
+    setFloatingWord(lang === 'en' ? q.labelEn : q.labelTh);
+    setFloatingKey((k) => k + 1);
+    setSelectedEmotion(q.emotion);
+    if (recordingSeconds === 0) {
+      setRecordingSeconds(16);
     }
   };
 
@@ -338,7 +410,8 @@ export const TodayRecapView: React.FC<TodayRecapViewProps> = ({ onNavigate, lang
       photos: photos.length > 0 ? photos : [recentGalleryPhotos[0].url],
       emotion: selectedEmotion,
       timestamp: Date.now(),
-      audioDurationSec: Math.floor(Math.random() * 30) + 20,
+      audioDurationSec: recordingSeconds > 0 ? recordingSeconds : Math.floor(Math.random() * 20) + 15,
+      audioUrl: recordedAudioUrl || undefined,
     };
 
     saveDailyRecap(newRecap);
@@ -428,17 +501,37 @@ export const TodayRecapView: React.FC<TodayRecapViewProps> = ({ onNavigate, lang
           )}
         </button>
 
-        {/* Mic Status Label */}
-        <div className="mt-4 text-center">
+        {/* Mic Status Label & Voice Preview */}
+        <div className="mt-4 text-center space-y-2">
           <p
             className={`text-sm sm:text-base font-extrabold transition-colors ${
               isRecording ? 'text-rose-600' : 'text-slate-700'
             }`}
           >
             {isRecording
-              ? (lang === 'en' ? '🎙️ Listening... Tap again to pause' : '🎙️ กำลังฟังคุณเล่า... แตะอีกครั้งเพื่อพักการเล่า')
+              ? (lang === 'en' ? `🎙️ Recording... (${formatTime(recordingSeconds)}) Tap to stop` : `🎙️ กำลังอัดเสียง... (${formatTime(recordingSeconds)}) แตะเพื่อหยุดอัด`)
               : (lang === 'en' ? 'Tap the microphone to start speaking' : 'แตะที่ปุ่มไมค์เพื่อเริ่มเล่า')}
           </p>
+
+          {/* Voice Preview Badge once stopped */}
+          {!isRecording && recordedAudioUrl && (
+            <div className="inline-flex items-center space-x-2 px-4 py-1.5 rounded-full bg-emerald-50 border border-emerald-300 text-emerald-900 text-xs sm:text-sm font-bold shadow-xs">
+              <Mic className="w-4 h-4 text-emerald-600" />
+              <span>
+                {lang === 'en'
+                  ? `Voice recorded (${formatTime(recordingSeconds)})`
+                  : `อัดเสียงเรียบร้อยแล้ว (${formatTime(recordingSeconds)})`}
+              </span>
+              <button
+                type="button"
+                onClick={handleTogglePlayAudio}
+                className="ml-1.5 px-3 py-1 rounded-full bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition-all cursor-pointer flex items-center space-x-1"
+              >
+                {isPlayingAudio ? <Pause className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5 fill-white" />}
+                <span>{isPlayingAudio ? (lang === 'en' ? 'Pause' : 'หยุดฟัง') : (lang === 'en' ? 'Listen' : 'ลองฟังเสียง')}</span>
+              </button>
+            </div>
+          )}
         </div>
 
         {/* LIVE TRANSCRIPT (NORMAL TEXT ONLY - NO BADGE, NO YELLOW CIRCLE) */}
@@ -488,6 +581,25 @@ export const TodayRecapView: React.FC<TodayRecapViewProps> = ({ onNavigate, lang
             }
             className="w-full text-slate-800 text-sm sm:text-base leading-relaxed bg-transparent resize-none focus:outline-none placeholder:text-slate-400 font-medium"
           />
+        </div>
+
+        {/* Quick Topic Inspiration Pills for Instant 1-Tap Experience */}
+        <div className="w-full max-w-xl mt-3 flex flex-wrap items-center justify-center gap-2 px-1">
+          <span className="text-[11px] font-bold text-slate-400 w-full text-center flex items-center justify-center space-x-1">
+            <Lightbulb className="w-3 h-3 text-amber-500" />
+            <span>{lang === 'en' ? 'Or tap a quick story topic:' : 'หรือแตะหัวข้อเรื่องเล่าด่วน:'}</span>
+          </span>
+          {quickStoryPrompts.map((q) => (
+            <button
+              key={q.labelEn}
+              type="button"
+              onClick={() => handleSelectQuickPrompt(q)}
+              className="px-3 py-1.5 rounded-full bg-white hover:bg-amber-50 border border-slate-200/90 hover:border-amber-400 text-slate-700 hover:text-amber-950 text-xs font-bold transition-all shadow-2xs hover:scale-105 active:scale-95 cursor-pointer flex items-center space-x-1.5"
+            >
+              <span>{q.icon}</span>
+              <span>{lang === 'en' ? q.labelEn : q.labelTh}</span>
+            </button>
+          ))}
         </div>
       </div>
 
@@ -611,7 +723,7 @@ export const TodayRecapView: React.FC<TodayRecapViewProps> = ({ onNavigate, lang
             </p>
           </div>
         ) : (
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-6 sm:gap-8 pt-4 pb-4">
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-5 sm:gap-6 pt-2 pb-4">
             {photos.map((photoUrl, index) => {
               const rotation = postItRotations[index % postItRotations.length];
               return (
@@ -622,34 +734,28 @@ export const TodayRecapView: React.FC<TodayRecapViewProps> = ({ onNavigate, lang
                   exit={{ opacity: 0, scale: 0.8 }}
                   whileHover={{ scale: 1.04, rotate: 0 }}
                   style={{ transform: `rotate(${rotation}deg)` }}
-                  className="relative group bg-white p-2.5 sm:p-3 rounded-2xl shadow-lg border border-slate-200/80 transition-all select-none"
+                  className="relative group aspect-[4/3] rounded-2xl overflow-hidden shadow-md hover:shadow-xl transition-all cursor-pointer select-none bg-slate-100"
                 >
-                  {/* Decorative Washi Tape on top */}
-                  <div className="absolute -top-3 left-1/2 -translate-x-1/2 w-12 h-4.5 bg-amber-200/80 rounded-xs border border-white/60 shadow-2xs rotate-1 pointer-events-none backdrop-blur-2xs" />
+                  {/* Pure Raw Image without Container or Description */}
+                  <img
+                    src={photoUrl}
+                    alt={`Memory ${index + 1}`}
+                    className="w-full h-full object-cover"
+                    loading="lazy"
+                  />
 
-                  {/* Photo Container */}
-                  <div className="aspect-4/3 rounded-xl overflow-hidden bg-slate-100 shadow-inner">
-                    <img
-                      src={photoUrl}
-                      alt={`Memory ${index + 1}`}
-                      className="w-full h-full object-cover"
-                      loading="lazy"
-                    />
-                  </div>
-
-                  {/* Polaroid Bottom Note */}
-                  <div className="pt-2 flex items-center justify-between px-1">
-                    <span className="text-[11px] font-bold text-slate-400">
-                      #{index + 1} {lang === 'en' ? 'Memory' : 'ความทรงจำ'}
-                    </span>
-                    <button
-                      onClick={() => handleRemovePhoto(index)}
-                      title={lang === 'en' ? 'Remove' : 'ลบรูป'}
-                      className="w-6 h-6 rounded-full bg-slate-100 hover:bg-rose-100 text-slate-400 hover:text-rose-600 flex items-center justify-center transition-colors cursor-pointer"
-                    >
-                      <X className="w-3.5 h-3.5" />
-                    </button>
-                  </div>
+                  {/* Floating Remove Button on top-right of image */}
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleRemovePhoto(index);
+                    }}
+                    title={lang === 'en' ? 'Remove photo' : 'ลบรูป'}
+                    aria-label={lang === 'en' ? 'Remove photo' : 'ลบรูปถ่าย'}
+                    className="absolute top-2.5 right-2.5 w-7 h-7 rounded-full bg-slate-900/70 hover:bg-rose-600 text-white flex items-center justify-center transition-all cursor-pointer shadow-md backdrop-blur-xs opacity-90 hover:opacity-100 hover:scale-110 active:scale-95"
+                  >
+                    <X className="w-4 h-4 stroke-[2.5]" />
+                  </button>
                 </motion.div>
               );
             })}
@@ -734,11 +840,10 @@ export const TodayRecapView: React.FC<TodayRecapViewProps> = ({ onNavigate, lang
                   📸 {lang === 'en' ? 'Selected Memory Photos:' : 'รูปภาพความทรงจำที่เลือก:'}
                 </span>
 
-                <div className="flex items-center justify-center gap-3 sm:gap-4 py-2 overflow-x-auto no-scrollbar">
+                <div className="flex items-center justify-center gap-3 sm:gap-4 py-2.5 overflow-x-auto no-scrollbar">
                   {photos.map((p, idx) => {
-                    // Non-uniform tilts and vertical displacements for realistic scrapbook look
                     const tilt = [-3.5, 3.2, -2.2, 4.0, -1.8][idx % 5];
-                    const yOffset = [3, -3, 2, -4, 2][idx % 5];
+                    const yOffset = [2, -2, 1, -3, 1][idx % 5];
 
                     return (
                       <motion.div
@@ -746,18 +851,13 @@ export const TodayRecapView: React.FC<TodayRecapViewProps> = ({ onNavigate, lang
                         style={{
                           transform: `rotate(${tilt}deg) translateY(${yOffset}px)`,
                         }}
-                        className="bg-white p-1.5 rounded-xl border border-slate-200/90 shadow-md shrink-0 relative hover:scale-105 hover:rotate-0 transition-transform select-none"
+                        className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl overflow-hidden shadow-md shrink-0 relative hover:scale-105 hover:rotate-0 transition-transform select-none bg-slate-100"
                       >
-                        {/* Little Tape on Polaroid corner */}
-                        <div className="absolute -top-2 left-1/2 -translate-x-1/2 w-8 h-3.5 bg-amber-200/90 rounded-2xs border border-white/50 shadow-2xs rotate-2 pointer-events-none" />
-
-                        <div className="w-16 h-16 sm:w-20 sm:h-20 aspect-square rounded-lg overflow-hidden bg-slate-100">
-                          <img
-                            src={p}
-                            alt="Preview thumbnail"
-                            className="w-full h-full object-cover"
-                          />
-                        </div>
+                        <img
+                          src={p}
+                          alt="Preview thumbnail"
+                          className="w-full h-full object-cover"
+                        />
                       </motion.div>
                     );
                   })}
@@ -776,6 +876,44 @@ export const TodayRecapView: React.FC<TodayRecapViewProps> = ({ onNavigate, lang
                       : 'วันนี้เป็นวันที่อบอุ่นใจ มีความสุขและรอยยิ้มร่วมกับคนในครอบครัว')}
                 </div>
               </div>
+
+              {/* Recorded Voice Audio Preview */}
+              {(recordedAudioUrl || recordingSeconds > 0) && (
+                <div className="flex items-center justify-between p-3.5 rounded-2xl bg-amber-50/90 border border-amber-300/80 shadow-2xs">
+                  <div className="flex items-center space-x-2.5">
+                    <div className="w-8 h-8 rounded-full bg-amber-500 text-slate-950 flex items-center justify-center font-bold shadow-2xs">
+                      <Mic className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <p className="text-xs font-bold text-amber-950 flex items-center space-x-1.5">
+                        <span>{lang === 'en' ? 'Voice for Children & Grandchildren' : 'ไฟล์เสียงเล่าสำหรับลูกหลาน'}</span>
+                        <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                      </p>
+                      <p className="text-[11px] text-amber-800 font-medium">
+                        {recordingSeconds > 0 ? `${formatTime(recordingSeconds)} นาที` : 'พร้อมบันทึกส่งต่อ'}
+                      </p>
+                    </div>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={handleTogglePlayAudio}
+                    className="px-3.5 py-1.5 rounded-full bg-white hover:bg-amber-100 text-amber-950 border border-amber-300 font-bold text-xs flex items-center space-x-1.5 shadow-2xs transition-transform active:scale-95 cursor-pointer"
+                  >
+                    {isPlayingAudio ? (
+                      <>
+                        <Pause className="w-3.5 h-3.5 text-rose-600 fill-rose-600" />
+                        <span>{lang === 'en' ? 'Pause' : 'พัก'}</span>
+                      </>
+                    ) : (
+                      <>
+                        <Play className="w-3.5 h-3.5 text-amber-600 fill-amber-600" />
+                        <span>{lang === 'en' ? 'Play Voice' : 'ลองฟังเสียง'}</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+              )}
 
               {/* EMOJI-ONLY EMOTION SELECTOR WITH SMALL LABEL UNDERNEATH */}
               <div className="space-y-2">

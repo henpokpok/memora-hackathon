@@ -506,20 +506,11 @@ export const HomeView: React.FC<HomeViewProps> = ({
           }`}
           title={`${orb.title} - แตะเพื่อเปิดลูกแก้ว`}
         >
-          {/* Soft Ethereal Breathing Radial Halo - Dims and brightens like a living spirit */}
+          {/* Completely Soft Feathered Ambient Glow - Zero Stroke, Zero Hard Edges */}
           <div
-            className="absolute -inset-3 sm:-inset-3.5 rounded-full pointer-events-none animate-aura-breathe-soft"
+            className="absolute -inset-3 sm:-inset-4 rounded-full pointer-events-none filter blur-md opacity-45 group-hover:opacity-75 transition-opacity duration-300"
             style={{
               background: style.radialGradient,
-              animationDelay: `${(orbIndex % 5) * 0.72}s`,
-            }}
-          />
-
-          {/* Radiant Glowing Gradient Aura radiating softly around ball without clipping */}
-          <div
-            className={`absolute -inset-1.5 sm:-inset-2 rounded-full bg-gradient-to-tr ${style.gradient} opacity-50 group-hover:opacity-90 animate-aura-breathe pointer-events-none`}
-            style={{
-              animationDelay: `${(orbIndex % 5) * 0.72 + 0.36}s`,
             }}
           />
 
@@ -551,8 +542,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
             <div className="orb-bottom-rim-light" />
             {orb.isUnlocked && (
               <div 
-                className="absolute inset-0 rounded-full ring-2 shadow-[0_0_12px_rgba(251,191,36,0.6)] pointer-events-none"
-                style={{ borderColor: style.glowHex }}
+                className="absolute inset-0 rounded-full shadow-[inset_0_0_8px_rgba(255,255,255,0.7)] pointer-events-none"
               />
             )}
           </div>
@@ -793,67 +783,80 @@ export const HomeView: React.FC<HomeViewProps> = ({
               }}
             >
               {/* Layer 1: Ethereal Celestial Shimmering Corona (Rotating Multi-angle Dispersion) */}
-              <div
-                className="absolute -inset-9 sm:-inset-12 rounded-full pointer-events-none transition-opacity duration-450 ease-out animate-mystic-shimmer"
-                style={{
+              <motion.div
+                animate={{
                   opacity:
                     animationPhase === 'morphed'
-                      ? 0.3
-                      : animationPhase === 'gliding-out'
-                      ? 0.45
-                      : animationPhase === 'docked'
+                      ? 0.28
+                      : animationPhase === 'gliding-out' || animationPhase === 'docked'
                       ? 0
                       : 0.85,
+                }}
+                transition={{
+                  duration: animationPhase === 'gliding-out' ? 0.52 : 0.45,
+                  ease: [0.2, 0.9, 0.25, 1],
+                }}
+                className="absolute -inset-9 sm:-inset-12 rounded-full pointer-events-none animate-mystic-shimmer"
+                style={{
                   background: activeStyle.mysticCorona,
                   filter: 'blur(22px)',
-                  willChange: 'transform, opacity',
                 }}
               />
 
               {/* Layer 2: Ethereal Multi-Spectrum Mystic Halo (Radiant Chromatic Core) */}
-              <div
-                className="absolute -inset-6 sm:-inset-8 rounded-full pointer-events-none transition-opacity duration-450 ease-out animate-mystic-pulse"
-                style={{
+              <motion.div
+                animate={{
                   opacity:
                     animationPhase === 'morphed'
-                      ? 0.4
-                      : animationPhase === 'gliding-out'
-                      ? 0.5
-                      : animationPhase === 'docked'
+                      ? 0.35
+                      : animationPhase === 'gliding-out' || animationPhase === 'docked'
                       ? 0
                       : 0.9,
+                }}
+                transition={{
+                  duration: animationPhase === 'gliding-out' ? 0.52 : 0.45,
+                  ease: [0.2, 0.9, 0.25, 1],
+                }}
+                className="absolute -inset-6 sm:-inset-8 rounded-full pointer-events-none animate-mystic-pulse"
+                style={{
                   background: activeStyle.mysticGradient,
                   filter: 'blur(13px)',
-                  willChange: 'transform, opacity',
                 }}
               />
 
               {/* Layer 3: Concentrated Luminous White-Hot & Emotional Core Hugging Orb */}
-              <div
-                className="absolute -inset-3 sm:-inset-4 rounded-full pointer-events-none transition-opacity duration-400 ease-out"
-                style={{
+              <motion.div
+                animate={{
                   opacity:
-                    animationPhase === 'morphed' || animationPhase === 'docked'
+                    animationPhase === 'morphed' || animationPhase === 'gliding-out' || animationPhase === 'docked'
                       ? 0
-                      : animationPhase === 'gliding-out'
-                      ? 0.35
                       : 0.95,
+                }}
+                transition={{
+                  duration: animationPhase === 'gliding-out' ? 0.48 : 0.4,
+                  ease: [0.2, 0.9, 0.25, 1],
+                }}
+                className="absolute -inset-3 sm:-inset-4 rounded-full pointer-events-none"
+                style={{
                   background: `radial-gradient(circle, rgba(255,255,255,0.98) 0%, ${activeStyle.auraColor} 50%, transparent 100%)`,
                   filter: 'blur(6px)',
-                  willChange: 'opacity',
                 }}
               />
 
               {/* Layer 4: Celestial Stardust Shimmer Ring with Brilliant Rim Lights */}
-              <div
-                className="absolute -inset-1.5 sm:-inset-2 rounded-full pointer-events-none transition-opacity duration-400 ease-out"
-                style={{
+              <motion.div
+                animate={{
                   opacity:
-                    animationPhase === 'morphed' || animationPhase === 'docked'
+                    animationPhase === 'morphed' || animationPhase === 'gliding-out' || animationPhase === 'docked'
                       ? 0
-                      : animationPhase === 'gliding-out'
-                      ? 0.3
                       : 0.85,
+                }}
+                transition={{
+                  duration: animationPhase === 'gliding-out' ? 0.48 : 0.4,
+                  ease: [0.2, 0.9, 0.25, 1],
+                }}
+                className="absolute -inset-1.5 sm:-inset-2 rounded-full pointer-events-none"
+                style={{
                   boxShadow: `0 0 24px 5px ${activeStyle.glowHex}, inset 0 0 16px rgba(255,255,255,0.8)`,
                   borderRadius: '9999px',
                 }}
@@ -866,11 +869,10 @@ export const HomeView: React.FC<HomeViewProps> = ({
                   boxShadow:
                     animationPhase === 'morphed'
                       ? `0 0 45px 4px ${activeStyle.auraColor}, 0 25px 60px -15px rgba(0,0,0,0.6)`
-                      : animationPhase === 'docked'
+                      : animationPhase === 'docked' || animationPhase === 'gliding-out'
                       ? '0 0 0px 0px transparent'
-                      : animationPhase === 'gliding-out'
-                      ? `0 0 14px 2px ${activeStyle.auraColor}`
                       : `0 0 28px 4px ${activeStyle.auraColor}`,
+                  transition: 'box-shadow 0.52s cubic-bezier(0.2, 0.9, 0.25, 1)',
                   transform: 'translateZ(0)',
                 }}
               >

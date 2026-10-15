@@ -1,10 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { MemoryOrb, OrbEmotion, Language, DailyRecapMemory, NavigationPage } from '../../types';
 import {
   Sparkles,
   Heart,
   Play,
+  Pause,
   X,
   Volume2,
   ArrowRight,
@@ -43,7 +44,7 @@ export const VaultView: React.FC<VaultViewProps> = ({
   // Main view segment: 'recaps' (Daily Stories) or 'orbs' (Inside Out Orbs)
   const [activeTab, setActiveTab] = useState<'recaps' | 'orbs'>('recaps');
 
-  // Daily Recaps state
+  // Daily recaps state
   const [recaps, setRecaps] = useState<DailyRecapMemory[]>([]);
   const [selectedRecap, setSelectedRecap] = useState<DailyRecapMemory | null>(null);
 
@@ -51,6 +52,8 @@ export const VaultView: React.FC<VaultViewProps> = ({
   const [activeFilter, setActiveFilter] = useState<OrbEmotion | 'all'>('all');
   const [expandedOrb, setExpandedOrb] = useState<MemoryOrb | null>(null);
   const [isPlayingAudio, setIsPlayingAudio] = useState<boolean>(false);
+  const [playingRecapId, setPlayingRecapId] = useState<string | null>(null);
+  const audioPlayerRef = useRef<HTMLAudioElement | null>(null);
 
   // Load recaps from storage
   useEffect(() => {
@@ -60,6 +63,17 @@ export const VaultView: React.FC<VaultViewProps> = ({
   const filteredOrbs =
     activeFilter === 'all' ? orbs : orbs.filter((o) => o.emotion === activeFilter);
 
+  // Stop any playing voice
+  const stopAllAudio = () => {
+    if (audioPlayerRef.current) {
+      audioPlayerRef.current.pause();
+      audioPlayerRef.current = null;
+    }
+    stopSpeech();
+    setIsPlayingAudio(false);
+    setPlayingRecapId(null);
+  };
+
   // Audio speech for expanded orb
   useEffect(() => {
     if (expandedOrb) {
@@ -68,6 +82,7 @@ export const VaultView: React.FC<VaultViewProps> = ({
           ? expandedOrb.voicePromptEn || expandedOrb.voicePrompt
           : expandedOrb.voicePrompt;
 
+      stopAllAudio();
       setIsPlayingAudio(true);
       speakWithElevenLabs(
         textToSpeak,
@@ -78,27 +93,65 @@ export const VaultView: React.FC<VaultViewProps> = ({
         lang
       );
     } else {
-      stopSpeech();
-      setIsPlayingAudio(false);
+      stopAllAudio();
     }
 
     return () => {
-      stopSpeech();
+      stopAllAudio();
     };
   }, [expandedOrb, lang]);
 
-  // Audio speech for daily recap detail
-  const handleSpeakRecap = (text: string) => {
-    if (isPlayingAudio) {
-      stopSpeech();
-      setIsPlayingAudio(false);
+  // Audio playback for daily recaps (Prioritizes real voice recording `audioUrl`, fallbacks to ElevenLabs)
+  const handleToggleRecapAudio = (recap: DailyRecapMemory, e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
+
+    if (playingRecapId === recap.id) {
+      stopAllAudio();
+      return;
+    }
+
+    stopAllAudio();
+    setPlayingRecapId(recap.id);
+    setIsPlayingAudio(true);
+
+    if (recap.audioUrl) {
+      const audio = new Audio(recap.audioUrl);
+      audioPlayerRef.current = audio;
+      audio.onended = () => {
+        setIsPlayingAudio(false);
+        setPlayingRecapId(null);
+      };
+      audio.onerror = () => {
+        // Fallback to ElevenLabs TTS
+        speakWithElevenLabs(
+          recap.transcript,
+          undefined,
+          () => {
+            setIsPlayingAudio(false);
+            setPlayingRecapId(null);
+          },
+          lang
+        );
+      };
+      audio.play().catch(() => {
+        // Fallback to ElevenLabs TTS
+        speakWithElevenLabs(
+          recap.transcript,
+          undefined,
+          () => {
+            setIsPlayingAudio(false);
+            setPlayingRecapId(null);
+          },
+          lang
+        );
+      });
     } else {
-      setIsPlayingAudio(true);
       speakWithElevenLabs(
-        text,
+        recap.transcript,
         undefined,
         () => {
           setIsPlayingAudio(false);
+          setPlayingRecapId(null);
         },
         lang
       );
@@ -145,8 +198,7 @@ export const VaultView: React.FC<VaultViewProps> = ({
       <div className="flex items-center bg-slate-200/80 p-1.5 rounded-full max-w-md mx-auto shadow-inner">
         <button
           onClick={() => {
-            stopSpeech();
-            setIsPlayingAudio(false);
+            stopAllAudio();
             setActiveTab('recaps');
           }}
           className={`flex-1 flex items-center justify-center space-x-2 py-2.5 rounded-full text-xs sm:text-sm font-bold transition-all cursor-pointer ${
@@ -164,8 +216,7 @@ export const VaultView: React.FC<VaultViewProps> = ({
 
         <button
           onClick={() => {
-            stopSpeech();
-            setIsPlayingAudio(false);
+            stopAllAudio();
             setActiveTab('orbs');
           }}
           className={`flex-1 flex items-center justify-center space-x-2 py-2.5 rounded-full text-xs sm:text-sm font-bold transition-all cursor-pointer ${
@@ -242,9 +293,10 @@ export const VaultView: React.FC<VaultViewProps> = ({
                         <button
                           onClick={(e) => handleDeleteRecap(recap.id, e)}
                           title={lang === 'en' ? 'Delete' : 'ลบบันทึก'}
-                          className="w-7 h-7 rounded-full bg-slate-100 hover:bg-rose-100 text-slate-400 hover:text-rose-600 flex items-center justify-center transition-colors"
+                          aria-label={lang === 'en' ? 'Delete story recap' : 'ลบบันทึกเรื่องราว'}
+                          className="w-9 h-9 sm:w-8 sm:h-8 rounded-full bg-slate-100 hover:bg-rose-100 text-slate-400 hover:text-rose-600 flex items-center justify-center transition-colors cursor-pointer"
                         >
-                          <Trash2 className="w-3.5 h-3.5" />
+                          <Trash2 className="w-4 h-4" />
                         </button>
                       </div>
                     </div>
@@ -277,13 +329,50 @@ export const VaultView: React.FC<VaultViewProps> = ({
                       )}
 
                       {/* Story Transcript Snippet */}
-                      <div className="flex-1 space-y-1.5">
+                      <div className="flex-1 space-y-2">
                         <p className="text-slate-700 text-sm sm:text-base font-medium line-clamp-2 leading-relaxed">
                           "{recap.transcript}"
                         </p>
-                        <div className="flex items-center space-x-1 text-xs font-bold text-amber-600 group-hover:text-amber-700 transition-colors">
-                          <span>{lang === 'en' ? 'Read full story' : 'แตะเพื่อเปิดดูบันทึกฉบับเต็ม'}</span>
-                          <ChevronRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
+
+                        <div className="flex flex-wrap items-center justify-between gap-2 pt-0.5">
+                          {/* Audio playback button for grandchildren */}
+                          <button
+                            type="button"
+                            onClick={(e) => handleToggleRecapAudio(recap, e)}
+                            aria-label={
+                              playingRecapId === recap.id
+                                ? (lang === 'en' ? 'Pause story voice' : 'พักเสียงเล่า')
+                                : (lang === 'en' ? 'Play story voice' : 'เปิดฟังเสียงเล่า')
+                            }
+                            className={`inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-full text-xs font-bold transition-all shadow-2xs active:scale-95 cursor-pointer ${
+                              playingRecapId === recap.id
+                                ? 'bg-rose-500 text-white animate-pulse'
+                                : recap.audioUrl
+                                ? 'bg-amber-100 hover:bg-amber-200 text-amber-950 border border-amber-300'
+                                : 'bg-slate-100 hover:bg-slate-200 text-slate-700'
+                            }`}
+                          >
+                            {playingRecapId === recap.id ? (
+                              <Pause className="w-3.5 h-3.5 fill-current" />
+                            ) : (
+                              <Play className="w-3.5 h-3.5 fill-current text-amber-700" />
+                            )}
+                            <span>
+                              {playingRecapId === recap.id
+                                ? (lang === 'en' ? 'Playing Voice...' : 'กำลังเล่นเสียง...')
+                                : recap.audioUrl
+                                ? (lang === 'en' ? '🎙️ Grandma’s Voice' : '🎙️ ฟังเสียงเล่าคุณยาย')
+                                : (lang === 'en' ? '🔊 Read Aloud' : '🔊 ฟังเสียงอ่าน')}
+                            </span>
+                            {recap.audioDurationSec ? (
+                              <span className="opacity-75 text-[10px]">({recap.audioDurationSec}s)</span>
+                            ) : null}
+                          </button>
+
+                          <div className="flex items-center space-x-1 text-xs font-bold text-amber-600 group-hover:text-amber-700 transition-colors">
+                            <span>{lang === 'en' ? 'Full Story' : 'ดูบันทึกฉบับเต็ม'}</span>
+                            <ChevronRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -305,11 +394,11 @@ export const VaultView: React.FC<VaultViewProps> = ({
                 >
                   <button
                     onClick={() => {
-                      stopSpeech();
-                      setIsPlayingAudio(false);
+                      stopAllAudio();
                       setSelectedRecap(null);
                     }}
-                    className="absolute top-5 right-5 w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 flex items-center justify-center transition-colors cursor-pointer"
+                    aria-label={lang === 'en' ? 'Close story details' : 'ปิดรายละเอียดบันทึก'}
+                    className="absolute top-5 right-5 w-9 h-9 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 flex items-center justify-center transition-colors cursor-pointer"
                   >
                     <X className="w-4 h-4" />
                   </button>
@@ -345,30 +434,55 @@ export const VaultView: React.FC<VaultViewProps> = ({
                     ))}
                   </div>
 
-                  {/* Full Story Text & Voice Read Aloud */}
-                  <div className="p-5 rounded-2xl bg-amber-50/70 border border-amber-200 space-y-3">
+                  {/* Full Story Text & Voice Player */}
+                  <div className="p-5 rounded-2xl bg-amber-50/70 border border-amber-200 space-y-3.5">
                     <div className="flex items-center justify-between">
-                      <span className="text-xs font-bold uppercase tracking-wider text-amber-900">
-                        {lang === 'en' ? 'Story Voice & Words' : 'เรื่องเล่าจากใจคุณ'}
-                      </span>
+                      <div className="flex items-center space-x-2">
+                        <div className="w-8 h-8 rounded-full bg-amber-500 text-slate-950 flex items-center justify-center font-bold shadow-2xs">
+                          <Mic className="w-4 h-4" />
+                        </div>
+                        <div>
+                          <span className="text-xs font-black uppercase tracking-wider text-amber-950 block">
+                            {selectedRecap.audioUrl
+                              ? (lang === 'en' ? 'Grandma’s Real Recorded Voice' : 'เสียงบันทึกจริงของคุณยาย (สำหรับลูกหลาน)')
+                              : (lang === 'en' ? 'Story Voice & Words' : 'เรื่องเล่าจากใจคุณ')}
+                          </span>
+                          <span className="text-[11px] text-amber-800 font-medium">
+                            {selectedRecap.audioDurationSec
+                              ? (lang === 'en' ? `Audio length: ${selectedRecap.audioDurationSec}s` : `ความยาวเสียง ${selectedRecap.audioDurationSec} วินาที`)
+                              : (lang === 'en' ? 'Tap to listen to the story' : 'แตะเพื่อเปิดฟังเสียงเรื่องเล่า')}
+                          </span>
+                        </div>
+                      </div>
+
                       <button
-                        onClick={() => handleSpeakRecap(selectedRecap.transcript)}
-                        className={`inline-flex items-center space-x-1.5 px-3 py-1 rounded-full text-xs font-bold transition-all cursor-pointer ${
-                          isPlayingAudio
+                        onClick={() => handleToggleRecapAudio(selectedRecap)}
+                        aria-label={
+                          playingRecapId === selectedRecap.id
+                            ? (lang === 'en' ? 'Pause voice' : 'พักเสียง')
+                            : (lang === 'en' ? 'Play voice' : 'เปิดฟังเสียง')
+                        }
+                        className={`inline-flex items-center space-x-1.5 px-4 py-2 rounded-full text-xs font-bold transition-all shadow-2xs active:scale-95 cursor-pointer ${
+                          playingRecapId === selectedRecap.id
                             ? 'bg-rose-500 text-white animate-pulse'
-                            : 'bg-white hover:bg-amber-100 text-amber-900 border border-amber-300'
+                            : 'bg-white hover:bg-amber-100 text-amber-950 border border-amber-300'
                         }`}
                       >
-                        <Volume2 className="w-3.5 h-3.5" />
-                        <span>
-                          {isPlayingAudio
-                            ? (lang === 'en' ? 'Stop Voice' : 'หยุดฟัง')
-                            : (lang === 'en' ? 'Listen Aloud' : 'ฟังเสียงอ่าน')}
-                        </span>
+                        {playingRecapId === selectedRecap.id ? (
+                          <>
+                            <Pause className="w-3.5 h-3.5 fill-current" />
+                            <span>{lang === 'en' ? 'Pause' : 'พักเสียง'}</span>
+                          </>
+                        ) : (
+                          <>
+                            <Play className="w-3.5 h-3.5 fill-current text-amber-700" />
+                            <span>{lang === 'en' ? 'Listen Voice' : 'ฟังเสียงเล่า'}</span>
+                          </>
+                        )}
                       </button>
                     </div>
 
-                    <p className="text-base sm:text-lg text-slate-800 font-medium leading-relaxed">
+                    <p className="text-base sm:text-lg text-slate-800 font-medium leading-relaxed bg-white/70 p-4 rounded-xl border border-amber-200/60">
                       "{selectedRecap.transcript}"
                     </p>
                   </div>
@@ -376,8 +490,7 @@ export const VaultView: React.FC<VaultViewProps> = ({
                   <div className="pt-2 flex justify-end">
                     <button
                       onClick={() => {
-                        stopSpeech();
-                        setIsPlayingAudio(false);
+                        stopAllAudio();
                         setSelectedRecap(null);
                       }}
                       className="px-6 py-2.5 rounded-full bg-slate-900 hover:bg-slate-800 text-white font-bold text-sm transition-transform active:scale-95 cursor-pointer"
@@ -427,6 +540,7 @@ export const VaultView: React.FC<VaultViewProps> = ({
                 <div className="absolute top-3.5 right-3.5 z-20">
                   <button
                     onClick={() => setExpandedOrb(null)}
+                    aria-label={lang === 'en' ? 'Close expanded memory orb' : 'ปิดลูกแก้วความทรงจำ'}
                     className="w-9 h-9 rounded-full bg-black/40 hover:bg-black/60 text-white flex items-center justify-center backdrop-blur-md transition-all active:scale-95 cursor-pointer"
                     title="Close / ปิด"
                   >

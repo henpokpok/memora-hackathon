@@ -59,6 +59,7 @@ export const LineCapsuleModal: React.FC<LineCapsuleModalProps> = ({
               stopSpeech();
               onClose();
             }}
+            aria-label="Close modal"
             className="p-1.5 rounded-full text-white/80 hover:text-white hover:bg-black/10 transition-colors cursor-pointer"
           >
             <X className="w-5 h-5" />
@@ -116,6 +117,7 @@ export const LineCapsuleModal: React.FC<LineCapsuleModalProps> = ({
                 <div className="flex items-center space-x-3">
                   <button
                     onClick={handlePlayVoiceSnippet}
+                    aria-label={isPlayingGrandmaVoice ? "Pause voice message" : "Play voice message"}
                     className="w-10 h-10 rounded-full bg-amber-400 text-slate-950 flex items-center justify-center hover:scale-105 active:scale-95 transition-transform shadow-xs cursor-pointer"
                   >
                     {isPlayingGrandmaVoice ? (
