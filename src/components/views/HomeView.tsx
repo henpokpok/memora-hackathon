@@ -1089,7 +1089,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
                   </motion.div>
                 )}
 
-                {/* 2. Floating Rectangular Photo (Clean, compact 220x136, NO heavy card box, NO countdown line) */}
+                {/* 2. Floating Rectangular Photo (Clean, compact 220x136, Pure Aura Glow matching orb emotion, NO hard stroke border) */}
                 <motion.div
                   initial={{ opacity: 0, scale: 0.97 }}
                   animate={{ opacity: 1, scale: 1 }}
@@ -1098,21 +1098,38 @@ export const HomeView: React.FC<HomeViewProps> = ({
                   className="relative flex items-center justify-center -mt-0.5"
                   style={{ width: 220, height: 136 }}
                 >
-                  {/* Very soft ambient back aura (subtle, calm) */}
+                  {/* Ambient Projection Beam Glow behind floating mini photo in orb emotion color */}
                   <div
-                    className="absolute -inset-2.5 rounded-2xl pointer-events-none transition-opacity duration-300"
+                    className="absolute -inset-3 rounded-2xl pointer-events-none transition-opacity duration-300"
                     style={{
                       background: miniStyle.radialGradient,
-                      filter: 'blur(8px)',
-                      opacity: 0.35,
+                      filter: 'blur(12px)',
+                      opacity: 0.65,
                     }}
                   />
 
-                  {/* The Floating Photo Frame */}
+                  {/* Primary Soft Aura Glow directly hugging the photo frame in orb emotion color */}
                   <div
-                    className="w-full h-full rounded-2xl overflow-hidden relative border border-white/60 bg-slate-900 shadow-md group-hover:scale-102 transition-transform duration-300"
+                    className="absolute inset-0 rounded-2xl pointer-events-none"
                     style={{
-                      boxShadow: `0 0 16px 2px ${miniStyle.auraColor}, 0 8px 20px -6px rgba(0,0,0,0.25)`,
+                      boxShadow: `0 0 24px 6px ${miniStyle.auraColor}, 0 0 10px 2px ${miniStyle.glowHex}88, 0 12px 25px -6px rgba(0,0,0,0.45)`,
+                    }}
+                  />
+
+                  {/* Secondary Wider Soft Halo layer in orb emotion color */}
+                  <div
+                    className="absolute -inset-1.5 rounded-2xl pointer-events-none"
+                    style={{
+                      boxShadow: `0 0 32px 8px ${miniStyle.auraColor}`,
+                      filter: 'blur(3px)',
+                      opacity: 0.6,
+                    }}
+                  />
+
+                  {/* The Floating Photo Frame (Clean, unclipped, pure glow) */}
+                  <div
+                    className="w-full h-full rounded-2xl overflow-hidden relative bg-slate-900 shadow-xl group-hover:scale-102 transition-transform duration-300"
+                    style={{
                       WebkitMaskImage: '-webkit-radial-gradient(white, black)',
                       maskImage: '-webkit-radial-gradient(white, black)',
                       isolation: 'isolate',
