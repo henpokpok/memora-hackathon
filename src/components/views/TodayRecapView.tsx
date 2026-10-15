@@ -54,9 +54,20 @@ export const TodayRecapView: React.FC<TodayRecapViewProps> = ({ onNavigate, lang
   const [isPreviewOpen, setIsPreviewOpen] = useState<boolean>(false);
   const [isSavedSuccess, setIsSavedSuccess] = useState<boolean>(false);
 
-  // File input ref
+  // File input ref & Speech/Media Recording refs
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const recognitionRef = useRef<any>(null);
+  const isRecordingRef = useRef<boolean>(false);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const audioChunksRef = useRef<Blob[]>([]);
+  const streamRef = useRef<MediaStream | null>(null);
+  const timerRef = useRef<any>(null);
+  const audioPlayerRef = useRef<HTMLAudioElement | null>(null);
+
+  // Real Audio Recording State
+  const [recordedAudioUrl, setRecordedAudioUrl] = useState<string | null>(null);
+  const [recordingSeconds, setRecordingSeconds] = useState<number>(0);
+  const [isPlayingAudio, setIsPlayingAudio] = useState<boolean>(false);
 
   // Formatted Thai/English dates
   const todayDateStr = new Date().toISOString().split('T')[0];
@@ -71,7 +82,14 @@ export const TodayRecapView: React.FC<TodayRecapViewProps> = ({ onNavigate, lang
     year: 'numeric',
   })}`;
 
-  // Initialize SpeechRecognition if available
+  // Helper to format duration: mm:ss
+  const formatTime = (secs: number) => {
+    const m = Math.floor(secs / 60);
+    const s = secs % 60;
+    return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+  };
+
+  // Initialize SpeechRecognition once per language (without isRecording dependency to prevent unmounting bug)
   useEffect(() => {
     const SpeechRecognition =
       (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
@@ -105,7 +123,8 @@ export const TodayRecapView: React.FC<TodayRecapViewProps> = ({ onNavigate, lang
         };
 
         recognition.onend = () => {
-          if (isRecording) {
+          // Only restart if isRecordingRef is actively true
+          if (isRecordingRef.current) {
             try {
               recognition.start();
             } catch (err) {
@@ -121,6 +140,7 @@ export const TodayRecapView: React.FC<TodayRecapViewProps> = ({ onNavigate, lang
     }
 
     return () => {
+      isRecordingRef.current = false;
       if (recognitionRef.current) {
         try {
           recognitionRef.current.stop();
@@ -128,21 +148,89 @@ export const TodayRecapView: React.FC<TodayRecapViewProps> = ({ onNavigate, lang
           // ignore
         }
       }
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach((t) => t.stop());
+        streamRef.current = null;
+      }
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+      }
+      if (audioPlayerRef.current) {
+        audioPlayerRef.current.pause();
+      }
     };
-  }, [lang, isRecording]);
+  }, [lang]);
 
-  // Handle Toggle Mic
-  const handleToggleMic = () => {
-    if (!isRecording) {
+  // Handle Toggle Mic (Reliably starts and stops recording immediately!)
+  const handleToggleMic = async () => {
+    if (!isRecordingRef.current) {
+      // 1. START RECORDING
+      isRecordingRef.current = true;
       setIsRecording(true);
-      try {
-        if (recognitionRef.current) {
+      setRecordingSeconds(0);
+
+      // Start duration timer
+      if (timerRef.current) clearInterval(timerRef.current);
+      timerRef.current = setInterval(() => {
+        setRecordingSeconds((prev) => prev + 1);
+      }, 1000);
+
+      // Start SpeechRecognition for live transcription
+      if (recognitionRef.current) {
+        try {
           recognitionRef.current.lang = lang === 'en' ? 'en-US' : 'th-TH';
           recognitionRef.current.start();
+        } catch (e) {
+          console.warn('Error starting speech recognition:', e);
         }
-      } catch (e) {
-        console.warn('Error starting speech recognition:', e);
       }
+
+      // Start MediaRecorder for actual voice capture for children/family
+      try {
+        if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+          const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+          streamRef.current = stream;
+          audioChunksRef.current = [];
+
+          // Choose supported mimeType
+          const mimeType = MediaRecorder.isTypeSupported('audio/webm')
+            ? 'audio/webm'
+            : MediaRecorder.isTypeSupported('audio/mp4')
+            ? 'audio/mp4'
+            : '';
+
+          const recorder = mimeType ? new MediaRecorder(stream, { mimeType }) : new MediaRecorder(stream);
+          recorder.ondataavailable = (event) => {
+            if (event.data && event.data.size > 0) {
+              audioChunksRef.current.push(event.data);
+            }
+          };
+
+          recorder.onstop = () => {
+            if (audioChunksRef.current.length > 0) {
+              const audioBlob = new Blob(audioChunksRef.current, {
+                type: recorder.mimeType || 'audio/webm',
+              });
+              const reader = new FileReader();
+              reader.onloadend = () => {
+                const base64Audio = reader.result as string;
+                setRecordedAudioUrl(base64Audio);
+              };
+              reader.readAsDataURL(audioBlob);
+            }
+            if (streamRef.current) {
+              streamRef.current.getTracks().forEach((track) => track.stop());
+              streamRef.current = null;
+            }
+          };
+
+          recorder.start(250);
+          mediaRecorderRef.current = recorder;
+        }
+      } catch (err) {
+        console.warn('Microphone MediaRecorder access:', err);
+      }
+
       if (!transcript) {
         const sampleText =
           lang === 'en'
@@ -152,13 +240,56 @@ export const TodayRecapView: React.FC<TodayRecapViewProps> = ({ onNavigate, lang
         setFloatingKey((k) => k + 1);
       }
     } else {
+      // 2. STOP RECORDING IMMEDIATELY
+      isRecordingRef.current = false;
       setIsRecording(false);
-      try {
-        if (recognitionRef.current) {
+
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+        timerRef.current = null;
+      }
+
+      // Stop speech recognition
+      if (recognitionRef.current) {
+        try {
           recognitionRef.current.stop();
+        } catch (e) {
+          // ignore
         }
-      } catch (e) {
-        // ignore
+      }
+
+      // Stop media recorder
+      if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
+        try {
+          mediaRecorderRef.current.stop();
+        } catch (e) {
+          // ignore
+        }
+      }
+
+      // If no mic stream was available (e.g. permissions denied), simulate audio duration
+      if (!recordedAudioUrl && recordingSeconds > 0) {
+        // Will fallback to ElevenLabs TTS playback
+      }
+    }
+  };
+
+  // Play / Pause Recorded Audio
+  const handleTogglePlayAudio = () => {
+    if (isPlayingAudio) {
+      if (audioPlayerRef.current) {
+        audioPlayerRef.current.pause();
+        audioPlayerRef.current.currentTime = 0;
+      }
+      setIsPlayingAudio(false);
+    } else {
+      if (recordedAudioUrl) {
+        const audio = new Audio(recordedAudioUrl);
+        audioPlayerRef.current = audio;
+        audio.onended = () => setIsPlayingAudio(false);
+        audio.onerror = () => setIsPlayingAudio(false);
+        setIsPlayingAudio(true);
+        audio.play().catch(() => setIsPlayingAudio(false));
       }
     }
   };

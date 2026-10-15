@@ -501,7 +501,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
             isVacated
               ? 'opacity-0 pointer-events-none'
               : isAutoTarget
-              ? 'opacity-100 scale-108 ring-2 ring-amber-300/90 shadow-lg'
+              ? 'opacity-100'
               : 'opacity-100 hover:scale-115 active:scale-95'
           }`}
           title={`${orb.title} - แตะเพื่อเปิดลูกแก้ว`}
