@@ -5,7 +5,6 @@ import {
   MessageCircle, 
   Play, 
   Pause, 
-  ShieldCheck, 
   Share2, 
   Check, 
   Plus, 
@@ -29,7 +28,15 @@ import {
   Volume2,
   FileText,
   Tag,
-  CheckCircle2
+  CheckCircle2,
+  Clock,
+  TrendingUp,
+  Smile,
+  Bookmark,
+  Headphones,
+  Lightbulb,
+  Award,
+  Activity
 } from 'lucide-react';
 import { speakWithElevenLabs, stopSpeech } from '../../services/elevenlabs';
 import { familyApi, mediaApi } from '../../services/api';
@@ -439,20 +446,83 @@ export const ChildPortalView: React.FC<ChildPortalViewProps> = ({
     alert(lang === 'en' ? 'Memory Orb created successfully and placed in Grandma’s vault!' : 'สร้างลูกแก้วความทรงจำสำเร็จแล้ว! บรรจุลงบนแท่นของคุณยายเรียบร้อยแล้วค่ะ ✨');
   };
 
-  const grandmaVoiceSnippet = lang === 'en'
-    ? 'Oh, this was in 1985 when we took the whole family to Chiang Mai! I remember the floral shirt you bought me!'
-    : 'อ๋อ... รูปนี้ตอนปี 2528 ที่เราพากันไปเที่ยวเชียงใหม่กันทั้งบ้าน ยายยังจำเสื้อลายดอกตัวที่ลูกซื้อให้ได้อยู่เลยนะ';
+  // Multi-clip state and bookmarks
+  const [activeClipId, setActiveClipId] = useState<string | null>(null);
+  const [bookmarkedClips, setBookmarkedClips] = useState<string[]>([]);
+  const [sharedClipId, setSharedClipId] = useState<string | null>(null);
 
-  const handlePlayVoice = () => {
-    if (isPlayingAudio) {
+  const voiceRecordings = [
+    {
+      id: 'clip-1',
+      titleTh: 'คุณยายเล่าเรื่องตอนไปเที่ยวเชียงใหม่ ปี 2528',
+      titleEn: 'Grandma Somsri reminiscing about Chiang Mai trip (1985)',
+      time: '10:45 น.',
+      duration: '0:42',
+      topicTh: 'ทริปเชียงใหม่ เสื้อลายดอก',
+      topicEn: 'Chiang Mai Floral Shirt',
+      emotion: 'nostalgia' as OrbEmotion,
+      transcriptTh: 'อ๋อ... รูปนี้ตอนปี 2528 ที่เราพากันไปเที่ยวเชียงใหม่กันทั้งบ้าน ยายยังจำเสื้อลายดอกตัวที่ลูกซื้อให้ได้อยู่เลยนะ... ดอยสุเทพตอนนั้นลมเย็นมาก ลูกๆ วิ่งเล่นกันสนุกสนาน ยายชอบอากาศที่นั่นที่สุด',
+      transcriptEn: 'Oh, this was in 1985 when we took the whole family to Chiang Mai! I remember the floral shirt you bought me... The breeze at Doi Suthep was so cool, the kids were running around happily.',
+      aiInsightTh: 'การออกเสียงชัดเจน น้ำเสียงร่าเริง มีการเชื่อมโยงความจำเรื่องเสื้อลายดอกและสถานที่ได้อย่างสมบูรณ์',
+      aiInsightEn: 'Clear articulation, upbeat emotional tone, perfectly recollected the floral shirt and location context.',
+    },
+    {
+      id: 'clip-2',
+      titleTh: 'เล่าถึงวันสงกรานต์และน้ำพริกกะปิน้าเพ็ญ',
+      titleEn: 'Recollecting Songkran and Aunt Phen’s chili paste',
+      time: '10:38 น.',
+      duration: '0:31',
+      topicTh: 'ทำบุญสงกรานต์ วัดบ้านเกิด',
+      topicEn: 'Songkran Merit Making',
+      emotion: 'joy' as OrbEmotion,
+      transcriptTh: 'จำได้เลย น้าเพ็ญเขาชอบตำน้ำพริกกะปิมาฝากยายทุกวันพระ วันสงกรานต์นั้นสนุกมาก รดน้ำดำหัวกันชื่นใจ ยายชอบกลิ่นมะลิอบควันเทียนที่สุด',
+      transcriptEn: 'I remember vividly! Aunt Phen always made delicious shrimp paste chili for me. That Songkran was wonderful, so refreshing with the jasmine water.',
+      aiInsightTh: 'ยิ้มแย้มขณะเล่า ตอบชื่อน้าเพ็ญได้ภายใน 3 วินาที แสดงถึงความจำระยะยาวเกี่ยวกับคนสนิทที่แข็งแรงมาก',
+      aiInsightEn: 'Smiled throughout, identified Aunt Phen within 3 seconds, showing strong long-term affective memory recall.',
+    },
+    {
+      id: 'clip-3',
+      titleTh: 'ความทรงจำวันรับปริญญาหลานคนโต',
+      titleEn: 'Pride and joy during oldest grandchild’s graduation',
+      time: '10:30 น.',
+      duration: '0:35',
+      topicTh: 'งานรับปริญญาหลานรัก',
+      topicEn: 'Grandchild Graduation',
+      emotion: 'celebration' as OrbEmotion,
+      transcriptTh: 'วันนั้นยายตื่นตั้งแต่ตีห้าไปรอแสดงความยินดีกับหลาน ยายจำได้ว่าเอาพวงมาลัยดอกดาวเรืองไปคล้องคอให้ ยายภูมิใจในตัวหลานทุกคนนะลูก',
+      transcriptEn: 'Grandma woke up at 5 AM that day just to be there for graduation. I remember placing the marigold garland on your neck. I am so proud of all of you.',
+      aiInsightTh: 'แววตามีประกายความสุข ชะลอความเร็วการตอบเล็กน้อยแต่ลำดับเรื่องราวได้ชัดเจน',
+      aiInsightEn: 'Vibrant emotional connection, high coherence and sequential recall of event details.',
+    },
+  ];
+
+  const handleTogglePlayClip = (clipId: string, text: string) => {
+    if (isPlayingAudio && activeClipId === clipId) {
       stopSpeech();
       setIsPlayingAudio(false);
+      setActiveClipId(null);
     } else {
+      stopSpeech();
+      setActiveClipId(clipId);
       setIsPlayingAudio(true);
-      speakWithElevenLabs(grandmaVoiceSnippet, undefined, () => {
+      speakWithElevenLabs(text, undefined, () => {
         setIsPlayingAudio(false);
+        setActiveClipId(null);
       }, lang);
     }
+  };
+
+  const handleToggleBookmark = (clipId: string) => {
+    if (bookmarkedClips.includes(clipId)) {
+      setBookmarkedClips(bookmarkedClips.filter((id) => id !== clipId));
+    } else {
+      setBookmarkedClips([...bookmarkedClips, clipId]);
+    }
+  };
+
+  const handleShareClip = (clipId: string) => {
+    setSharedClipId(clipId);
+    setTimeout(() => setSharedClipId(null), 3000);
   };
 
   const handleCopyCode = () => {
@@ -518,98 +588,361 @@ export const ChildPortalView: React.FC<ChildPortalViewProps> = ({
             <span>{lang === 'en' ? 'Back to Your Family' : 'กลับสู่ Your Family'}</span>
           </button>
 
-          <span className="text-xs font-bold text-indigo-700 bg-indigo-50 border border-indigo-200/70 px-3.5 py-1.5 rounded-full flex items-center space-x-1.5">
-            <Volume2 className="w-4 h-4 text-indigo-600" />
-            <span>{lang === 'en' ? 'Daily Reports & Voice' : 'รายงานประจำวันและเสียง'}</span>
+          <span className="text-xs font-bold text-emerald-700 bg-emerald-50 border border-emerald-200/80 px-3.5 py-1.5 rounded-full flex items-center space-x-2 shadow-2xs">
+            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+            <span>{lang === 'en' ? 'Live Synced Today' : 'ซิงค์ข้อมูลล่าสุดวันนี้'}</span>
           </span>
         </div>
 
-        {/* Page Title */}
+        {/* Page Title & Description */}
         <div className="text-left space-y-1">
           <h1 className="text-3xl sm:text-4xl font-extrabold text-slate-900 tracking-normal">
             {lang === 'en' ? 'Daily Reports & Voice Recordings' : 'รายงานประจำวัน & เสียงเล่าความทรงจำ'}
           </h1>
           <p className="text-sm sm:text-base text-slate-500 font-medium">
             {lang === 'en'
-              ? 'Listen to senior voice memories recorded during gameplay, review engagement stats, and share summaries with family.'
-              : 'ฟังเสียงเล่าความทรงจำของคุณตาคุณยายระหว่างทำกิจกรรม ติดตามพัฒนาการ และส่งสรุปเรื่องราวเข้ากลุ่มครอบครัว'}
+              ? 'Listen to senior voice memories recorded during gameplay, review cognitive recall, and share heartwarming moments with family.'
+              : 'ฟังเสียงเล่าความทรงจำจริงของคุณยายที่บันทึกระหว่างเล่น ติดตามพัฒนาการฟื้นฟูสมอง และส่งต่อเรื่องราวความสุขเข้ากลุ่มครอบครัว'}
           </p>
         </div>
 
-        {/* Audio Snippet Player */}
-        <div className="bg-gradient-to-r from-rose-50 via-amber-50 to-sky-50 rounded-[28px] border border-rose-200/80 p-6 sm:p-7 shadow-xs space-y-5 text-left">
-          <div className="flex items-start justify-between">
-            <div className="space-y-1">
-              <span className="text-xs font-bold uppercase tracking-wider text-rose-700">
-                {lang === 'en' ? 'Today’s Voice Capsule' : 'บันทึกเสียงของคุณยายวันนี้'}
+        {/* 4 Cognitive & Storytelling Vitality Cards */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-left">
+          <div className="p-4 rounded-2xl bg-white border border-slate-200/80 shadow-2xs space-y-1.5">
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
+                {lang === 'en' ? 'Recall Rate' : 'อัตราการจำได้'}
               </span>
-              <h3 className="text-xl font-extrabold text-slate-900">
-                {lang === 'en' ? 'Grandma Somsri reminiscing about Chiang Mai' : 'คุณยายเล่าเรื่องตอนไปเที่ยวเชียงใหม่'}
+              <TrendingUp className="w-4 h-4 text-emerald-600" />
+            </div>
+            <div className="flex items-baseline space-x-1.5">
+              <span className="text-2xl sm:text-3xl font-black text-slate-900">94%</span>
+              <span className="text-[11px] font-bold text-emerald-600">+6%</span>
+            </div>
+            <p className="text-[11px] text-slate-500 font-medium">
+              {lang === 'en' ? '5 of 5 memory orbs' : 'ตอบถูก 5 จาก 5 ลูกแก้ว'}
+            </p>
+          </div>
+
+          <div className="p-4 rounded-2xl bg-white border border-slate-200/80 shadow-2xs space-y-1.5">
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
+                {lang === 'en' ? 'Story Time' : 'เวลาเล่าเรื่อง'}
+              </span>
+              <Clock className="w-4 h-4 text-indigo-600" />
+            </div>
+            <div className="flex items-baseline space-x-1.5">
+              <span className="text-2xl sm:text-3xl font-black text-slate-900">8m 45s</span>
+            </div>
+            <p className="text-[11px] text-slate-500 font-medium">
+              {lang === 'en' ? '3 new recorded stories' : '3 เรื่องเล่าความทรงจำใหม่'}
+            </p>
+          </div>
+
+          <div className="p-4 rounded-2xl bg-white border border-slate-200/80 shadow-2xs space-y-1.5">
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
+                {lang === 'en' ? 'Senior Mood' : 'อารมณ์ความรู้สึก'}
+              </span>
+              <Smile className="w-4 h-4 text-amber-500" />
+            </div>
+            <div className="flex items-baseline space-x-1.5">
+              <span className="text-base sm:text-lg font-black text-slate-900">
+                {lang === 'en' ? 'Joyful & Warm' : 'สดใส & อบอุ่น'}
+              </span>
+            </div>
+            <p className="text-[11px] text-slate-500 font-medium">
+              {lang === 'en' ? 'Smiled throughout session' : 'มีรอยยิ้มระหว่างกิจกรรม'}
+            </p>
+          </div>
+
+          <div className="p-4 rounded-2xl bg-white border border-slate-200/80 shadow-2xs space-y-1.5">
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
+                {lang === 'en' ? 'Key Relative' : 'บุคคลที่นึกถึง'}
+              </span>
+              <Users className="w-4 h-4 text-rose-500" />
+            </div>
+            <div className="flex items-baseline space-x-1.5">
+              <span className="text-base sm:text-lg font-black text-slate-900 truncate">
+                {lang === 'en' ? 'Aunt Phen' : 'น้าเพ็ญ, ภูมิ'}
+              </span>
+            </div>
+            <p className="text-[11px] text-slate-500 font-medium truncate">
+              {lang === 'en' ? 'Strong affective bond' : 'สายสัมพันธ์ครอบครัวแน่นแฟ้น'}
+            </p>
+          </div>
+        </div>
+
+        {/* Featured Voice Capsule Player */}
+        <div className="bg-gradient-to-br from-rose-50/90 via-amber-50/60 to-orange-50/70 rounded-[32px] border border-rose-200/90 p-6 sm:p-8 shadow-xs space-y-6 text-left">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div className="flex items-center space-x-2.5">
+              <span className="text-[11px] font-extrabold uppercase tracking-wider px-3 py-1 rounded-full bg-rose-500 text-white shadow-2xs flex items-center space-x-1.5">
+                <Volume2 className="w-3.5 h-3.5" />
+                <span>{lang === 'en' ? 'Today’s Featured Audio' : 'บันทึกเสียงเด่นประจำวัน'}</span>
+              </span>
+              <span className="text-xs font-semibold text-slate-500">
+                {lang === 'en' ? 'Recorded at 10:45 AM' : 'บันทึกเมื่อ 10:45 น. วันนี้'}
+              </span>
+            </div>
+
+            <span className="text-xs font-mono font-bold text-slate-600 bg-white/80 px-3 py-1 rounded-full border border-slate-200/60 w-fit">
+              ElevenLabs AI · Thai Natural Voice
+            </span>
+          </div>
+
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-5 bg-white/95 p-5 rounded-2xl border border-rose-100 shadow-2xs">
+            <div className="flex items-center space-x-4">
+              <button
+                onClick={() => handleTogglePlayClip('clip-1', voiceRecordings[0].transcriptTh)}
+                aria-label={isPlayingAudio && activeClipId === 'clip-1' ? 'Pause voice recording' : 'Play voice recording'}
+                className="w-14 h-14 rounded-full bg-gradient-to-br from-rose-500 to-amber-500 hover:from-rose-600 hover:to-amber-600 text-white flex items-center justify-center shadow-md active:scale-95 transition-all shrink-0 cursor-pointer"
+              >
+                {isPlayingAudio && activeClipId === 'clip-1' ? (
+                  <Pause className="w-6 h-6 fill-white" />
+                ) : (
+                  <Play className="w-6 h-6 fill-white ml-0.5" />
+                )}
+              </button>
+
+              <div className="space-y-1">
+                <h3 className="text-base sm:text-lg font-extrabold text-slate-900 leading-snug">
+                  {lang === 'en' ? voiceRecordings[0].titleEn : voiceRecordings[0].titleTh}
+                </h3>
+                <div className="flex items-center space-x-2 text-xs text-slate-500">
+                  <span className="font-mono font-bold text-rose-600">{voiceRecordings[0].duration} นาที</span>
+                  <span>•</span>
+                  <span>{lang === 'en' ? 'Unlocked Chiang Mai Orb' : 'จากลูกแก้ว "เที่ยวเชียงใหม่"'}</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Audio Waveform Visualizer */}
+            <div className="flex items-center space-x-1 h-8 shrink-0 px-2">
+              {[30, 65, 45, 90, 75, 40, 85, 95, 60, 80, 50, 70, 90, 40, 75, 60, 85, 50, 95, 65, 40, 70].map((h, i) => (
+                <div
+                  key={i}
+                  className={`w-1 rounded-full transition-all duration-200 ${
+                    isPlayingAudio && activeClipId === 'clip-1'
+                      ? 'bg-gradient-to-t from-rose-500 to-amber-500 animate-pulse'
+                      : 'bg-slate-200'
+                  }`}
+                  style={{
+                    height: isPlayingAudio && activeClipId === 'clip-1'
+                      ? `${Math.max(20, (h * Math.sin((i + 1) * 0.85)) % 100)}%`
+                      : `${h * 0.35}%`,
+                    animationDelay: `${(i % 6) * 100}ms`,
+                  }}
+                />
+              ))}
+            </div>
+          </div>
+
+          {/* Transcript Box */}
+          <div className="space-y-2">
+            <span className="text-xs font-extrabold uppercase tracking-wider text-slate-500">
+              {lang === 'en' ? 'Voice Transcript (คำถอดเสียง)' : 'บันทึกคำพูดจริงของคุณยาย (Voice Transcript)'}
+            </span>
+            <p className="italic text-base sm:text-lg text-slate-800 bg-white/80 p-4 sm:p-5 rounded-2xl border border-rose-100 shadow-2xs leading-relaxed">
+              "{lang === 'en' ? voiceRecordings[0].transcriptEn : voiceRecordings[0].transcriptTh}"
+            </p>
+          </div>
+
+          {/* AI Cognitive & Linguistic Insight */}
+          <div className="flex items-start space-x-3 p-3.5 bg-amber-100/70 border border-amber-200/90 rounded-2xl text-xs text-amber-950 font-medium">
+            <Sparkles className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+            <p className="leading-relaxed">
+              <span className="font-bold">{lang === 'en' ? 'Memora AI Clinical Insight: ' : 'การวิเคราะห์จาก Memora AI: '}</span>
+              {lang === 'en' ? voiceRecordings[0].aiInsightEn : voiceRecordings[0].aiInsightTh}
+            </p>
+          </div>
+
+          {/* Actions */}
+          <div className="flex flex-wrap items-center gap-3 pt-1">
+            <button
+              onClick={() => handleShareClip('clip-1')}
+              className="flex items-center space-x-2 px-5 py-2.5 rounded-full bg-[#06C755] hover:bg-[#05b34c] text-white font-bold text-xs shadow-xs active:scale-95 transition-all cursor-pointer"
+            >
+              {sharedClipId === 'clip-1' ? <CheckCircle2 className="w-4 h-4" /> : <Share2 className="w-4 h-4" />}
+              <span>{sharedClipId === 'clip-1' ? (lang === 'en' ? 'Sent to Family LINE!' : 'ส่งเข้า LINE ครอบครัวแล้ว!') : (lang === 'en' ? 'Share to Family LINE' : 'ส่งคลิปเสียงเข้า LINE ครอบครัว')}</span>
+            </button>
+
+            <button
+              onClick={() => handleToggleBookmark('clip-1')}
+              className={`flex items-center space-x-2 px-5 py-2.5 rounded-full border text-xs font-bold transition-all cursor-pointer ${
+                bookmarkedClips.includes('clip-1')
+                  ? 'bg-rose-50 text-rose-700 border-rose-300'
+                  : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'
+              }`}
+            >
+              <Heart className={`w-4 h-4 ${bookmarkedClips.includes('clip-1') ? 'fill-rose-500 text-rose-500' : ''}`} />
+              <span>{bookmarkedClips.includes('clip-1') ? (lang === 'en' ? 'Saved to Favorites' : 'บันทึกเป็นเสียงโปรดแล้ว') : (lang === 'en' ? 'Save as Favorite' : 'บันทึกเป็นเสียงโปรด')}</span>
+            </button>
+          </div>
+        </div>
+
+        {/* Timeline of Today's Memory Reflections */}
+        <div className="bg-white rounded-[28px] border border-slate-200/80 p-6 sm:p-7 shadow-xs space-y-4 text-left">
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="text-lg font-bold text-slate-900 flex items-center space-x-2">
+                <Clock className="w-5 h-5 text-indigo-600" />
+                <span>{lang === 'en' ? 'Today’s Voice Reflections Timeline' : 'ไทม์ไลน์บันทึกเสียงเล่าเรื่องวันนี้'}</span>
               </h3>
-              <p className="text-xs text-slate-500">
-                {lang === 'en' ? 'Recorded automatically during Memory Orb unlocking' : 'บันทึกเสียงอัตโนมัติขณะปลดล็อกลูกแก้ว'}
+              <p className="text-xs sm:text-sm text-slate-500 font-medium">
+                {lang === 'en' ? 'All memories shared by Grandma during quiz unlocking' : 'รวมทุกเรื่องเล่าที่คุณยายพูดคุยขณะปลดล็อกลูกแก้ว'}
               </p>
             </div>
 
-            <button
-              onClick={handlePlayVoice}
-              aria-label={isPlayingAudio ? (lang === 'en' ? 'Pause voice recording' : 'หยุดฟังบันทึกเสียง') : (lang === 'en' ? 'Play voice recording' : 'เล่นบันทึกเสียง')}
-              className="w-13 h-13 rounded-full bg-rose-500 hover:bg-rose-600 text-white flex items-center justify-center shadow-md active:scale-95 transition-all shrink-0 cursor-pointer"
-            >
-              {isPlayingAudio ? <Pause className="w-6 h-6 fill-white" /> : <Play className="w-6 h-6 fill-white ml-0.5" />}
-            </button>
+            <span className="text-xs font-bold px-3 py-1 rounded-full bg-slate-100 text-slate-700">
+              {voiceRecordings.length} {lang === 'en' ? 'Recordings' : 'คลิปเสียง'}
+            </span>
           </div>
 
-          <p className="italic text-sm sm:text-base text-slate-700 bg-white/80 p-4 rounded-2xl border border-rose-100 shadow-2xs leading-relaxed">
-            "{grandmaVoiceSnippet}"
-          </p>
+          <div className="space-y-3 pt-1">
+            {voiceRecordings.map((recording, idx) => {
+              const isPlaying = isPlayingAudio && activeClipId === recording.id;
+              const isBookmarked = bookmarkedClips.includes(recording.id);
+              const isShared = sharedClipId === recording.id;
 
-          <div className="flex flex-wrap items-center gap-3 pt-1">
-            <button
-              onClick={() => {
-                setHasSentLine(true);
-                setTimeout(() => setHasSentLine(false), 3000);
-              }}
-              className="flex items-center space-x-2 px-5 py-2.5 rounded-full bg-[#06C755] hover:bg-[#05b34c] text-white font-bold text-xs shadow-xs active:scale-95 transition-all cursor-pointer"
-            >
-              {hasSentLine ? <CheckCircle2 className="w-4 h-4" /> : <Share2 className="w-4 h-4" />}
-              <span>{hasSentLine ? (lang === 'en' ? 'Sent to Family LINE!' : 'ส่งเข้า LINE ครอบครัวแล้ว!') : (lang === 'en' ? 'Share to LINE Group' : 'ส่งสรุปผลเข้า LINE ครอบครัว')}</span>
-            </button>
+              return (
+                <div
+                  key={recording.id}
+                  className="p-4 sm:p-5 rounded-2xl bg-slate-50/80 hover:bg-white border border-slate-200/80 hover:border-slate-300 transition-all space-y-3"
+                >
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-200/60 pb-3">
+                    <div className="flex items-center space-x-2.5">
+                      <span className="w-6 h-6 rounded-full bg-indigo-100 text-indigo-700 font-bold text-xs flex items-center justify-center">
+                        {idx + 1}
+                      </span>
+                      <h4 className="font-extrabold text-slate-900 text-sm">
+                        {lang === 'en' ? recording.titleEn : recording.titleTh}
+                      </h4>
+                    </div>
 
-            <button
-              onClick={() => {
-                stopSpeech();
-                onNavigate('today-recap');
-              }}
-              className="flex items-center space-x-2 px-5 py-2.5 rounded-full bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 font-bold text-xs shadow-2xs active:scale-95 transition-all cursor-pointer"
-            >
-              <FileText className="w-4 h-4 text-indigo-600" />
-              <span>{lang === 'en' ? 'Open Full Storytelling Recap →' : 'เปิดหน้าบันทึกเรื่องเล่าประจำวัน (Today’s Recap) →'}</span>
-            </button>
+                    <div className="flex items-center space-x-2">
+                      <span className="text-xs font-mono text-slate-500">
+                        {recording.time} ({recording.duration} นาที)
+                      </span>
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 border border-amber-200">
+                        {lang === 'en' ? recording.topicEn : recording.topicTh}
+                      </span>
+                    </div>
+                  </div>
+
+                  <p className="italic text-sm text-slate-700 leading-relaxed bg-white/70 p-3.5 rounded-xl border border-slate-100">
+                    "{lang === 'en' ? recording.transcriptEn : recording.transcriptTh}"
+                  </p>
+
+                  <div className="flex items-center justify-between pt-1">
+                    <div className="flex items-center space-x-2">
+                      <button
+                        onClick={() => handleTogglePlayClip(recording.id, lang === 'en' ? recording.transcriptEn : recording.transcriptTh)}
+                        className={`flex items-center space-x-1.5 px-3.5 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer ${
+                          isPlaying
+                            ? 'bg-rose-500 text-white shadow-xs'
+                            : 'bg-slate-900 hover:bg-slate-800 text-white'
+                        }`}
+                      >
+                        {isPlaying ? <Pause className="w-3.5 h-3.5 fill-white" /> : <Play className="w-3.5 h-3.5 fill-white" />}
+                        <span>{isPlaying ? (lang === 'en' ? 'Pause' : 'หยุดฟัง') : (lang === 'en' ? 'Play Voice' : 'ฟังเสียงยาย')}</span>
+                      </button>
+
+                      <button
+                        onClick={() => handleToggleBookmark(recording.id)}
+                        className={`p-2 rounded-full border transition-all cursor-pointer ${
+                          isBookmarked
+                            ? 'bg-rose-50 text-rose-600 border-rose-200'
+                            : 'bg-white text-slate-400 border-slate-200 hover:text-slate-600'
+                        }`}
+                        title={lang === 'en' ? 'Favorite' : 'บันทึกเป็นเสียงโปรด'}
+                      >
+                        <Heart className={`w-3.5 h-3.5 ${isBookmarked ? 'fill-rose-500' : ''}`} />
+                      </button>
+                    </div>
+
+                    <button
+                      onClick={() => handleShareClip(recording.id)}
+                      className="flex items-center space-x-1.5 px-3 py-1.5 rounded-full bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 text-[#06C755] font-bold text-xs transition-all cursor-pointer"
+                    >
+                      {isShared ? <Check className="w-3.5 h-3.5" /> : <Share2 className="w-3.5 h-3.5" />}
+                      <span>{isShared ? (lang === 'en' ? 'Sent!' : 'ส่งแล้ว!') : (lang === 'en' ? 'Share Clip' : 'แชร์เข้า LINE')}</span>
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
           </div>
         </div>
 
-        {/* Unit Economics for Hackathon Judges */}
-        <div className="bg-white rounded-[28px] border border-slate-200/80 p-6 sm:p-7 shadow-xs space-y-3 text-left">
-          <h4 className="text-sm font-bold text-slate-900">
-            {lang === 'en' ? 'Project Economics & Unit Viability' : 'โมเดลความคุ้มค่าเชิงธุรกิจ (Unit Economics)'}
-          </h4>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
-            <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-100">
-              <span className="text-slate-500 block">Subscription Price</span>
-              <span className="text-base font-extrabold text-slate-900">฿290 / Month</span>
-              <span className="text-[10px] text-slate-400 block mt-0.5">Family plan (all relatives)</span>
+        {/* AI Caregiver Recommendation for Tonight */}
+        <div className="rounded-[28px] bg-gradient-to-r from-amber-500/10 via-amber-500/5 to-rose-500/10 border border-amber-300/80 p-6 sm:p-7 shadow-xs text-left space-y-3">
+          <div className="flex items-center space-x-2.5">
+            <div className="w-8 h-8 rounded-xl bg-amber-500 text-slate-950 flex items-center justify-center font-bold shadow-2xs">
+              <Lightbulb className="w-4 h-4" />
             </div>
-            <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-100">
-              <span className="text-slate-500 block">ElevenLabs + AI Cost</span>
-              <span className="text-base font-extrabold text-emerald-600">~฿22 / Senior / Mo</span>
-              <span className="text-[10px] text-slate-400 block mt-0.5">Multilingual v2 cached TTS</span>
+            <span className="text-xs font-extrabold uppercase tracking-wider text-amber-900">
+              {lang === 'en' ? 'AI Caregiver Tip for Tonight' : 'คำแนะนำสำหรับลูกหลานและผู้ดูแลช่วงเย็นนี้'}
+            </span>
+          </div>
+          <p className="text-sm sm:text-base text-slate-800 font-medium leading-relaxed">
+            {lang === 'en'
+              ? '💡 Tip for tonight: Grandma spoke fondly about her Chiang Mai trip and the floral shirt. Try calling her tonight and asking about her favorite Northern dishes or show old holiday pictures. This stimulates emotional episodic memory!'
+              : '💡 ข้อแนะนำช่วงเย็นนี้: วันนี้คุณยายพูดถึงทริปเชียงใหม่และเสื้อลายดอกด้วยแววตามีความสุขมาก ช่วงเย็นนี้ลองโทรหาแล้วชวนคุยถามถึงสูตรอาหารเหนือ หรือเปิดรูปเก่าๆ ในอัลบั้มให้ดู จะช่วยกระตุ้นความจำระยะยาวและสร้างความอบอุ่นใจให้คุณยายได้อย่างต่อเนื่องค่ะ'}
+          </p>
+        </div>
+
+        {/* Storytelling Recap CTA & Unit Economics */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-left">
+          <button
+            onClick={() => {
+              stopSpeech();
+              onNavigate('today-recap');
+            }}
+            className="p-6 rounded-[28px] bg-gradient-to-br from-indigo-500/10 via-purple-500/5 to-sky-500/10 border border-indigo-200/80 hover:border-indigo-300 hover:shadow-xs transition-all flex flex-col justify-between space-y-4 group cursor-pointer"
+          >
+            <div className="space-y-1.5">
+              <span className="text-[10px] font-extrabold uppercase tracking-wider text-indigo-700 bg-indigo-50 px-2.5 py-0.5 rounded-full border border-indigo-200">
+                Storytelling Scrapbook
+              </span>
+              <h4 className="text-base font-extrabold text-slate-900 group-hover:text-indigo-600 transition-colors">
+                {lang === 'en' ? 'Open Full Storytelling Recap →' : 'เปิดดูสมุดบันทึกเรื่องเล่าประจำวัน (Today’s Recap) →'}
+              </h4>
+              <p className="text-xs text-slate-500 font-medium">
+                {lang === 'en'
+                  ? 'View interactive organic sticky notes and photos of today’s reminiscence.'
+                  : 'ดูบันทึกโน้ตเรื่องเล่าและรูปภาพแบบสแครปบุ๊กที่ประมวลผลจากเสียงพูด'}
+              </p>
             </div>
-            <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-100">
-              <span className="text-slate-500 block">Gross Profit Margin</span>
-              <span className="text-base font-extrabold text-amber-600">92.4%</span>
-              <span className="text-[10px] text-slate-400 block mt-0.5">High margin software model</span>
+            <div className="flex items-center text-xs font-bold text-indigo-600 group-hover:translate-x-1 transition-transform">
+              <span>{lang === 'en' ? 'View Scrapbook' : 'เปิดดูสมุดเรื่องเล่า'}</span>
+              <ChevronRight className="w-4 h-4 ml-1" />
             </div>
+          </button>
+
+          {/* Unit Economics */}
+          <div className="p-6 rounded-[28px] bg-white border border-slate-200/80 shadow-2xs space-y-3">
+            <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-500">
+              {lang === 'en' ? 'Unit Economics for Judges' : 'โมเดลความคุ้มค่าเชิงธุรกิจ (Unit Economics)'}
+            </span>
+            <div className="grid grid-cols-3 gap-2 text-xs">
+              <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-100">
+                <span className="text-[10px] text-slate-500 block">Plan</span>
+                <span className="text-sm font-extrabold text-slate-900">฿290/mo</span>
+              </div>
+              <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-100">
+                <span className="text-[10px] text-slate-500 block">AI Cost</span>
+                <span className="text-sm font-extrabold text-emerald-600">~฿22</span>
+              </div>
+              <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-100">
+                <span className="text-[10px] text-slate-500 block">Margin</span>
+                <span className="text-sm font-extrabold text-amber-600">92.4%</span>
+              </div>
+            </div>
+            <p className="text-[10px] text-slate-400 font-medium">
+              Multilingual ElevenLabs v2 + Gemini caching architecture
+            </p>
           </div>
         </div>
       </div>
@@ -621,7 +954,7 @@ export const ChildPortalView: React.FC<ChildPortalViewProps> = ({
   // =========================================================================
   return (
     <div className="space-y-6 sm:space-y-8 py-2 max-w-4xl mx-auto">
-      {/* Top Header Navigation */}
+      {/* Top Header Navigation (Caregiver portal badge removed as requested) */}
       <div className="flex items-center justify-between">
         <button
           onClick={() => {
@@ -633,11 +966,6 @@ export const ChildPortalView: React.FC<ChildPortalViewProps> = ({
           <ArrowLeft className="w-4 h-4" />
           <span>{lang === 'en' ? 'Back to Senior Home' : 'กลับสู่หน้าหลักของผู้สูงอายุ'}</span>
         </button>
-
-        <span className="text-xs font-bold text-indigo-700 bg-indigo-50 border border-indigo-200/70 px-3.5 py-1.5 rounded-full flex items-center space-x-1.5">
-          <ShieldCheck className="w-4 h-4 text-indigo-600" />
-          <span>{lang === 'en' ? 'Protected Caregiver Portal' : 'พื้นที่เฉพาะลูกหลานและผู้ดูแล'}</span>
-        </span>
       </div>
 
       {/* Page Title & Description */}
