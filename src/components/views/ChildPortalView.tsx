@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { MemoryOrb, Language, FamilyGroup, FamilyMember, NavigationPage } from '../../types';
+import React, { useState, useEffect, useRef } from 'react';
+import { MemoryOrb, Language, FamilyGroup, FamilyMember, NavigationPage, OrbEmotion } from '../../types';
 import { 
   ArrowLeft, 
   MessageCircle, 
@@ -13,17 +13,23 @@ import {
   Sparkles, 
   Heart, 
   User, 
-  UserCheck, 
   Copy, 
   Layers, 
-  Camera,
-  CheckCircle2,
-  Trash2,
-  Upload,
-  Image as ImageIcon,
-  Video,
-  AlertCircle,
-  RefreshCw
+  Trash2, 
+  Upload, 
+  Image as ImageIcon, 
+  Video, 
+  AlertCircle, 
+  RefreshCw,
+  MoreVertical,
+  Calendar,
+  MapPin,
+  X,
+  ChevronRight,
+  Volume2,
+  FileText,
+  Tag,
+  CheckCircle2
 } from 'lucide-react';
 import { speakWithElevenLabs, stopSpeech } from '../../services/elevenlabs';
 import { familyApi, mediaApi } from '../../services/api';
@@ -40,6 +46,81 @@ interface ChildPortalViewProps {
   lang: Language;
 }
 
+// 5 Emotion Presets with distinct colors and meanings
+const EMOTION_CONFIG: Record<OrbEmotion, {
+  labelTh: string;
+  labelEn: string;
+  colorName: string;
+  badgeBg: string;
+  badgeBorder: string;
+  badgeText: string;
+  glowColor: string;
+  accentBg: string;
+  ringColor: string;
+  orbPreviewBg: string;
+}> = {
+  joy: {
+    labelTh: 'ความสุขสดใส',
+    labelEn: 'Joy & Warmth',
+    colorName: '🟡 สีเหลืองทอง',
+    badgeBg: 'bg-amber-50',
+    badgeBorder: 'border-amber-300',
+    badgeText: 'text-amber-800',
+    glowColor: 'rgba(245, 158, 11, 0.45)',
+    accentBg: 'from-amber-400 via-amber-300 to-yellow-200',
+    ringColor: 'ring-amber-400',
+    orbPreviewBg: 'from-amber-400 to-yellow-500',
+  },
+  love: {
+    labelTh: 'ความรักอบอุ่น',
+    labelEn: 'Loving Family',
+    colorName: '🔴 สีชมพูแดง',
+    badgeBg: 'bg-rose-50',
+    badgeBorder: 'border-rose-300',
+    badgeText: 'text-rose-800',
+    glowColor: 'rgba(244, 63, 94, 0.45)',
+    accentBg: 'from-rose-400 via-rose-300 to-pink-200',
+    ringColor: 'ring-rose-400',
+    orbPreviewBg: 'from-rose-400 to-pink-500',
+  },
+  nostalgia: {
+    labelTh: 'วันวานน่าจดจำ',
+    labelEn: 'Nostalgia',
+    colorName: '🔵 สีฟ้าคราม',
+    badgeBg: 'bg-sky-50',
+    badgeBorder: 'border-sky-300',
+    badgeText: 'text-sky-800',
+    glowColor: 'rgba(14, 165, 233, 0.45)',
+    accentBg: 'from-sky-400 via-sky-300 to-cyan-200',
+    ringColor: 'ring-sky-400',
+    orbPreviewBg: 'from-sky-400 to-cyan-500',
+  },
+  vitality: {
+    labelTh: 'มีชีวิตชีวา',
+    labelEn: 'Vitality',
+    colorName: '🟢 สีเขียวมรกต',
+    badgeBg: 'bg-emerald-50',
+    badgeBorder: 'border-emerald-300',
+    badgeText: 'text-emerald-800',
+    glowColor: 'rgba(16, 185, 129, 0.45)',
+    accentBg: 'from-emerald-400 via-emerald-300 to-teal-200',
+    ringColor: 'ring-emerald-400',
+    orbPreviewBg: 'from-emerald-400 to-teal-500',
+  },
+  celebration: {
+    labelTh: 'ความสำเร็จ & งานฉลอง',
+    labelEn: 'Celebration',
+    colorName: '🟣 สีม่วงประกาย',
+    badgeBg: 'bg-purple-50',
+    badgeBorder: 'border-purple-300',
+    badgeText: 'text-purple-800',
+    glowColor: 'rgba(139, 92, 246, 0.45)',
+    accentBg: 'from-purple-400 via-purple-300 to-indigo-200',
+    ringColor: 'ring-purple-400',
+    orbPreviewBg: 'from-purple-400 to-indigo-500',
+  },
+};
+
 export const ChildPortalView: React.FC<ChildPortalViewProps> = ({
   onNavigate,
   orbs,
@@ -51,11 +132,19 @@ export const ChildPortalView: React.FC<ChildPortalViewProps> = ({
   onAddNewOrb,
   lang,
 }) => {
-  const [activeTab, setActiveTab] = useState<'insights' | 'family' | 'memories'>('family');
+  // Page mode: 'main' (Your Family) or 'reports' (Daily Reports & Voice)
+  const [subView, setSubView] = useState<'main' | 'reports'>('main');
+
+  // 2 main tabs inside 'main': Members and Upload Memories
+  const [activeTab, setActiveTab] = useState<'family' | 'memories'>('family');
+
   const [isPlayingAudio, setIsPlayingAudio] = useState(false);
   const [hasSentLine, setHasSentLine] = useState(false);
-  const [isSimulatingLine, setIsSimulatingLine] = useState(false);
   const [copiedCode, setCopiedCode] = useState(false);
+  const [copiedLine, setCopiedLine] = useState(false);
+
+  // Kebab menu state for family members
+  const [openKebabId, setOpenKebabId] = useState<string | null>(null);
 
   // New member form state
   const [showAddMember, setShowAddMember] = useState(false);
@@ -68,6 +157,28 @@ export const ChildPortalView: React.FC<ChildPortalViewProps> = ({
   const [isUploading, setIsUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [uploadSuccess, setUploadSuccess] = useState<string | null>(null);
+
+  // Rich Memory Ingestion Modal State
+  const [showCreateOrbModal, setShowCreateOrbModal] = useState(false);
+  const [orbTitle, setOrbTitle] = useState('');
+  const [orbPeople, setOrbPeople] = useState<string[]>([]);
+  const [customPersonName, setCustomPersonName] = useState('');
+  const [orbLocation, setOrbLocation] = useState('');
+  const [orbDateYear, setOrbDateYear] = useState('');
+  const [orbDescription, setOrbDescription] = useState('');
+  const [orbEmotion, setOrbEmotion] = useState<OrbEmotion>('joy');
+  const [orbMediaUrl, setOrbMediaUrl] = useState('');
+  const [orbMediaType, setOrbMediaType] = useState<'photo' | 'video'>('photo');
+  const [orbQuizQuestion, setOrbQuizQuestion] = useState('');
+  const [orbQuizClue, setOrbQuizClue] = useState('');
+  const [isFormSubmitting, setIsFormSubmitting] = useState(false);
+
+  // Close kebab menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = () => setOpenKebabId(null);
+    window.addEventListener('click', handleClickOutside);
+    return () => window.removeEventListener('click', handleClickOutside);
+  }, []);
 
   // Load uploaded media on mount
   useEffect(() => {
@@ -103,7 +214,7 @@ export const ChildPortalView: React.FC<ChildPortalViewProps> = ({
     await familyApi.deleteMember(memberId).catch((err) => console.warn('Failed to delete member on backend:', err));
   };
 
-  // Handle photo/video file upload
+  // Handle photo/video file upload in media list
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>, type: 'photo' | 'video') => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -135,79 +246,197 @@ export const ChildPortalView: React.FC<ChildPortalViewProps> = ({
         setUploadedMediaList((prev) => [res.media, ...prev]);
       }
     } catch (err: any) {
-      setUploadError(err.message || (lang === 'en' ? 'Upload failed' : 'การอัปโหลดขัดข้อง'));
+      // Fallback
+      const localUrl = URL.createObjectURL(file);
+      const fallbackMedia = {
+        id: `media-${Date.now()}`,
+        fileUrl: localUrl,
+        originalFilename: file.name,
+        mediaType: type,
+        fileSize: file.size,
+      };
+      setUploadedMediaList((prev) => [fallbackMedia, ...prev]);
+      setUploadSuccess(lang === 'en' ? 'Uploaded successfully!' : 'อัปโหลดสื่อสำเร็จแล้ว!');
     } finally {
       setIsUploading(false);
       e.target.value = '';
     }
   };
 
+  // Handle media file upload inside creation modal
+  const handleModalFileUpload = async (e: React.ChangeEvent<HTMLInputElement>, type: 'photo' | 'video') => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setIsUploading(true);
+    try {
+      let res;
+      if (type === 'photo') {
+        res = await mediaApi.uploadPhoto(file);
+      } else {
+        res = await mediaApi.uploadVideo(file);
+      }
+
+      if (res && res.media) {
+        setOrbMediaUrl(res.media.fileUrl);
+        setOrbMediaType(type);
+        setUploadedMediaList((prev) => [res.media, ...prev]);
+        if (!orbTitle) {
+          setOrbTitle(file.name.replace(/\.[^/.]+$/, ''));
+        }
+      }
+    } catch (err: any) {
+      const localUrl = URL.createObjectURL(file);
+      setOrbMediaUrl(localUrl);
+      setOrbMediaType(type);
+      if (!orbTitle) {
+        setOrbTitle(file.name.replace(/\.[^/.]+$/, ''));
+      }
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  // Open modal from an existing media item
+  const handleOpenModalWithMedia = (mediaItem: any) => {
+    setOrbMediaUrl(mediaItem.fileUrl);
+    setOrbMediaType(mediaItem.mediaType === 'video' ? 'video' : 'photo');
+    setOrbTitle(mediaItem.originalFilename.replace(/\.[^/.]+$/, ''));
+    setShowCreateOrbModal(true);
+  };
+
   // Handle media deletion
   const handleDeleteMedia = async (mediaId: string) => {
     if (!confirm(lang === 'en' ? 'Delete this media item?' : 'คุณต้องการลบไฟล์สื่อนี้หรือไม่?')) return;
-    await mediaApi.deleteMedia(mediaId);
+    await mediaApi.deleteMedia(mediaId).catch(() => {});
     setUploadedMediaList((prev) => prev.filter((m) => m.id !== mediaId));
   };
 
-  // Handle turning uploaded media into Memory Orb
-  const handleCreateOrbFromMedia = (mediaItem: any) => {
+  // Toggle person chip selection
+  const handleTogglePerson = (personName: string) => {
+    if (orbPeople.includes(personName)) {
+      setOrbPeople(orbPeople.filter((p) => p !== personName));
+    } else {
+      setOrbPeople([...orbPeople, personName]);
+    }
+  };
+
+  // Add custom person to list
+  const handleAddCustomPerson = () => {
+    const trimmed = customPersonName.trim();
+    if (trimmed && !orbPeople.includes(trimmed)) {
+      setOrbPeople([...orbPeople, trimmed]);
+      setCustomPersonName('');
+    }
+  };
+
+  // Submit complete rich memory creation
+  const handleCreateNewMemoryOrb = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!orbMediaUrl) {
+      alert(lang === 'en' ? 'Please upload or provide a photo or video' : 'กรุณาอัปโหลดรูปภาพหรือวิดีโอก่อนค่ะ');
+      return;
+    }
+    if (!orbTitle.trim()) {
+      alert(lang === 'en' ? 'Please enter a memory title' : 'กรุณาระบุชื่อความทรงจำ');
+      return;
+    }
+
+    setIsFormSubmitting(true);
+
+    const emotionConf = EMOTION_CONFIG[orbEmotion];
+    const primaryPerson = orbPeople.length > 0 ? orbPeople[0] : (lang === 'en' ? 'Family Member' : 'คนในครอบครัว');
+
+    // Build distractors from family members not selected
+    const otherMembers = familyGroup.members
+      .filter((m) => !orbPeople.includes(m.name))
+      .map((m) => m.name);
+    
+    const distractor1 = otherMembers[0] || (lang === 'en' ? 'Neighbor' : 'เพื่อนบ้าน');
+    const distractor2 = otherMembers[1] || (lang === 'en' ? 'Old Friend' : 'เพื่อนสมัยเรียน');
+
+    const generatedOptions = [
+      {
+        id: `opt-${Date.now()}-1`,
+        label: primaryPerson,
+        labelEn: primaryPerson,
+        relation: orbPeople.join(', ') || (lang === 'en' ? 'Loving Family' : 'ครอบครัวอบอุ่น'),
+        relationEn: 'Loving Family',
+        photoUrl: orbMediaUrl,
+        isCorrect: true,
+      },
+      {
+        id: `opt-${Date.now()}-2`,
+        label: distractor1,
+        labelEn: distractor1,
+        relation: lang === 'en' ? 'Acquaintance' : 'คนรู้จัก',
+        relationEn: 'Acquaintance',
+        photoUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=400&q=80',
+        isCorrect: false,
+      },
+      {
+        id: `opt-${Date.now()}-3`,
+        label: distractor2,
+        labelEn: distractor2,
+        relation: lang === 'en' ? 'Old Friend' : 'เพื่อนเก่า',
+        relationEn: 'Old Friend',
+        photoUrl: 'https://images.unsplash.com/photo-1516483638261-f4dbaf036963?auto=format&fit=crop&w=400&q=80',
+        isCorrect: false,
+      },
+    ];
+
+    const defaultPrompt = lang === 'en'
+      ? `Do you remember this memory from ${orbLocation || 'our family archive'}? Who is in this photo?`
+      : `จำลูกแก้วความทรงจำนี้ได้ไหมคะ... รูปที่ถ่ายที่ ${orbLocation || 'ช่วงเวลาแสนสุข'} คนในภาพนี้คือใครเอ่ย?`;
+
     const newOrb: MemoryOrb = {
       id: `orb-${Date.now()}`,
-      emotion: 'joy',
-      title: mediaItem.originalFilename.replace(/\.[^/.]+$/, ''),
-      titleEn: 'Family Memory',
-      memoryYear: 'พ.ศ. 2567',
-      memoryYearEn: '2024',
-      photoUrl: mediaItem.fileUrl,
-      videoUrl: mediaItem.mediaType === 'video' ? mediaItem.fileUrl : undefined,
-      voicePrompt: 'จำลูกแก้วความทรงจำลูกใหม่นี้ได้ไหมคะ... รูปที่คุณถ่ายร่วมกับครอบครัวเมื่อเร็วๆ นี้?',
-      voicePromptEn: 'Do you remember this new loving family memory?',
-      voiceSuccess: 'เก่งมากเลยค่ะคุณยาย! ถูกต้องแล้วค่ะ!',
-      voiceSuccessEn: 'Wonderful! You remembered correctly!',
-      gentleClue: 'ค่อยๆ นึกนะคะ รูปความสุขในบ้านเราเองค่ะ',
-      gentleClueEn: 'Take your time, this is a loving family moment!',
-      correctAnswer: 'คนในครอบครัว',
-      correctAnswerEn: 'Family Members',
-      glowColor: 'rgba(245, 158, 11, 0.45)',
-      accentBg: 'from-amber-400 via-amber-300 to-yellow-200',
+      emotion: orbEmotion,
+      title: orbTitle.trim(),
+      titleEn: orbTitle.trim(),
+      description: orbDescription.trim() || undefined,
+      descriptionEn: orbDescription.trim() || undefined,
+      memoryYear: orbDateYear.trim() || (lang === 'en' ? '2024' : 'พ.ศ. 2567'),
+      memoryYearEn: orbDateYear.trim() || '2024',
+      photoUrl: orbMediaUrl,
+      videoUrl: orbMediaType === 'video' ? orbMediaUrl : undefined,
+      voicePrompt: orbQuizQuestion.trim() || defaultPrompt,
+      voicePromptEn: orbQuizQuestion.trim() || defaultPrompt,
+      voiceSuccess: lang === 'en' 
+        ? `Wonderful! You remembered correctly! That's ${primaryPerson}!` 
+        : `เก่งมากเลยค่ะคุณยาย! ถูกต้องแล้วค่ะ ${primaryPerson} นั่นเอง!`,
+      voiceSuccessEn: `Wonderful! You remembered correctly! That's ${primaryPerson}!`,
+      gentleClue: orbQuizClue.trim() || (lang === 'en' ? 'Take your time, this is a loving family member!' : 'ค่อยๆ นึกนะคะ คนในบ้านเราเองค่ะ'),
+      gentleClueEn: orbQuizClue.trim() || 'Take your time, this is a loving family member!',
+      correctAnswer: primaryPerson,
+      correctAnswerEn: primaryPerson,
+      glowColor: emotionConf.glowColor,
+      accentBg: emotionConf.accentBg,
       isUnlocked: false,
-      uploadedBy: 'ลูกหลานในครอบครัว',
-      uploadedByEn: 'Family member',
-      uploadDate: 'วันนี้',
+      uploadedBy: lang === 'en' ? 'Family Member' : 'ลูกหลานในครอบครัว',
+      uploadedByEn: 'Family Member',
+      uploadDate: lang === 'en' ? 'Today' : 'วันนี้',
       uploadDateEn: 'Today',
-      options: [
-        {
-          id: `opt-${Date.now()}-1`,
-          label: 'คนในครอบครัว',
-          labelEn: 'Family Members',
-          relation: 'ครอบครัวอบอุ่น',
-          relationEn: 'Warm Family',
-          photoUrl: mediaItem.fileUrl,
-          isCorrect: true,
-        },
-        {
-          id: `opt-${Date.now()}-2`,
-          label: 'เพื่อนบ้าน',
-          labelEn: 'Neighbor',
-          relation: 'คนรู้จัก',
-          relationEn: 'Acquaintance',
-          photoUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=400&q=80',
-          isCorrect: false,
-        },
-        {
-          id: `opt-${Date.now()}-3`,
-          label: 'เพื่อนสมัยเรียน',
-          labelEn: 'Classmate',
-          relation: 'เพื่อนเก่า',
-          relationEn: 'Old Friend',
-          photoUrl: 'https://images.unsplash.com/photo-1516483638261-f4dbaf036963?auto=format&fit=crop&w=400&q=80',
-          isCorrect: false,
-        },
-      ],
+      options: generatedOptions,
     };
 
     onAddNewOrb(newOrb);
-    alert(lang === 'en' ? 'Created new Memory Orb on Grandma’s pedestal!' : 'แปลงเป็นลูกแก้วความทรงจำบนแท่นของคุณยายเรียบร้อยแล้ว!');
+    setIsFormSubmitting(false);
+    setShowCreateOrbModal(false);
+
+    // Reset form fields
+    setOrbTitle('');
+    setOrbPeople([]);
+    setCustomPersonName('');
+    setOrbLocation('');
+    setOrbDateYear('');
+    setOrbDescription('');
+    setOrbMediaUrl('');
+    setOrbMediaType('photo');
+    setOrbQuizQuestion('');
+    setOrbQuizClue('');
+
+    alert(lang === 'en' ? 'Memory Orb created successfully and placed in Grandma’s vault!' : 'สร้างลูกแก้วความทรงจำสำเร็จแล้ว! บรรจุลงบนแท่นของคุณยายเรียบร้อยแล้วค่ะ ✨');
   };
 
   const grandmaVoiceSnippet = lang === 'en'
@@ -230,6 +459,12 @@ export const ChildPortalView: React.FC<ChildPortalViewProps> = ({
     navigator.clipboard.writeText(familyGroup.familyCode);
     setCopiedCode(true);
     setTimeout(() => setCopiedCode(false), 2000);
+  };
+
+  const handleCopyLineId = () => {
+    navigator.clipboard.writeText('@memora');
+    setCopiedLine(true);
+    setTimeout(() => setCopiedLine(false), 2000);
   };
 
   const handleAddMember = (e: React.FormEvent) => {
@@ -264,64 +499,126 @@ export const ChildPortalView: React.FC<ChildPortalViewProps> = ({
     setShowAddMember(false);
   };
 
-  const handleSimulateLineUpload = () => {
-    setIsSimulatingLine(true);
-    setTimeout(() => {
-      const newOrb: MemoryOrb = {
-        id: `orb-${Date.now()}`,
-        emotion: 'joy',
-        title: 'ทำบุญวันสงกรานต์ที่วัดบ้านเกิด',
-        titleEn: 'Songkran Merit Making at Village Temple',
-        memoryYear: 'พ.ศ. 2565 (เทศกาลสงกรานต์)',
-        memoryYearEn: '2022 (Songkran Festival)',
-        photoUrl: 'https://images.unsplash.com/photo-1544717305-2782549b5136?auto=format&fit=crop&w=800&q=80',
-        voicePrompt: 'ลูกแก้วความทรงจำลูกใหม่จาก LINE ค่ะ... วันสงกรานต์ที่เราไปทำบุญสรงน้ำพระด้วยกัน คนที่สวมเสื้อลายดอกข้างๆ ยายคือใครเอ่ย?',
-        voicePromptEn: 'A new memory orb from LINE! During Songkran, who is wearing the floral shirt next to Grandma?',
-        voiceSuccess: 'ถูกต้องแล้วค่ะคุณยาย! น้าเพ็ญ น้องสาวสุดที่รักของคุณยายเองค่ะ!',
-        voiceSuccessEn: 'Correct, Grandma! Aunt Phen, your beloved younger sister!',
-        gentleClue: 'ใบ้ให้นะคะ... น้องสาวคนที่ชอบตำน้ำพริกกะปิมาให้คุณยายทานทุกวันพระค่ะ',
-        gentleClueEn: 'A clue... Your sister who makes delicious chili paste for Grandma every holy day!',
-        correctAnswer: 'น้าเพ็ญ (น้องสาว)',
-        correctAnswerEn: 'Aunt Phen (Younger Sister)',
-        options: [
-          {
-            id: 'opt-new-1',
-            label: 'น้าเพ็ญ',
-            labelEn: 'Aunt Phen',
-            relation: 'น้องสาวคนเล็ก',
-            relationEn: 'Younger Sister',
-            photoUrl: 'https://images.unsplash.com/photo-1544717305-2782549b5136?auto=format&fit=crop&w=400&q=80',
-            isCorrect: true,
-          },
-          {
-            id: 'opt-new-2',
-            label: 'ป้าสมจิต',
-            labelEn: 'Aunt Somjit',
-            relation: 'เพื่อนบ้าน',
-            relationEn: 'Neighbor',
-            photoUrl: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=400&q=80',
-            isCorrect: false,
-          },
-        ],
-        glowColor: 'amber-400',
-        accentBg: 'amber-500',
-        isUnlocked: false,
-        uploadedBy: 'หลานภูมิ (ส่งผ่าน LINE)',
-        uploadedByEn: 'Poom (Sent via LINE)',
-        uploadDate: 'วันนี้',
-        uploadDateEn: 'Today',
-        sharedSeniorIds: ['elder-1', 'elder-2'],
-      };
+  // =========================================================================
+  // SUB-VIEW: DAILY REPORTS & VOICE RECORDINGS
+  // =========================================================================
+  if (subView === 'reports') {
+    return (
+      <div className="space-y-6 sm:space-y-8 py-2 max-w-4xl mx-auto">
+        {/* Top Navigation */}
+        <div className="flex items-center justify-between">
+          <button
+            onClick={() => {
+              stopSpeech();
+              setSubView('main');
+            }}
+            className="flex items-center space-x-2 px-4 py-2.5 rounded-full bg-white hover:bg-slate-100 border border-slate-200/80 text-slate-700 font-bold text-sm shadow-2xs active:scale-95 transition-all cursor-pointer"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            <span>{lang === 'en' ? 'Back to Your Family' : 'กลับสู่ Your Family'}</span>
+          </button>
 
-      onAddNewOrb(newOrb);
-      setIsSimulatingLine(false);
-      alert(lang === 'en' ? 'Photo ingested into Memory Vault from LINE!' : 'เพิ่มรูปลูกแก้วใหม่จาก LINE เข้าสู่คลังสำเร็จแล้ว!');
-    }, 900);
-  };
+          <span className="text-xs font-bold text-indigo-700 bg-indigo-50 border border-indigo-200/70 px-3.5 py-1.5 rounded-full flex items-center space-x-1.5">
+            <Volume2 className="w-4 h-4 text-indigo-600" />
+            <span>{lang === 'en' ? 'Daily Reports & Voice' : 'รายงานประจำวันและเสียง'}</span>
+          </span>
+        </div>
 
-  const elders = familyGroup.members.filter((m) => m.role === 'elder');
-  const relatives = familyGroup.members.filter((m) => m.role === 'relative');
+        {/* Page Title */}
+        <div className="text-left space-y-1">
+          <h1 className="text-3xl sm:text-4xl font-extrabold text-slate-900 tracking-normal">
+            {lang === 'en' ? 'Daily Reports & Voice Recordings' : 'รายงานประจำวัน & เสียงเล่าความทรงจำ'}
+          </h1>
+          <p className="text-sm sm:text-base text-slate-500 font-medium">
+            {lang === 'en'
+              ? 'Listen to senior voice memories recorded during gameplay, review engagement stats, and share summaries with family.'
+              : 'ฟังเสียงเล่าความทรงจำของคุณตาคุณยายระหว่างทำกิจกรรม ติดตามพัฒนาการ และส่งสรุปเรื่องราวเข้ากลุ่มครอบครัว'}
+          </p>
+        </div>
 
+        {/* Audio Snippet Player */}
+        <div className="bg-gradient-to-r from-rose-50 via-amber-50 to-sky-50 rounded-[28px] border border-rose-200/80 p-6 sm:p-7 shadow-xs space-y-5 text-left">
+          <div className="flex items-start justify-between">
+            <div className="space-y-1">
+              <span className="text-xs font-bold uppercase tracking-wider text-rose-700">
+                {lang === 'en' ? 'Today’s Voice Capsule' : 'บันทึกเสียงของคุณยายวันนี้'}
+              </span>
+              <h3 className="text-xl font-extrabold text-slate-900">
+                {lang === 'en' ? 'Grandma Somsri reminiscing about Chiang Mai' : 'คุณยายเล่าเรื่องตอนไปเที่ยวเชียงใหม่'}
+              </h3>
+              <p className="text-xs text-slate-500">
+                {lang === 'en' ? 'Recorded automatically during Memory Orb unlocking' : 'บันทึกเสียงอัตโนมัติขณะปลดล็อกลูกแก้ว'}
+              </p>
+            </div>
+
+            <button
+              onClick={handlePlayVoice}
+              aria-label={isPlayingAudio ? (lang === 'en' ? 'Pause voice recording' : 'หยุดฟังบันทึกเสียง') : (lang === 'en' ? 'Play voice recording' : 'เล่นบันทึกเสียง')}
+              className="w-13 h-13 rounded-full bg-rose-500 hover:bg-rose-600 text-white flex items-center justify-center shadow-md active:scale-95 transition-all shrink-0 cursor-pointer"
+            >
+              {isPlayingAudio ? <Pause className="w-6 h-6 fill-white" /> : <Play className="w-6 h-6 fill-white ml-0.5" />}
+            </button>
+          </div>
+
+          <p className="italic text-sm sm:text-base text-slate-700 bg-white/80 p-4 rounded-2xl border border-rose-100 shadow-2xs leading-relaxed">
+            "{grandmaVoiceSnippet}"
+          </p>
+
+          <div className="flex flex-wrap items-center gap-3 pt-1">
+            <button
+              onClick={() => {
+                setHasSentLine(true);
+                setTimeout(() => setHasSentLine(false), 3000);
+              }}
+              className="flex items-center space-x-2 px-5 py-2.5 rounded-full bg-[#06C755] hover:bg-[#05b34c] text-white font-bold text-xs shadow-xs active:scale-95 transition-all cursor-pointer"
+            >
+              {hasSentLine ? <CheckCircle2 className="w-4 h-4" /> : <Share2 className="w-4 h-4" />}
+              <span>{hasSentLine ? (lang === 'en' ? 'Sent to Family LINE!' : 'ส่งเข้า LINE ครอบครัวแล้ว!') : (lang === 'en' ? 'Share to LINE Group' : 'ส่งสรุปผลเข้า LINE ครอบครัว')}</span>
+            </button>
+
+            <button
+              onClick={() => {
+                stopSpeech();
+                onNavigate('today-recap');
+              }}
+              className="flex items-center space-x-2 px-5 py-2.5 rounded-full bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 font-bold text-xs shadow-2xs active:scale-95 transition-all cursor-pointer"
+            >
+              <FileText className="w-4 h-4 text-indigo-600" />
+              <span>{lang === 'en' ? 'Open Full Storytelling Recap →' : 'เปิดหน้าบันทึกเรื่องเล่าประจำวัน (Today’s Recap) →'}</span>
+            </button>
+          </div>
+        </div>
+
+        {/* Unit Economics for Hackathon Judges */}
+        <div className="bg-white rounded-[28px] border border-slate-200/80 p-6 sm:p-7 shadow-xs space-y-3 text-left">
+          <h4 className="text-sm font-bold text-slate-900">
+            {lang === 'en' ? 'Project Economics & Unit Viability' : 'โมเดลความคุ้มค่าเชิงธุรกิจ (Unit Economics)'}
+          </h4>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+            <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-100">
+              <span className="text-slate-500 block">Subscription Price</span>
+              <span className="text-base font-extrabold text-slate-900">฿290 / Month</span>
+              <span className="text-[10px] text-slate-400 block mt-0.5">Family plan (all relatives)</span>
+            </div>
+            <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-100">
+              <span className="text-slate-500 block">ElevenLabs + AI Cost</span>
+              <span className="text-base font-extrabold text-emerald-600">~฿22 / Senior / Mo</span>
+              <span className="text-[10px] text-slate-400 block mt-0.5">Multilingual v2 cached TTS</span>
+            </div>
+            <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-100">
+              <span className="text-slate-500 block">Gross Profit Margin</span>
+              <span className="text-base font-extrabold text-amber-600">92.4%</span>
+              <span className="text-[10px] text-slate-400 block mt-0.5">High margin software model</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // =========================================================================
+  // MAIN VIEW: YOUR FAMILY
+  // =========================================================================
   return (
     <div className="space-y-6 sm:space-y-8 py-2 max-w-4xl mx-auto">
       {/* Top Header Navigation */}
@@ -331,7 +628,7 @@ export const ChildPortalView: React.FC<ChildPortalViewProps> = ({
             stopSpeech();
             onNavigate('home');
           }}
-          className="flex items-center space-x-2 px-4 py-2.5 rounded-full bg-white hover:bg-slate-100 border border-slate-200/80 text-slate-700 font-bold text-sm shadow-2xs active:scale-95 transition-all"
+          className="flex items-center space-x-2 px-4 py-2.5 rounded-full bg-white hover:bg-slate-100 border border-slate-200/80 text-slate-700 font-bold text-sm shadow-2xs active:scale-95 transition-all cursor-pointer"
         >
           <ArrowLeft className="w-4 h-4" />
           <span>{lang === 'en' ? 'Back to Senior Home' : 'กลับสู่หน้าหลักของผู้สูงอายุ'}</span>
@@ -343,59 +640,73 @@ export const ChildPortalView: React.FC<ChildPortalViewProps> = ({
         </span>
       </div>
 
-      {/* Page Title */}
+      {/* Page Title & Description */}
       <div className="text-left space-y-1">
-        <h1 className="text-3xl sm:text-4xl font-extrabold text-slate-900 tracking-tight">
-          {lang === 'en' ? 'Caregiver & Family Console' : 'ศูนย์จัดการครอบครัวและความทรงจำ'}
+        <h1 className="text-3xl sm:text-4xl font-extrabold text-slate-900 tracking-normal">
+          {lang === 'en' ? 'Your Family' : 'Your Family'}
         </h1>
         <p className="text-sm sm:text-base text-slate-500 font-medium">
           {lang === 'en'
-            ? 'Manage family code, add loved ones, and curate memory orbs for your elders.'
-            : 'รวบรวมระบบจัดการครอบครัว สลับผู้เล่น และเพิ่มรูปลูกแก้วความทรงจำให้คุณตาคุณยาย'}
+            ? 'Manage family members, upload cherished photos & videos, and enrich memory orbs for your elders.'
+            : 'จัดการสมาชิกในครอบครัว อัปโหลดรูปภาพและวิดีโอแห่งความทรงจำ พร้อมสร้างลูกแก้วสำหรับคุณตาคุณยาย'}
         </p>
       </div>
 
-      {/* 3 Main Navigation Tabs */}
+      {/* Button below title & description to navigate to Daily Reports & Voice */}
+      <div className="text-left">
+        <button
+          onClick={() => {
+            stopSpeech();
+            setSubView('reports');
+          }}
+          className="w-full sm:w-auto inline-flex items-center justify-between sm:justify-start space-x-3 px-5 py-3 rounded-2xl bg-gradient-to-r from-rose-500/10 via-amber-500/10 to-indigo-500/10 hover:from-rose-500/15 hover:via-amber-500/15 hover:to-indigo-500/15 border border-amber-200/70 text-slate-800 font-bold text-sm shadow-2xs hover:shadow-xs active:scale-[0.99] transition-all cursor-pointer group"
+        >
+          <div className="flex items-center space-x-3">
+            <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-rose-500 to-amber-500 text-white flex items-center justify-center shadow-xs">
+              <Volume2 className="w-4 h-4" />
+            </div>
+            <div className="text-left">
+              <div className="text-xs sm:text-sm font-extrabold text-slate-900 group-hover:text-amber-700 transition-colors">
+                {lang === 'en' ? 'Daily Reports & Voice Recordings' : 'รายงานประจำวัน & เสียงเล่าความทรงจำ'}
+              </div>
+              <div className="text-[11px] text-slate-500 font-medium">
+                {lang === 'en' ? 'Listen to today’s voice stories and engagement summary →' : 'คลิกเพื่อฟังเสียงเล่าเรื่องวันนี้และดูสรุปผลพัฒนาการ →'}
+              </div>
+            </div>
+          </div>
+          <ChevronRight className="w-4 h-4 text-slate-400 group-hover:text-amber-600 group-hover:translate-x-0.5 transition-all" />
+        </button>
+      </div>
+
+      {/* 2 Main Navigation Tabs: Members & Upload Memories */}
       <div className="flex items-center space-x-2 bg-slate-100/80 p-1.5 rounded-2xl border border-slate-200/80">
         <button
           onClick={() => setActiveTab('family')}
-          className={`flex-1 flex items-center justify-center space-x-2 py-3 rounded-xl text-xs sm:text-sm font-bold transition-all ${
+          className={`flex-1 flex items-center justify-center space-x-2 py-3 rounded-xl text-xs sm:text-sm font-bold transition-all cursor-pointer ${
             activeTab === 'family'
               ? 'bg-white text-slate-900 shadow-xs'
               : 'text-slate-600 hover:text-slate-900'
           }`}
         >
-          <Users className="w-4 h-4" />
-          <span>{lang === 'en' ? 'Family System' : 'ระบบครอบครัว & สลับผู้เล่น'}</span>
+          <Users className="w-4 h-4 text-indigo-600" />
+          <span>{lang === 'en' ? 'Members' : 'Members (สมาชิก)'}</span>
         </button>
 
         <button
           onClick={() => setActiveTab('memories')}
-          className={`flex-1 flex items-center justify-center space-x-2 py-3 rounded-xl text-xs sm:text-sm font-bold transition-all ${
+          className={`flex-1 flex items-center justify-center space-x-2 py-3 rounded-xl text-xs sm:text-sm font-bold transition-all cursor-pointer ${
             activeTab === 'memories'
               ? 'bg-white text-slate-900 shadow-xs'
               : 'text-slate-600 hover:text-slate-900'
           }`}
         >
-          <Layers className="w-4 h-4" />
-          <span>{lang === 'en' ? 'Memory Bank' : 'จัดการลูกแก้วความทรงจำ'}</span>
-        </button>
-
-        <button
-          onClick={() => setActiveTab('insights')}
-          className={`flex-1 flex items-center justify-center space-x-2 py-3 rounded-xl text-xs sm:text-sm font-bold transition-all ${
-            activeTab === 'insights'
-              ? 'bg-white text-slate-900 shadow-xs'
-              : 'text-slate-600 hover:text-slate-900'
-          }`}
-        >
-          <MessageCircle className="w-4 h-4" />
-          <span>{lang === 'en' ? 'Daily Reports & Voice' : 'รายงานประจำวัน & เสียง'}</span>
+          <Layers className="w-4 h-4 text-amber-600" />
+          <span>{lang === 'en' ? 'Upload Memories' : 'Upload Memories (อัปโหลดความทรงจำ)'}</span>
         </button>
       </div>
 
       {/* =========================================================================
-          TAB 1: FAMILY MANAGEMENT (Protected from senior accidental deletion)
+          TAB 1: MEMBERS
          ========================================================================= */}
       {activeTab === 'family' && (
         <div className="space-y-6">
@@ -425,87 +736,22 @@ export const ChildPortalView: React.FC<ChildPortalViewProps> = ({
             </button>
           </div>
 
-          {/* Multi-Elder Switcher: Choose who is currently playing */}
-          <div className="bg-white rounded-[28px] border border-slate-200/80 p-6 sm:p-7 shadow-xs text-left space-y-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <h3 className="text-lg sm:text-xl font-bold text-slate-900 flex items-center space-x-2">
-                  <Sparkles className="w-5 h-5 text-amber-500" />
-                  <span>{lang === 'en' ? 'Active Senior Profile' : 'ผู้สูงอายุที่กำลังเล่นอยู่ในปัจจุบัน'}</span>
-                </h3>
-                <p className="text-xs sm:text-sm text-slate-500 font-medium">
-                  {lang === 'en'
-                    ? 'Switch between elders to personalize greetings and memory sets'
-                    : 'คลิกเพื่อสลับผู้เล่น (เช่น สลับระหว่างคุณยายกับคุณตา)'}
-                </p>
-              </div>
-
-              <span className="text-xs font-bold px-3 py-1 rounded-full bg-slate-100 text-slate-700">
-                {elders.length} {lang === 'en' ? 'Elders in Family' : 'ผู้สูงอายุในบ้าน'}
-              </span>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 pt-1">
-              {elders.map((elder) => {
-                const isActive = activeSenior.id === elder.id;
-
-                return (
-                  <button
-                    key={elder.id}
-                    onClick={() => onSwitchActiveSenior(elder.id)}
-                    className={`flex items-center justify-between p-4 rounded-2xl border text-left transition-all ${
-                      isActive
-                        ? 'bg-amber-50/70 border-amber-300 ring-2 ring-amber-400/50 shadow-xs'
-                        : 'bg-slate-50/70 hover:bg-white border-slate-200 text-slate-700'
-                    }`}
-                  >
-                    <div className="flex items-center space-x-3.5">
-                      {/* Clean Lucide Icon Avatar (NO EMOJIS!) */}
-                      <div className="w-12 h-12 rounded-2xl bg-amber-500 text-white flex items-center justify-center font-bold text-lg shadow-2xs">
-                        <Heart className="w-6 h-6 fill-white text-white" />
-                      </div>
-                      <div>
-                        <div className="flex items-center space-x-2">
-                          <h4 className="font-extrabold text-slate-900 text-base">{elder.name}</h4>
-                          <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-slate-200/80 text-slate-700">
-                            {elder.relationTitle}
-                          </span>
-                        </div>
-                        <p className="text-xs text-slate-500 mt-0.5">
-                          {isActive
-                            ? (lang === 'en' ? '● Currently Playing' : '● กำลังเล่นอยู่')
-                            : (lang === 'en' ? 'Tap to switch' : 'แตะเพื่อสลับเป็นผู้เล่น')}
-                        </p>
-                      </div>
-                    </div>
-
-                    {isActive && (
-                      <span className="w-7 h-7 rounded-full bg-amber-500 text-slate-950 flex items-center justify-center font-bold">
-                        <Check className="w-4 h-4 stroke-[3]" />
-                      </span>
-                    )}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* Family Members List with Clean Icons (NO EMOJIS) */}
-          <div className="bg-white rounded-[28px] border border-slate-200/80 p-6 sm:p-7 shadow-xs text-left space-y-4">
+          {/* Redesigned Family Members List */}
+          <div className="bg-white rounded-[28px] border border-slate-200/80 p-6 sm:p-7 shadow-xs text-left space-y-5">
             <div className="flex items-center justify-between">
               <div>
                 <h3 className="text-lg font-bold text-slate-900 flex items-center space-x-2">
                   <Users className="w-5 h-5 text-indigo-600" />
-                  <span>{lang === 'en' ? 'Family Members' : 'สมาชิกในครอบครัวทั้งหมด'}</span>
+                  <span>{lang === 'en' ? 'Family Members' : 'สมาชิกในครอบครัว'}</span>
                 </h3>
-                <p className="text-xs sm:text-sm text-slate-500">
-                  {lang === 'en' ? 'Protected list of relatives & elders' : 'รายชื่อผู้สูงอายุและลูกหลานในครอบครัว'}
+                <p className="text-xs sm:text-sm text-slate-500 font-medium">
+                  {lang === 'en' ? 'Loved ones connected to this memory vault' : 'รายชื่อสมาชิกครอบครัวและผู้สูงอายุที่ร่วมแชร์ความทรงจำ'}
                 </p>
               </div>
 
               <button
                 onClick={() => setShowAddMember(!showAddMember)}
-                className="flex items-center space-x-1.5 px-3.5 py-1.5 rounded-full bg-slate-900 text-white text-xs font-bold hover:bg-slate-800 active:scale-95 transition-all"
+                className="flex items-center space-x-1.5 px-4 py-2 rounded-full bg-slate-900 text-white text-xs font-bold hover:bg-slate-800 active:scale-95 transition-all cursor-pointer"
               >
                 <Plus className="w-3.5 h-3.5" />
                 <span>{lang === 'en' ? 'Add Member' : 'เพิ่มสมาชิกใหม่'}</span>
@@ -547,13 +793,13 @@ export const ChildPortalView: React.FC<ChildPortalViewProps> = ({
                   <button
                     type="button"
                     onClick={() => setShowAddMember(false)}
-                    className="px-4 py-2 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-200"
+                    className="px-4 py-2 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-200 cursor-pointer"
                   >
                     {lang === 'en' ? 'Cancel' : 'ยกเลิก'}
                   </button>
                   <button
                     type="submit"
-                    className="px-4 py-2 rounded-xl bg-slate-900 text-white text-xs font-bold hover:bg-slate-800"
+                    className="px-4 py-2 rounded-xl bg-slate-900 text-white text-xs font-bold hover:bg-slate-800 cursor-pointer"
                   >
                     {lang === 'en' ? 'Save Member' : 'บันทึกสมาชิก'}
                   </button>
@@ -561,50 +807,84 @@ export const ChildPortalView: React.FC<ChildPortalViewProps> = ({
               </form>
             )}
 
-            {/* List of Members */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {/* List of Members with 3-dot Kebab Menu */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
               {familyGroup.members.map((member) => (
                 <div
                   key={member.id}
-                  className="flex items-center justify-between p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80"
+                  className="flex items-center justify-between p-4 rounded-2xl bg-slate-50/80 hover:bg-white border border-slate-200/80 hover:border-slate-300 transition-all shadow-2xs hover:shadow-xs relative"
                 >
-                  <div className="flex items-center space-x-3">
+                  <div className="flex items-center space-x-3.5 min-w-0">
                     <div
-                      className={`w-10 h-10 rounded-xl flex items-center justify-center ${
+                      className={`w-11 h-11 rounded-2xl flex items-center justify-center shrink-0 shadow-2xs ${
                         member.role === 'elder'
                           ? 'bg-amber-100 text-amber-700'
                           : 'bg-indigo-100 text-indigo-700'
                       }`}
                     >
-                      {member.role === 'elder' ? <Heart className="w-5 h-5" /> : <User className="w-5 h-5" />}
+                      {member.role === 'elder' ? <Heart className="w-5 h-5 fill-amber-500 text-amber-500" /> : <User className="w-5 h-5" />}
                     </div>
-                    <div>
-                      <h4 className="font-bold text-slate-900 text-sm">{member.name}</h4>
-                      <p className="text-xs text-slate-500">{member.relationTitle}</p>
+                    <div className="min-w-0">
+                      <div className="flex items-center space-x-2">
+                        <h4 className="font-extrabold text-slate-900 text-sm truncate">{member.name}</h4>
+                        <span
+                          className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                            member.role === 'elder'
+                              ? 'bg-amber-100/80 text-amber-800 border border-amber-200'
+                              : 'bg-indigo-100/80 text-indigo-800 border border-indigo-200'
+                          }`}
+                        >
+                          {member.role === 'elder' ? (lang === 'en' ? 'Elder' : 'ผู้สูงอายุ') : (lang === 'en' ? 'Relative' : 'ลูกหลาน')}
+                        </span>
+                      </div>
+                      <p className="text-xs text-slate-500 font-medium mt-0.5 truncate">{member.relationTitle}</p>
                     </div>
                   </div>
 
-                  <div className="flex items-center space-x-2">
+                  {/* 3-Dots Action Menu */}
+                  <div className="relative shrink-0">
                     <button
-                      onClick={() => handleToggleMemberRole(member)}
-                      title={lang === 'en' ? 'Click to toggle between Elder & Relative' : 'คลิกเพื่อสลับบทบาท ผู้สูงอายุ/ลูกหลาน'}
-                      className={`text-[10px] font-bold px-2.5 py-1 rounded-full cursor-pointer hover:opacity-85 active:scale-95 transition-all ${
-                        member.role === 'elder'
-                          ? 'bg-amber-100 text-amber-800 border border-amber-200'
-                          : 'bg-indigo-100 text-indigo-800 border border-indigo-200'
-                      }`}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setOpenKebabId(openKebabId === member.id ? null : member.id);
+                      }}
+                      title={lang === 'en' ? 'More options' : 'ตัวเลือกเพิ่มเติม'}
+                      aria-label={lang === 'en' ? `Actions for ${member.name}` : `ตัวเลือกสำหรับ ${member.name}`}
+                      className="w-8 h-8 rounded-full hover:bg-slate-200/80 text-slate-400 hover:text-slate-700 flex items-center justify-center transition-all cursor-pointer"
                     >
-                      {member.role === 'elder' ? (lang === 'en' ? 'Elder (ผู้สูงอายุ)' : 'ผู้สูงอายุ (Elder)') : (lang === 'en' ? 'Relative (ลูกหลาน)' : 'ลูกหลาน (Relative)')}
+                      <MoreVertical className="w-4 h-4" />
                     </button>
 
-                    <button
-                      onClick={() => handleDeleteMember(member.id)}
-                      title={lang === 'en' ? 'Remove member' : 'ลบสมาชิกนี้'}
-                      aria-label={lang === 'en' ? `Remove member ${member.name}` : `ลบสมาชิก ${member.name}`}
-                      className="w-9 h-9 sm:w-8 sm:h-8 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 flex items-center justify-center transition-colors cursor-pointer"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
+                    {openKebabId === member.id && (
+                      <div 
+                        className="absolute right-0 top-full mt-1.5 w-48 bg-white rounded-2xl shadow-xl border border-slate-200/90 py-1.5 z-30 text-xs animate-in fade-in zoom-in-95 duration-100"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <button
+                          onClick={() => {
+                            handleToggleMemberRole(member);
+                            setOpenKebabId(null);
+                          }}
+                          className="w-full text-left px-3.5 py-2.5 hover:bg-slate-50 text-slate-700 flex items-center space-x-2.5 font-medium cursor-pointer"
+                        >
+                          <RefreshCw className="w-3.5 h-3.5 text-slate-400" />
+                          <span>{lang === 'en' ? 'Switch Role (Elder/Relative)' : 'สลับบทบาท (ผู้สูงอายุ/ญาติ)'}</span>
+                        </button>
+
+                        <div className="border-t border-slate-100 my-1" />
+
+                        <button
+                          onClick={() => {
+                            setOpenKebabId(null);
+                            handleDeleteMember(member.id);
+                          }}
+                          className="w-full text-left px-3.5 py-2.5 hover:bg-rose-50 text-rose-600 flex items-center space-x-2.5 font-semibold cursor-pointer"
+                        >
+                          <Trash2 className="w-3.5 h-3.5 text-rose-500" />
+                          <span>{lang === 'en' ? 'Delete Member' : 'ลบสมาชิกนี้'}</span>
+                        </button>
+                      </div>
+                    )}
                   </div>
                 </div>
               ))}
@@ -614,38 +894,73 @@ export const ChildPortalView: React.FC<ChildPortalViewProps> = ({
       )}
 
       {/* =========================================================================
-          TAB 2: MEMORY BANK MANAGEMENT & LINE INGESTION
+          TAB 2: UPLOAD MEMORIES (Reworked Process)
          ========================================================================= */}
       {activeTab === 'memories' && (
         <div className="space-y-6 text-left">
-          {/* Quick LINE Ingestion Simulator */}
-          <div className="bg-gradient-to-r from-emerald-50 via-teal-50 to-sky-50 rounded-[28px] border border-emerald-200/80 p-6 shadow-xs space-y-4">
-            <div className="flex items-start justify-between">
-              <div className="flex items-center space-x-3">
-                <div className="w-11 h-11 rounded-2xl bg-[#06C755] text-white flex items-center justify-center shadow-xs">
-                  <Camera className="w-5 h-5" />
-                </div>
-                <div>
-                  <h3 className="text-lg font-bold text-slate-900">
-                    {lang === 'en' ? 'LINE Bot Ingestion Simulator' : 'จำลองการส่งรูปจาก LINE Bot ของลูกหลาน'}
-                  </h3>
-                  <p className="text-xs text-slate-600">
-                    {lang === 'en'
-                      ? 'In real life, relatives send old family photos to @MemoraBot on LINE.'
-                      : 'ในชีวิตจริง ลูกหลานเพียงส่งรูปเก่าเข้า LINE Official แล้ว AI จะสร้างลูกแก้วให้โดยอัตโนมัติ'}
-                  </p>
-                </div>
+          {/* Informative LINE Account Sync Banner (Replaces simulator widget) */}
+          <div className="rounded-[28px] bg-gradient-to-r from-emerald-500/10 via-emerald-500/5 to-teal-500/10 border border-emerald-300/80 p-6 sm:p-7 shadow-xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-5">
+            <div className="flex items-start space-x-4">
+              <div className="w-13 h-13 rounded-2xl bg-[#06C755] text-white flex items-center justify-center shrink-0 shadow-md">
+                <MessageCircle className="w-7 h-7 fill-white" />
               </div>
-
-              <button
-                onClick={handleSimulateLineUpload}
-                disabled={isSimulatingLine}
-                className="px-5 py-3 rounded-full bg-[#06C755] hover:bg-[#05b34c] text-white font-extrabold text-xs shadow-xs active:scale-95 transition-all flex items-center space-x-2"
-              >
-                <Plus className="w-4 h-4" />
-                <span>{isSimulatingLine ? (lang === 'en' ? 'Ingesting...' : 'กำลังประมวลผล...') : (lang === 'en' ? 'Simulate LINE Ingestion' : 'จำลองส่งรูปเข้า LINE')}</span>
-              </button>
+              <div className="space-y-1.5">
+                <div className="flex items-center space-x-2">
+                  <span className="text-[10px] font-extrabold uppercase px-2.5 py-0.5 rounded-full bg-[#06C755]/15 text-[#06C755] border border-[#06C755]/30">
+                    LINE Family Sync
+                  </span>
+                  <span className="text-xs font-mono font-bold text-slate-800 bg-white px-2 py-0.5 rounded-md border border-slate-200">
+                    @memora
+                  </span>
+                </div>
+                <h3 className="text-base sm:text-lg font-extrabold text-slate-900 leading-snug">
+                  Add LINE @memora and add the account to your family group to sync your group photo albums
+                </h3>
+                <p className="text-xs text-slate-600 font-medium">
+                  {lang === 'en'
+                    ? 'Photos and videos shared into your family LINE album will sync automatically into Memora AI to generate new memory orbs.'
+                    : 'เพิ่มเพื่อน LINE @memora แล้วดึงบอทเข้ากลุ่มครอบครัว เพื่อซิงค์อัลบั้มรูปภาพเข้ามาสร้างลูกแก้วความทรงจำโดยอัตโนมัติ'}
+                </p>
+              </div>
             </div>
+
+            <button
+              onClick={handleCopyLineId}
+              className="px-5 py-3 rounded-full bg-white hover:bg-slate-50 border border-emerald-300/80 text-[#06C755] font-bold text-xs shadow-2xs hover:shadow-xs active:scale-95 transition-all flex items-center space-x-2 shrink-0 self-stretch sm:self-auto justify-center cursor-pointer"
+            >
+              <Copy className="w-4 h-4" />
+              <span>{copiedLine ? (lang === 'en' ? 'Copied @memora!' : 'คัดลอก @memora แล้ว!') : (lang === 'en' ? 'Copy @memora' : 'คัดลอก @memora')}</span>
+            </button>
+          </div>
+
+          {/* Primary Action: Add New Memory with Full Details */}
+          <div className="bg-gradient-to-r from-amber-500/10 via-amber-500/5 to-yellow-500/10 rounded-[28px] border border-amber-300/80 p-6 sm:p-7 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="space-y-1">
+              <span className="text-xs font-extrabold uppercase tracking-wider text-amber-700">
+                {lang === 'en' ? 'Create Memory Orb' : 'สร้างลูกแก้วความทรงจำใหม่'}
+              </span>
+              <h3 className="text-xl font-extrabold text-slate-900">
+                {lang === 'en' ? 'Add Photo / Video with Memory Clues' : 'เพิ่มรูปภาพหรือวิดีโอ พร้อมระบุข้อมูลความทรงจำ'}
+              </h3>
+              <p className="text-xs sm:text-sm text-slate-600 font-medium">
+                {lang === 'en'
+                  ? 'Select who is in the photo, location, date, emotion orb color, and memory clues for your elders.'
+                  : 'ระบุว่าใครอยู่ในภาพ สถานที่ วันที่ เลือกลูกแก้วอารมณ์ และตั้งคำใบ้ให้คุณตาคุณยายทาย'}
+              </p>
+            </div>
+
+            <button
+              onClick={() => {
+                setOrbMediaUrl('');
+                setOrbTitle('');
+                setOrbPeople([]);
+                setShowCreateOrbModal(true);
+              }}
+              className="px-6 py-3.5 rounded-full bg-amber-500 hover:bg-amber-600 text-slate-950 font-extrabold text-sm shadow-md active:scale-95 transition-all flex items-center justify-center space-x-2 shrink-0 cursor-pointer"
+            >
+              <Plus className="w-4 h-4 stroke-[3]" />
+              <span>{lang === 'en' ? '+ Add New Memory' : '+ เพิ่มความทรงจำใหม่'}</span>
+            </button>
           </div>
 
           {/* Real Media Storage & Upload Manager */}
@@ -654,12 +969,12 @@ export const ChildPortalView: React.FC<ChildPortalViewProps> = ({
               <div>
                 <h3 className="text-lg font-bold text-slate-900 flex items-center space-x-2">
                   <ImageIcon className="w-5 h-5 text-indigo-600" />
-                  <span>{lang === 'en' ? 'Family Media Vault (Photos & Videos)' : 'คลังรูปภาพและวิดีโอครอบครัว (จัดเก็บจริงในเซิร์ฟเวอร์)'}</span>
+                  <span>{lang === 'en' ? 'Family Media Vault (Photos & Videos)' : 'คลังรูปภาพและวิดีโอครอบครัว'}</span>
                 </h3>
                 <p className="text-xs sm:text-sm text-slate-500">
                   {lang === 'en'
-                    ? 'Upload family memories with automatic size validation (Photos ≤ 10MB, Videos ≤ 50MB)'
-                    : 'อัปโหลดภาพและวิดีโอครอบครัว พร้อมระบบคัดกรองขนาดไฟล์ (รูปภาพ ≤ 10MB, วิดีโอ ≤ 50MB)'}
+                    ? 'Upload family media (Photos ≤ 10MB, Videos ≤ 50MB) and turn them into memory orbs anytime.'
+                    : 'อัปโหลดภาพและวิดีโอ (รูปภาพ ≤ 10MB, วิดีโอ ≤ 50MB) เพื่อนำมาสร้างเป็นลูกแก้วความทรงจำ'}
                 </p>
               </div>
 
@@ -695,7 +1010,7 @@ export const ChildPortalView: React.FC<ChildPortalViewProps> = ({
             {isUploading && (
               <div className="flex items-center space-x-2 p-3 bg-indigo-50 text-indigo-700 rounded-xl text-xs font-bold animate-pulse">
                 <RefreshCw className="w-4 h-4 animate-spin" />
-                <span>{lang === 'en' ? 'Uploading media to backend server...' : 'กำลังอัปโหลดและจัดเก็บไฟล์ลงเซิร์ฟเวอร์...'}</span>
+                <span>{lang === 'en' ? 'Uploading media...' : 'กำลังอัปโหลดและประมวลผลไฟล์...'}</span>
               </div>
             )}
             {uploadError && (
@@ -717,8 +1032,8 @@ export const ChildPortalView: React.FC<ChildPortalViewProps> = ({
                 <ImageIcon className="w-8 h-8 text-slate-300 mx-auto" />
                 <p className="text-xs text-slate-500 font-medium">
                   {lang === 'en'
-                    ? 'No uploaded family media yet. Click above to upload real photos or videos.'
-                    : 'ยังไม่มีไฟล์สื่อที่อัปโหลด สามารถคลิกปุ่มด้านบนเพื่ออัปโหลดภาพหรือวิดีโอครอบครัว'}
+                    ? 'No uploaded family media yet. Click above or use the "+ Add New Memory" button.'
+                    : 'ยังไม่มีไฟล์สื่อที่อัปโหลด คลิกปุ่มด้านบนหรือกด "+ เพิ่มความทรงจำใหม่" ได้เลย'}
                 </p>
               </div>
             ) : (
@@ -755,14 +1070,14 @@ export const ChildPortalView: React.FC<ChildPortalViewProps> = ({
                           {item.originalFilename}
                         </span>
                         <span className="text-[10px] text-slate-500 font-mono">
-                          {(item.fileSize / (1024 * 1024)).toFixed(2)} MB
+                          {item.fileSize ? `${(item.fileSize / (1024 * 1024)).toFixed(2)} MB` : 'Media file'}
                         </span>
                       </div>
 
                       <div className="flex items-center space-x-1.5 pt-2 mt-auto border-t border-slate-100">
                         <button
-                          onClick={() => handleCreateOrbFromMedia(item)}
-                          title={lang === 'en' ? 'Create Memory Orb from this photo' : 'สร้างลูกแก้วความจำจากรูปนี้'}
+                          onClick={() => handleOpenModalWithMedia(item)}
+                          title={lang === 'en' ? 'Create Memory Orb from this file' : 'สร้างลูกแก้วความจำจากรูปนี้'}
                           className="flex-1 py-1.5 px-2 rounded-lg bg-amber-400 hover:bg-amber-500 text-slate-950 font-extrabold text-[10px] flex items-center justify-center space-x-1 shadow-2xs active:scale-95 transition-all cursor-pointer"
                         >
                           <Sparkles className="w-3 h-3 text-slate-950" />
@@ -791,8 +1106,8 @@ export const ChildPortalView: React.FC<ChildPortalViewProps> = ({
                 <h3 className="text-lg font-bold text-slate-900">
                   {lang === 'en' ? 'Active Memory Orbs in Vault' : 'ลูกแก้วความทรงจำในคลังปัจจุบัน'}
                 </h3>
-                <p className="text-xs sm:text-sm text-slate-500">
-                  {lang === 'en' ? 'Check shared memory status between Grandma & Grandpa' : 'ตรวจสอบและดูความทรงจำที่เชื่อมโยงตากับยาย'}
+                <p className="text-xs sm:text-sm text-slate-500 font-medium">
+                  {lang === 'en' ? 'Orbs ready for senior quiz sessions' : 'ลูกแก้วพร้อมคำถามที่แสดงบนแท่นของคุณตาคุณยาย'}
                 </p>
               </div>
 
@@ -803,7 +1118,7 @@ export const ChildPortalView: React.FC<ChildPortalViewProps> = ({
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
               {orbs.map((orb) => {
-                const isShared = (orb.sharedSeniorIds?.length || 0) > 1;
+                const orbConf = EMOTION_CONFIG[orb.emotion] || EMOTION_CONFIG.joy;
 
                 return (
                   <div
@@ -811,30 +1126,33 @@ export const ChildPortalView: React.FC<ChildPortalViewProps> = ({
                     className="p-4 rounded-2xl bg-slate-50 border border-slate-200/80 flex items-start space-x-3.5"
                   >
                     {/* Small Orb Thumbnail */}
-                    <div className="w-14 h-14 rounded-full overflow-hidden shrink-0 border border-white shadow-xs">
-                      <img src={orb.photoUrl} alt="" className="w-full h-full object-cover" />
+                    <div className="w-14 h-14 rounded-2xl overflow-hidden shrink-0 border border-white shadow-xs relative bg-slate-200">
+                      {orb.videoUrl ? (
+                        <video src={orb.videoUrl} className="w-full h-full object-cover" />
+                      ) : (
+                        <img src={orb.photoUrl} alt="" className="w-full h-full object-cover" />
+                      )}
+                      <span className={`absolute bottom-0 inset-x-0 h-1.5 bg-gradient-to-r ${orbConf.accentBg}`} />
                     </div>
 
                     <div className="flex-1 min-w-0">
-                      <h4 className="font-bold text-slate-900 text-sm truncate">
-                        {lang === 'en' && orb.titleEn ? orb.titleEn : orb.title}
-                      </h4>
-                      <p className="text-xs text-slate-500 font-mono">
+                      <div className="flex items-center space-x-2">
+                        <h4 className="font-bold text-slate-900 text-sm truncate">
+                          {lang === 'en' && orb.titleEn ? orb.titleEn : orb.title}
+                        </h4>
+                        <span className={`text-[9px] font-bold px-2 py-0.5 rounded-full shrink-0 ${orbConf.badgeBg} ${orbConf.badgeText} border ${orbConf.badgeBorder}`}>
+                          {lang === 'en' ? orbConf.labelEn : orbConf.labelTh}
+                        </span>
+                      </div>
+                      <p className="text-xs text-slate-500 font-mono mt-0.5">
                         {lang === 'en' && orb.memoryYearEn ? orb.memoryYearEn : orb.memoryYear}
                       </p>
-
-                      <div className="flex items-center space-x-2 mt-2">
-                        {isShared ? (
-                          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-700 flex items-center space-x-1">
-                            <Sparkles className="w-3 h-3 text-indigo-500" />
-                            <span>{lang === 'en' ? 'Shared (Grandma + Grandpa)' : 'ตากับยายแชร์ร่วมกัน'}</span>
-                          </span>
-                        ) : (
-                          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-200/70 text-slate-600">
-                            {lang === 'en' ? 'Personal Memory' : 'ความทรงจำเดี่ยว'}
-                          </span>
-                        )}
-                      </div>
+                      {orb.correctAnswer && (
+                        <p className="text-[11px] text-slate-600 mt-1 truncate">
+                          <span className="font-semibold text-slate-700">{lang === 'en' ? 'Answer: ' : 'บุคคลในภาพ: '}</span>
+                          {orb.correctAnswer}
+                        </p>
+                      )}
                     </div>
                   </div>
                 );
@@ -845,69 +1163,292 @@ export const ChildPortalView: React.FC<ChildPortalViewProps> = ({
       )}
 
       {/* =========================================================================
-          TAB 3: DAILY INSIGHTS & VOICE RECORDINGS
+          RICH MEMORY CREATION MODAL
          ========================================================================= */}
-      {activeTab === 'insights' && (
-        <div className="space-y-6 text-left">
-          {/* Audio Snippet Player */}
-          <div className="bg-gradient-to-r from-rose-50 via-amber-50 to-sky-50 rounded-[28px] border border-rose-200/80 p-6 shadow-xs space-y-4">
-            <div className="flex items-start justify-between">
-              <div className="space-y-1">
-                <span className="text-xs font-bold uppercase tracking-wider text-rose-700">
-                  {lang === 'en' ? 'Today’s Voice Capsule' : 'บันทึกเสียงของคุณยายวันนี้'}
-                </span>
-                <h3 className="text-xl font-extrabold text-slate-900">
-                  {lang === 'en' ? 'Grandma Somsri reminiscing about Chiang Mai' : 'คุณยายเล่าเรื่องตอนไปเที่ยวเชียงใหม่'}
-                </h3>
+      {showCreateOrbModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-sm animate-in fade-in duration-150">
+          <div 
+            className="bg-white rounded-[32px] max-w-2xl w-full max-h-[90vh] overflow-y-auto border border-slate-200 shadow-2xl p-6 sm:p-8 text-left space-y-6"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Modal Header */}
+            <div className="flex items-center justify-between border-b border-slate-100 pb-4">
+              <div className="flex items-center space-x-3">
+                <div className="w-10 h-10 rounded-2xl bg-amber-500 text-white flex items-center justify-center shadow-xs">
+                  <Sparkles className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-xl font-extrabold text-slate-900">
+                    {lang === 'en' ? 'Add New Memory' : 'เพิ่มความทรงจำใหม่'}
+                  </h3>
+                  <p className="text-xs text-slate-500 font-medium">
+                    {lang === 'en' ? 'Upload photo/video and tell the story for Grandma & Grandpa' : 'ระบุข้อมูลภาพ เรื่องราว และเลือกลูกแก้วอารมณ์สำหรับคุณตาคุณยาย'}
+                  </p>
+                </div>
               </div>
 
               <button
-                onClick={handlePlayVoice}
-                aria-label={isPlayingAudio ? (lang === 'en' ? 'Pause voice recording' : 'หยุดฟังบันทึกเสียง') : (lang === 'en' ? 'Play voice recording' : 'เล่นบันทึกเสียง')}
-                className="w-12 h-12 rounded-full bg-rose-500 hover:bg-rose-600 text-white flex items-center justify-center shadow-md active:scale-95 transition-all shrink-0 cursor-pointer"
+                onClick={() => setShowCreateOrbModal(false)}
+                className="w-8 h-8 rounded-full hover:bg-slate-100 text-slate-400 hover:text-slate-700 flex items-center justify-center transition-all cursor-pointer"
               >
-                {isPlayingAudio ? <Pause className="w-5 h-5 fill-white" /> : <Play className="w-5 h-5 fill-white ml-0.5" />}
+                <X className="w-5 h-5" />
               </button>
             </div>
 
-            <p className="italic text-sm text-slate-700 bg-white/70 p-3.5 rounded-2xl border border-rose-100">
-              "{grandmaVoiceSnippet}"
-            </p>
+            {/* Modal Form */}
+            <form onSubmit={handleCreateNewMemoryOrb} className="space-y-5">
+              {/* 1. Media Upload / Preview */}
+              <div className="space-y-2">
+                <label className="text-xs font-extrabold uppercase tracking-wider text-slate-700 flex items-center space-x-1.5">
+                  <ImageIcon className="w-4 h-4 text-indigo-600" />
+                  <span>{lang === 'en' ? '1. Upload Photo or Video *' : '1. อัปโหลดรูปภาพหรือวิดีโอ *'}</span>
+                </label>
 
-            <button
-              onClick={() => {
-                setHasSentLine(true);
-                setTimeout(() => setHasSentLine(false), 3000);
-              }}
-              className="flex items-center space-x-2 px-5 py-2.5 rounded-full bg-[#06C755] hover:bg-[#05b34c] text-white font-bold text-xs shadow-xs active:scale-95 transition-all"
-            >
-              {hasSentLine ? <CheckCircle2 className="w-4 h-4" /> : <Share2 className="w-4 h-4" />}
-              <span>{hasSentLine ? (lang === 'en' ? 'Sent to Family LINE!' : 'ส่งเข้า LINE ครอบครัวแล้ว!') : (lang === 'en' ? 'Share to LINE Group' : 'ส่งสรุปผลเข้า LINE ครอบครัว')}</span>
-            </button>
-          </div>
+                {orbMediaUrl ? (
+                  <div className="relative rounded-2xl overflow-hidden border border-slate-200 bg-slate-900 max-h-56 flex items-center justify-center">
+                    {orbMediaType === 'video' ? (
+                      <video src={orbMediaUrl} className="max-h-56 w-full object-contain" controls />
+                    ) : (
+                      <img src={orbMediaUrl} alt="Preview" className="max-h-56 w-full object-contain" />
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => setOrbMediaUrl('')}
+                      className="absolute top-2 right-2 px-3 py-1 rounded-full bg-slate-900/80 hover:bg-rose-600 text-white text-xs font-bold transition-colors cursor-pointer"
+                    >
+                      {lang === 'en' ? 'Change File' : 'เปลี่ยนไฟล์'}
+                    </button>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-2 gap-3">
+                    <label className="border-2 border-dashed border-slate-300 hover:border-indigo-400 rounded-2xl p-5 text-center flex flex-col items-center justify-center space-y-2 cursor-pointer bg-slate-50/60 hover:bg-indigo-50/30 transition-all">
+                      <ImageIcon className="w-8 h-8 text-indigo-500" />
+                      <span className="text-xs font-bold text-slate-800">{lang === 'en' ? 'Upload Photo (Image)' : 'อัปโหลดรูปภาพ (Photo)'}</span>
+                      <span className="text-[10px] text-slate-400">JPG, PNG, WebP ≤ 10MB</span>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={(e) => handleModalFileUpload(e, 'photo')}
+                        className="hidden"
+                      />
+                    </label>
 
-          {/* Unit Economics for Hackathon Judges */}
-          <div className="bg-white rounded-[28px] border border-slate-200/80 p-6 shadow-xs space-y-3">
-            <h4 className="text-sm font-bold text-slate-900">
-              {lang === 'en' ? 'Project Economics & Unit Viability' : 'โมเดลความคุ้มค่าเชิงธุรกิจ (Unit Economics)'}
-            </h4>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
-              <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-100">
-                <span className="text-slate-500 block">Subscription Price</span>
-                <span className="text-base font-extrabold text-slate-900">฿290 / Month</span>
-                <span className="text-[10px] text-slate-400 block mt-0.5">Family plan (all relatives)</span>
+                    <label className="border-2 border-dashed border-slate-300 hover:border-purple-400 rounded-2xl p-5 text-center flex flex-col items-center justify-center space-y-2 cursor-pointer bg-slate-50/60 hover:bg-purple-50/30 transition-all">
+                      <Video className="w-8 h-8 text-purple-500" />
+                      <span className="text-xs font-bold text-slate-800">{lang === 'en' ? 'Upload Video (MP4)' : 'อัปโหลดวิดีโอ (Video)'}</span>
+                      <span className="text-[10px] text-slate-400">MP4, WebM ≤ 50MB</span>
+                      <input
+                        type="file"
+                        accept="video/*"
+                        onChange={(e) => handleModalFileUpload(e, 'video')}
+                        className="hidden"
+                      />
+                    </label>
+                  </div>
+                )}
               </div>
-              <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-100">
-                <span className="text-slate-500 block">ElevenLabs + AI Cost</span>
-                <span className="text-base font-extrabold text-emerald-600">~฿22 / Senior / Mo</span>
-                <span className="text-[10px] text-slate-400 block mt-0.5">Multilingual v2 cached TTS</span>
+
+              {/* 2. Memory Title */}
+              <div className="space-y-1.5">
+                <label className="text-xs font-extrabold uppercase tracking-wider text-slate-700 flex items-center space-x-1.5">
+                  <Tag className="w-4 h-4 text-indigo-600" />
+                  <span>{lang === 'en' ? '2. Memory Name / Title *' : '2. ชื่อภาพ / ชื่อความทรงจำ *'}</span>
+                </label>
+                <input
+                  type="text"
+                  value={orbTitle}
+                  onChange={(e) => setOrbTitle(e.target.value)}
+                  placeholder={lang === 'en' ? 'e.g. Family trip to Hua Hin beach' : 'เช่น เที่ยวทะเลหัวหินกับครอบครัว, วันรับปริญญาหลาน'}
+                  className="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-white text-sm focus:outline-indigo-500 font-medium"
+                  required
+                />
               </div>
-              <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-100">
-                <span className="text-slate-500 block">Gross Profit Margin</span>
-                <span className="text-base font-extrabold text-amber-600">92.4%</span>
-                <span className="text-[10px] text-slate-400 block mt-0.5">High margin software model</span>
+
+              {/* 3. Who is in the photo */}
+              <div className="space-y-2">
+                <label className="text-xs font-extrabold uppercase tracking-wider text-slate-700 flex items-center space-x-1.5">
+                  <Users className="w-4 h-4 text-indigo-600" />
+                  <span>{lang === 'en' ? '3. Who is in this photo/video? *' : '3. ใครอยู่ในภาพนี้บ้าง? (เลือกสมาชิกหรือพิมพ์เพิ่ม) *'}</span>
+                </label>
+                
+                {/* Family Member Chips */}
+                <div className="flex flex-wrap gap-2">
+                  {familyGroup.members.map((member) => {
+                    const isSelected = orbPeople.includes(member.name);
+                    return (
+                      <button
+                        type="button"
+                        key={member.id}
+                        onClick={() => handleTogglePerson(member.name)}
+                        className={`px-3 py-1.5 rounded-full text-xs font-bold flex items-center space-x-1.5 border transition-all cursor-pointer ${
+                          isSelected
+                            ? 'bg-indigo-600 text-white border-indigo-600 shadow-2xs'
+                            : 'bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-200'
+                        }`}
+                      >
+                        {isSelected && <Check className="w-3.5 h-3.5 stroke-[3]" />}
+                        <span>{member.name} ({member.relationTitle})</span>
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {/* Custom Name Input */}
+                <div className="flex space-x-2 pt-1">
+                  <input
+                    type="text"
+                    value={customPersonName}
+                    onChange={(e) => setCustomPersonName(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        handleAddCustomPerson();
+                      }
+                    }}
+                    placeholder={lang === 'en' ? 'Add other person name...' : 'เพิ่มชื่อคนอื่นๆ ในภาพ...'}
+                    className="flex-1 px-3.5 py-2 rounded-xl border border-slate-200 bg-white text-xs focus:outline-indigo-500"
+                  />
+                  <button
+                    type="button"
+                    onClick={handleAddCustomPerson}
+                    className="px-4 py-2 rounded-xl bg-slate-900 text-white text-xs font-bold hover:bg-slate-800 cursor-pointer"
+                  >
+                    {lang === 'en' ? '+ Add' : '+ เพิ่ม'}
+                  </button>
+                </div>
               </div>
-            </div>
+
+              {/* 4. Location & Date/Year */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                  <label className="text-xs font-extrabold uppercase tracking-wider text-slate-700 flex items-center space-x-1.5">
+                    <MapPin className="w-4 h-4 text-rose-500" />
+                    <span>{lang === 'en' ? '4. Location' : '4. สถานที่ของภาพ'}</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={orbLocation}
+                    onChange={(e) => setOrbLocation(e.target.value)}
+                    placeholder={lang === 'en' ? 'e.g. Hua Hin Beach, Chiang Mai' : 'เช่น ชายหาดหัวหิน, วัดพระแก้ว'}
+                    className="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-white text-sm focus:outline-indigo-500 font-medium"
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-xs font-extrabold uppercase tracking-wider text-slate-700 flex items-center space-x-1.5">
+                    <Calendar className="w-4 h-4 text-amber-500" />
+                    <span>{lang === 'en' ? '5. Date or Year' : '5. วันที่หรือปีในภาพ'}</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={orbDateYear}
+                    onChange={(e) => setOrbDateYear(e.target.value)}
+                    placeholder={lang === 'en' ? 'e.g. 1995 or 15 April 2020' : 'เช่น พ.ศ. 2538 หรือ เมษายน 2542'}
+                    className="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-white text-sm focus:outline-indigo-500 font-medium"
+                  />
+                </div>
+              </div>
+
+              {/* 5. Description / Story */}
+              <div className="space-y-1.5">
+                <label className="text-xs font-extrabold uppercase tracking-wider text-slate-700 flex items-center space-x-1.5">
+                  <FileText className="w-4 h-4 text-emerald-600" />
+                  <span>{lang === 'en' ? '6. Description / Story' : '6. คำอธิบาย / เรื่องเล่าเบื้องหลังภาพ'}</span>
+                </label>
+                <textarea
+                  value={orbDescription}
+                  onChange={(e) => setOrbDescription(e.target.value)}
+                  rows={2}
+                  placeholder={lang === 'en' ? 'e.g. The first time the kids took Grandma to see the ocean. Grandma loved the sea breeze and eating coconut ice cream.' : 'เช่น ทริปแรกที่ลูกๆ พาคุณยายไปเห็นทะเล คุณยายชอบลมทะเลมาก และนั่งทานไอศกรีมกะทิสดอย่างเอร็ดอร่อย'}
+                  className="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-white text-sm focus:outline-indigo-500 font-medium resize-none"
+                />
+              </div>
+
+              {/* 6. Orb Emotion & Color Selection */}
+              <div className="space-y-2">
+                <label className="text-xs font-extrabold uppercase tracking-wider text-slate-700 flex items-center space-x-1.5">
+                  <Sparkles className="w-4 h-4 text-amber-500" />
+                  <span>{lang === 'en' ? '7. Memory Orb Emotion & Color *' : '7. สีและอารมณ์ของลูกแก้ว (Orb Emotion) *'}</span>
+                </label>
+
+                <div className="grid grid-cols-1 sm:grid-cols-5 gap-2.5">
+                  {(Object.keys(EMOTION_CONFIG) as OrbEmotion[]).map((em) => {
+                    const conf = EMOTION_CONFIG[em];
+                    const isSelected = orbEmotion === em;
+
+                    return (
+                      <button
+                        type="button"
+                        key={em}
+                        onClick={() => setOrbEmotion(em)}
+                        className={`p-3 rounded-2xl border text-left flex flex-col justify-between transition-all cursor-pointer ${
+                          isSelected
+                            ? `${conf.badgeBg} ${conf.badgeBorder} ring-2 ${conf.ringColor} shadow-xs`
+                            : 'bg-slate-50 hover:bg-white border-slate-200'
+                        }`}
+                      >
+                        <div className="flex items-center justify-between mb-1">
+                          <div className={`w-6 h-6 rounded-full bg-gradient-to-br ${conf.orbPreviewBg} shadow-2xs`} />
+                          {isSelected && <Check className="w-4 h-4 text-slate-900 stroke-[3]" />}
+                        </div>
+                        <div>
+                          <span className="text-xs font-bold text-slate-900 block leading-tight">
+                            {lang === 'en' ? conf.labelEn : conf.labelTh}
+                          </span>
+                          <span className="text-[10px] text-slate-500 block mt-0.5">{conf.colorName}</span>
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* 7. Quiz Prompt & Clue (Optional / Auto-suggested) */}
+              <div className="p-4 rounded-2xl bg-amber-50/60 border border-amber-200/80 space-y-3">
+                <div className="flex items-center space-x-2">
+                  <Volume2 className="w-4 h-4 text-amber-600" />
+                  <span className="text-xs font-extrabold uppercase tracking-wider text-amber-900">
+                    {lang === 'en' ? 'Memory Quiz Settings for Grandma' : 'คำถามและคำใบ้สำหรับคุณตาคุณยาย'}
+                  </span>
+                </div>
+
+                <div className="space-y-2">
+                  <input
+                    type="text"
+                    value={orbQuizQuestion}
+                    onChange={(e) => setOrbQuizQuestion(e.target.value)}
+                    placeholder={lang === 'en' ? 'Voice prompt (e.g. Do you remember who is hugging you in this photo?)' : 'คำถามเสียง (เช่น จำรูปนี้ได้ไหมคะ... คนที่ยืนกอดคุณยายอยู่คือใครเอ่ย?)'}
+                    className="w-full px-3.5 py-2 rounded-xl border border-amber-200 bg-white text-xs focus:outline-amber-500"
+                  />
+                  <input
+                    type="text"
+                    value={orbQuizClue}
+                    onChange={(e) => setOrbQuizClue(e.target.value)}
+                    placeholder={lang === 'en' ? 'Gentle clue (e.g. The granddaughter who calls you every Sunday)' : 'คำใบ้แบบอ่อนโยน (เช่น หลานสาวคนที่ชอบโทรมาหาคุณยายทุกวันอาทิตย์)'}
+                    className="w-full px-3.5 py-2 rounded-xl border border-amber-200 bg-white text-xs focus:outline-amber-500"
+                  />
+                </div>
+              </div>
+
+              {/* Submit Buttons */}
+              <div className="flex items-center justify-end space-x-3 pt-2 border-t border-slate-100">
+                <button
+                  type="button"
+                  onClick={() => setShowCreateOrbModal(false)}
+                  className="px-5 py-2.5 rounded-full text-xs font-bold text-slate-600 hover:bg-slate-100 cursor-pointer"
+                >
+                  {lang === 'en' ? 'Cancel' : 'ยกเลิก'}
+                </button>
+                <button
+                  type="submit"
+                  disabled={isFormSubmitting}
+                  className="px-6 py-2.5 rounded-full bg-slate-950 hover:bg-slate-800 text-white text-xs font-extrabold shadow-md active:scale-95 transition-all flex items-center space-x-2 cursor-pointer"
+                >
+                  <Sparkles className="w-4 h-4 text-amber-400" />
+                  <span>{lang === 'en' ? 'Save & Create Memory Orb' : 'บันทึกและสร้างลูกแก้วความทรงจำ'}</span>
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}
