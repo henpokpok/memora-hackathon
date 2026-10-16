@@ -57,6 +57,23 @@ function getLocalOrbs(): MemoryOrb[] {
     if (saved) {
       const parsed = JSON.parse(saved);
       if (Array.isArray(parsed) && parsed.length > 0) {
+        // Auto-migrate legacy orbs: upgrade initial seed orbs (orb-1 to orb-15) with authentic family photos & voice prompts
+        const hasLegacy = parsed.some(
+          (o: any) => !o.photoUrl || o.photoUrl.includes('unsplash.com')
+        );
+        if (hasLegacy) {
+          const seedMap = new Map(initialMemoryOrbs.map((o) => [o.id, o]));
+          const updated = parsed.map((o: MemoryOrb) => seedMap.get(o.id) || o);
+          const updatedIds = new Set(updated.map((o: any) => o.id));
+          for (const seed of initialMemoryOrbs) {
+            if (!updatedIds.has(seed.id)) {
+              updated.push(seed);
+            }
+          }
+          saveLocalOrbs(updated);
+          return updated;
+        }
+
         const existingIds = new Set(parsed.map((o: any) => o.id));
         const missing = initialMemoryOrbs.filter((o) => !existingIds.has(o.id));
         const merged = [...parsed, ...missing];

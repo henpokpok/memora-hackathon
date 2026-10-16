@@ -156,11 +156,18 @@ const STORAGE_KEYS = {
 
 export function isSpeechGloballyMuted(): boolean {
   if (typeof window !== 'undefined') {
+    // Automatic un-mute migration for users who were muted under previous prototyping defaults
+    const migrated = localStorage.getItem('memora_speech_unmuted_v2');
+    if (!migrated) {
+      localStorage.setItem('memora_speech_unmuted_v2', 'true');
+      localStorage.setItem(STORAGE_KEYS.SPEECH_MUTED, 'false');
+      return false;
+    }
     const local = localStorage.getItem(STORAGE_KEYS.SPEECH_MUTED);
     if (local !== null) return local === 'true';
   }
-  // Default to true (Muted) to save ElevenLabs API credits during prototyping
-  return true;
+  // Default to false (Sound ON)
+  return false;
 }
 
 export function setSpeechGloballyMuted(muted: boolean): void {
@@ -185,7 +192,10 @@ export function getApiKey(): string {
     const local = localStorage.getItem(STORAGE_KEYS.API_KEY);
     if (local && local.trim()) return local.trim();
   }
-  return (import.meta.env.VITE_ELEVENLABS_API_KEY || '').trim();
+  return (
+    import.meta.env.VITE_ELEVENLABS_API_KEY ||
+    'sk_eed81586d06c6723085528d7a932225a614c6f3835a9d070'
+  ).trim();
 }
 
 export function setApiKey(key: string): void {
@@ -249,7 +259,8 @@ export function getAllowSiriFallback(): boolean {
     const local = localStorage.getItem(STORAGE_KEYS.ALLOW_SIRI_FALLBACK);
     if (local !== null) return local === 'true';
   }
-  return false;
+  // Default to true so browser device TTS is always available as backup
+  return true;
 }
 
 export function setAllowSiriFallback(allow: boolean): void {

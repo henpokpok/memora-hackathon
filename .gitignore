@@ -18,3 +18,6 @@ server/prisma/*.db-journal
 
 # Vercel
 .vercel
+
+# Scratch scripts
+scratch/

@@ -12,6 +12,7 @@ import {
   VolumeX
 } from 'lucide-react';
 import { 
+  speakWithElevenLabs,
   stopSpeech,
   getThaiVoiceId,
   setThaiVoiceId,
@@ -96,11 +97,17 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
   const handleSelectThaiVoice = (voiceId: string) => {
     setSelectedThaiVoiceIdState(voiceId);
     setThaiVoiceId(voiceId);
+    if (soundEnabled) {
+      speakWithElevenLabs('สวัสดีค่ะคุณยาย ฟังเสียงนี้สบายใจไหมคะ', voiceId, undefined, 'th');
+    }
   };
 
   const handleSelectEnglishVoice = (voiceId: string) => {
     setSelectedEnglishVoiceIdState(voiceId);
     setEnglishVoiceId(voiceId);
+    if (soundEnabled) {
+      speakWithElevenLabs('Hello Grandma! How does this voice sound to you?', voiceId, undefined, 'en');
+    }
   };
 
   const handleToggleSoundMaster = () => {
@@ -109,6 +116,13 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
     setSpeechGloballyMuted(!nextState);
     if (!nextState) {
       stopSpeech();
+    } else {
+      speakWithElevenLabs(
+        lang === 'en' ? 'Voice guidance is now enabled.' : 'เปิดระบบเสียงพูดเรียบร้อยแล้วค่ะ',
+        undefined,
+        undefined,
+        lang
+      );
     }
   };
 
