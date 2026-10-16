@@ -310,11 +310,10 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                         : 'bg-slate-50/70 hover:bg-white border-slate-200/90 text-slate-700'
                     }`}
                   >
-                    {/* Official Inside Out 3D Memory Orb Component */}
+                    {/* Official Inside Out 3D Memory Orb Component (Pure Glass Orb without Photo) */}
                     <div className="shrink-0 p-0.5">
                       <MemoryOrb
                         emotion={getPresetEmotion(preset.id)}
-                        photoUrl={preset.orbPhotoUrl}
                         size={52}
                         isSelected={isSelected}
                         showAura={true}
@@ -365,11 +364,10 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                         : 'bg-slate-50/70 hover:bg-white border-slate-200/90 text-slate-700'
                     }`}
                   >
-                    {/* Official Inside Out 3D Memory Orb Component */}
+                    {/* Official Inside Out 3D Memory Orb Component (Pure Glass Orb without Photo) */}
                     <div className="shrink-0 p-0.5">
                       <MemoryOrb
                         emotion={getPresetEmotion(preset.id)}
-                        photoUrl={preset.orbPhotoUrl}
                         size={52}
                         isSelected={isSelected}
                         showAura={true}
