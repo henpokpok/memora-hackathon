@@ -8,6 +8,8 @@ export interface VoicePreset {
   descriptionEn?: string;
   gender: 'female' | 'male';
   lang: 'th' | 'en';
+  orbPhotoUrl: string;
+  glowColor: string;
 }
 
 export const THAI_VOICE_PRESETS: VoicePreset[] = [
@@ -20,7 +22,9 @@ export const THAI_VOICE_PRESETS: VoicePreset[] = [
     description: 'น้ำเสียงคุณป้า/คุณน้าใจดี สำเนียงไทยแท้ นุ่มนวล จังหวะช้า ไม่เร่งรีบ',
     descriptionEn: 'Kind aunt tone, authentic Thai accent, soothing and unhurried pace',
     gender: 'female',
-    lang: 'th'
+    lang: 'th',
+    orbPhotoUrl: 'https://images.unsplash.com/photo-1492562080023-ab3db95bfbce?auto=format&fit=crop&w=400&q=80',
+    glowColor: 'rgba(245, 158, 11, 0.45)'
   },
   {
     id: 'v2NF9R77fF8wZRdbGYTg',
@@ -31,7 +35,9 @@ export const THAI_VOICE_PRESETS: VoicePreset[] = [
     description: 'น้ำเสียงหญิงไทยวัยกลางคน สุภาพ อบอุ่น ฟังสบาย',
     descriptionEn: 'Polite mature female voice, clear, respectful and comfortable to hear',
     gender: 'female',
-    lang: 'th'
+    lang: 'th',
+    orbPhotoUrl: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=400&q=80',
+    glowColor: 'rgba(56, 189, 248, 0.45)'
   },
   {
     id: 'nealpwJT5tCyJFKDzEq8',
@@ -42,7 +48,9 @@ export const THAI_VOICE_PRESETS: VoicePreset[] = [
     description: 'น้ำเสียงลูกหลาน อ่อนหวาน น่ารัก เป็นกันเอง',
     descriptionEn: 'Affectionate granddaughter voice, sweet, uplifting and friendly',
     gender: 'female',
-    lang: 'th'
+    lang: 'th',
+    orbPhotoUrl: 'https://images.unsplash.com/photo-1563245372-f21724e3856d?auto=format&fit=crop&w=400&q=80',
+    glowColor: 'rgba(244, 63, 94, 0.45)'
   },
   {
     id: 'H9eYlNHpm1vah6PPgYAk',
@@ -53,7 +61,9 @@ export const THAI_VOICE_PRESETS: VoicePreset[] = [
     description: 'น้ำเสียงผู้ชายไทยสบายๆ เป็นมิตร ชัดถ้อยชัดคำ',
     descriptionEn: 'Casual and friendly Thai male voice, clear articulation and reassuring',
     gender: 'male',
-    lang: 'th'
+    lang: 'th',
+    orbPhotoUrl: 'https://images.unsplash.com/photo-1506126613408-eca07ce68773?auto=format&fit=crop&w=400&q=80',
+    glowColor: 'rgba(16, 185, 129, 0.45)'
   },
   {
     id: 'XLXcyPK1jTjw1pYLLcM9',
@@ -64,7 +74,9 @@ export const THAI_VOICE_PRESETS: VoicePreset[] = [
     description: 'น้ำเสียงผู้เชี่ยวชาญ/คุณหมอผู้ดูแล อบอุ่น ให้ความมั่นใจ',
     descriptionEn: 'Professional caregiver/physician tone, deep, calm and reassuring',
     gender: 'male',
-    lang: 'th'
+    lang: 'th',
+    orbPhotoUrl: 'https://images.unsplash.com/photo-1531545514256-b1400bc00f31?auto=format&fit=crop&w=400&q=80',
+    glowColor: 'rgba(139, 92, 246, 0.45)'
   }
 ];
 
@@ -78,7 +90,9 @@ export const ENGLISH_VOICE_PRESETS: VoicePreset[] = [
     description: 'น้ำเสียงผู้หญิงนุ่มนวล ฟังสบาย เหมาะสำหรับการฟังอย่างสงบ',
     descriptionEn: 'Soothing, gentle female voice, perfect for calm listening',
     gender: 'female',
-    lang: 'en'
+    lang: 'en',
+    orbPhotoUrl: 'https://images.unsplash.com/photo-1511632765486-a01980e01a18?auto=format&fit=crop&w=400&q=80',
+    glowColor: 'rgba(245, 158, 11, 0.45)'
   },
   {
     id: '21m00Tcm4TlvDq8ikWAM',
@@ -89,7 +103,9 @@ export const ENGLISH_VOICE_PRESETS: VoicePreset[] = [
     description: 'น้ำเสียงมืออาชีพ สำเนียงอเมริกันชัดถ้อยชัดคำ',
     descriptionEn: 'Professional, articulate American English voice',
     gender: 'female',
-    lang: 'en'
+    lang: 'en',
+    orbPhotoUrl: 'https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?auto=format&fit=crop&w=400&q=80',
+    glowColor: 'rgba(14, 165, 233, 0.45)'
   },
   {
     id: 'EXAVITQu4vr4xnSDxMaL',
@@ -100,7 +116,9 @@ export const ENGLISH_VOICE_PRESETS: VoicePreset[] = [
     description: 'น้ำเสียงเป็นกันเอง ร่าเริง เหมือนลูกหลานคุยด้วย',
     descriptionEn: 'Warm and expressive, like a daughter or grandchild',
     gender: 'female',
-    lang: 'en'
+    lang: 'en',
+    orbPhotoUrl: 'https://images.unsplash.com/photo-1491438590914-bc09fcaaf77a?auto=format&fit=crop&w=400&q=80',
+    glowColor: 'rgba(244, 63, 94, 0.45)'
   },
   {
     id: 'ErXwobaYiN019PkySvjV',
@@ -111,7 +129,9 @@ export const ENGLISH_VOICE_PRESETS: VoicePreset[] = [
     description: 'น้ำเสียงทุ้ม สุภาพ เหมาะสำหรับการดูแลผู้สูงอายุ',
     descriptionEn: 'Gentle, reassuring tone suitable for caregiving',
     gender: 'male',
-    lang: 'en'
+    lang: 'en',
+    orbPhotoUrl: 'https://images.unsplash.com/photo-1519741497674-611481863552?auto=format&fit=crop&w=400&q=80',
+    glowColor: 'rgba(99, 102, 241, 0.45)'
   }
 ];
 

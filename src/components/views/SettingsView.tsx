@@ -125,7 +125,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
           SECTION 1: LANGUAGE PREFERENCE (MINIMAL: NO EMOJIS, NO DESCRIPTION)
          ========================================================================= */}
       <div className="bg-white rounded-[28px] border border-slate-200/80 p-6 sm:p-7 shadow-xs space-y-4">
-        <div className="flex items-center space-x-3 border-b border-slate-100 pb-4">
+        <div className="flex items-center space-x-3">
           <div className="w-10 h-10 rounded-2xl bg-sky-50 border border-sky-200/70 text-sky-700 flex items-center justify-center">
             <Globe className="w-5 h-5" />
           </div>
@@ -139,7 +139,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
           </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-3 pt-1">
+        <div className="grid grid-cols-2 gap-3">
           {/* Thai Language Option */}
           <button
             onClick={() => {
@@ -190,12 +190,15 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
               <Volume2 className="w-5 h-5" />
             </div>
             <div className="text-left space-y-1">
-              <div className="inline-flex items-center px-2 py-0.5 rounded-md bg-slate-100 border border-slate-200/80 w-fit">
-                <ElevenLabsLogo className="h-3.5 w-auto text-slate-800" />
+              <div className="flex flex-wrap items-center gap-2">
+                <h3 className="text-lg font-bold text-slate-900 leading-tight">
+                  {lang === 'en' ? 'Voice Guidance & AI Narrator' : 'ระบบเสียงพูดและคุณหมอ AI'}
+                </h3>
+                <div className="inline-flex items-center space-x-1.5 px-2.5 py-0.5 rounded-full bg-slate-950 text-white shadow-2xs">
+                  <span className="text-[9px] font-bold text-slate-400 tracking-wider uppercase">AI by</span>
+                  <ElevenLabsLogo className="h-2.5 w-auto text-white" />
+                </div>
               </div>
-              <h3 className="text-lg font-bold text-slate-900 leading-tight">
-                {lang === 'en' ? 'Voice Guidance & AI Narrator' : 'ระบบเสียงพูดและคุณหมอ AI'}
-              </h3>
               <p className="text-xs sm:text-sm text-slate-500">
                 {lang === 'en' ? 'Natural warm speech powered by ElevenLabs' : 'เสียงพูดภาษาไทยและอังกฤษที่เป็นธรรมชาติ ฟังสบาย'}
               </p>
@@ -264,7 +267,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
 
           {/* Presets for Thai */}
           {voiceTab === 'th' && (
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-1">
+            <div className="flex flex-col space-y-2.5 pt-1">
               {THAI_VOICE_PRESETS.map((preset) => {
                 const isSelected = selectedThaiVoiceId === preset.id;
                 const displayName = lang === 'en' && preset.nameEn ? preset.nameEn : preset.name;
@@ -274,32 +277,52 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                   <button
                     key={preset.id}
                     onClick={() => handleSelectThaiVoice(preset.id)}
-                    className={`p-3.5 rounded-2xl border text-left transition-all relative cursor-pointer active:scale-98 ${
+                    className={`flex items-center space-x-3.5 sm:space-x-4 p-3.5 sm:p-4 rounded-2xl border text-left transition-all relative cursor-pointer active:scale-99 ${
                       isSelected
                         ? 'bg-amber-50/80 border-amber-400 ring-2 ring-amber-300/60 shadow-xs'
                         : 'bg-slate-50/70 hover:bg-white border-slate-200/90 text-slate-700'
                     }`}
                   >
-                    <div className="flex items-start justify-between">
-                      <div className="pr-2">
-                        <div className="flex items-center space-x-1.5">
-                          <span className="font-bold text-slate-900 text-sm">{displayName}</span>
-                          {preset.id === 'B4NdgwdU97lHqA8Udh2D' && (
-                            <span className="text-[10px] bg-emerald-100 text-emerald-800 font-extrabold px-2 py-0.5 rounded-full border border-emerald-200">
-                              {lang === 'en' ? 'Recommended' : 'แนะนำสูงสุด'}
-                            </span>
-                          )}
-                        </div>
-                        <p className="text-xs font-semibold text-slate-700 mt-0.5">{displayLabel}</p>
-                        <p className="text-[11px] text-slate-500 mt-1 leading-relaxed">{displayDesc}</p>
-                      </div>
-
-                      {isSelected && (
-                        <div className="w-5 h-5 rounded-full bg-amber-500 text-white flex items-center justify-center shrink-0">
-                          <Check className="w-3.5 h-3.5 stroke-[3]" />
-                        </div>
-                      )}
+                    {/* 3D Glass Memory Orb representation */}
+                    <div
+                      className="relative shrink-0 w-13 h-13 sm:w-15 sm:h-15 rounded-full overflow-hidden transition-all duration-300"
+                      style={{
+                        boxShadow: isSelected
+                          ? `0 0 18px 3px ${preset.glowColor || 'rgba(245, 158, 11, 0.5)'}, inset 0 0 10px rgba(255, 255, 255, 0.7)`
+                          : `0 4px 10px ${preset.glowColor || 'rgba(245, 158, 11, 0.25)'}, inset 0 0 6px rgba(255, 255, 255, 0.4)`
+                      }}
+                    >
+                      <img
+                        src={preset.orbPhotoUrl || 'https://images.unsplash.com/photo-1492562080023-ab3db95bfbce?auto=format&fit=crop&w=400&q=80'}
+                        alt={displayName}
+                        className="w-full h-full object-cover scale-110"
+                      />
+                      {/* Glass Specular Glare & Ring */}
+                      <div className="absolute inset-0 rounded-full bg-gradient-to-tr from-transparent via-white/10 to-white/60 pointer-events-none" />
+                      <div className="absolute inset-0 rounded-full ring-1 ring-white/60 pointer-events-none" />
+                      <div className="absolute top-1 left-1.5 w-3 h-2 rounded-full bg-white/70 blur-[0.8px] pointer-events-none" />
                     </div>
+
+                    {/* Text Details: title, label, description */}
+                    <div className="flex-1 min-w-0 pr-2">
+                      <div className="flex flex-wrap items-center gap-1.5">
+                        <span className="font-extrabold text-slate-900 text-sm sm:text-base">{displayName}</span>
+                        {preset.id === 'B4NdgwdU97lHqA8Udh2D' && (
+                          <span className="text-[10px] bg-emerald-100 text-emerald-800 font-extrabold px-2 py-0.5 rounded-full border border-emerald-200">
+                            {lang === 'en' ? 'Recommended' : 'แนะนำสูงสุด'}
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-xs sm:text-sm font-semibold text-slate-700 mt-0.5">{displayLabel}</p>
+                      <p className="text-[11px] sm:text-xs text-slate-500 mt-0.5 leading-relaxed">{displayDesc}</p>
+                    </div>
+
+                    {/* Selected Checkmark */}
+                    {isSelected && (
+                      <div className="w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-amber-500 text-white flex items-center justify-center shrink-0 shadow-2xs">
+                        <Check className="w-3.5 h-3.5 sm:w-4 sm:h-4 stroke-[3]" />
+                      </div>
+                    )}
                   </button>
                 );
               })}
@@ -308,7 +331,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
 
           {/* Presets for English */}
           {voiceTab === 'en' && (
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-1">
+            <div className="flex flex-col space-y-2.5 pt-1">
               {ENGLISH_VOICE_PRESETS.map((preset) => {
                 const isSelected = selectedEnglishVoiceId === preset.id;
                 const displayName = lang === 'en' && preset.nameEn ? preset.nameEn : preset.name;
@@ -318,32 +341,52 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                   <button
                     key={preset.id}
                     onClick={() => handleSelectEnglishVoice(preset.id)}
-                    className={`p-3.5 rounded-2xl border text-left transition-all relative cursor-pointer active:scale-98 ${
+                    className={`flex items-center space-x-3.5 sm:space-x-4 p-3.5 sm:p-4 rounded-2xl border text-left transition-all relative cursor-pointer active:scale-99 ${
                       isSelected
                         ? 'bg-amber-50/80 border-amber-400 ring-2 ring-amber-300/60 shadow-xs'
                         : 'bg-slate-50/70 hover:bg-white border-slate-200/90 text-slate-700'
                     }`}
                   >
-                    <div className="flex items-start justify-between">
-                      <div className="pr-2">
-                        <div className="flex items-center space-x-1.5">
-                          <span className="font-bold text-slate-900 text-sm">{displayName}</span>
-                          {preset.id === 'pFZP5JQG7iQjIQuC4Bku' && (
-                            <span className="text-[10px] bg-sky-100 text-sky-800 font-extrabold px-2 py-0.5 rounded-full border border-sky-200">
-                              {lang === 'en' ? 'Recommended' : 'แนะนำ'}
-                            </span>
-                          )}
-                        </div>
-                        <p className="text-xs font-semibold text-slate-700 mt-0.5">{displayLabel}</p>
-                        <p className="text-[11px] text-slate-500 mt-1 leading-relaxed">{displayDesc}</p>
-                      </div>
-
-                      {isSelected && (
-                        <div className="w-5 h-5 rounded-full bg-amber-500 text-white flex items-center justify-center shrink-0">
-                          <Check className="w-3.5 h-3.5 stroke-[3]" />
-                        </div>
-                      )}
+                    {/* 3D Glass Memory Orb representation */}
+                    <div
+                      className="relative shrink-0 w-13 h-13 sm:w-15 sm:h-15 rounded-full overflow-hidden transition-all duration-300"
+                      style={{
+                        boxShadow: isSelected
+                          ? `0 0 18px 3px ${preset.glowColor || 'rgba(245, 158, 11, 0.5)'}, inset 0 0 10px rgba(255, 255, 255, 0.7)`
+                          : `0 4px 10px ${preset.glowColor || 'rgba(245, 158, 11, 0.25)'}, inset 0 0 6px rgba(255, 255, 255, 0.4)`
+                      }}
+                    >
+                      <img
+                        src={preset.orbPhotoUrl || 'https://images.unsplash.com/photo-1511632765486-a01980e01a18?auto=format&fit=crop&w=400&q=80'}
+                        alt={displayName}
+                        className="w-full h-full object-cover scale-110"
+                      />
+                      {/* Glass Specular Glare & Ring */}
+                      <div className="absolute inset-0 rounded-full bg-gradient-to-tr from-transparent via-white/10 to-white/60 pointer-events-none" />
+                      <div className="absolute inset-0 rounded-full ring-1 ring-white/60 pointer-events-none" />
+                      <div className="absolute top-1 left-1.5 w-3 h-2 rounded-full bg-white/70 blur-[0.8px] pointer-events-none" />
                     </div>
+
+                    {/* Text Details: title, label, description */}
+                    <div className="flex-1 min-w-0 pr-2">
+                      <div className="flex flex-wrap items-center gap-1.5">
+                        <span className="font-extrabold text-slate-900 text-sm sm:text-base">{displayName}</span>
+                        {preset.id === 'pFZP5JQG7iQjIQuC4Bku' && (
+                          <span className="text-[10px] bg-sky-100 text-sky-800 font-extrabold px-2 py-0.5 rounded-full border border-sky-200">
+                            {lang === 'en' ? 'Recommended' : 'แนะนำ'}
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-xs sm:text-sm font-semibold text-slate-700 mt-0.5">{displayLabel}</p>
+                      <p className="text-[11px] sm:text-xs text-slate-500 mt-0.5 leading-relaxed">{displayDesc}</p>
+                    </div>
+
+                    {/* Selected Checkmark */}
+                    {isSelected && (
+                      <div className="w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-amber-500 text-white flex items-center justify-center shrink-0 shadow-2xs">
+                        <Check className="w-3.5 h-3.5 sm:w-4 sm:h-4 stroke-[3]" />
+                      </div>
+                    )}
                   </button>
                 );
               })}
@@ -356,7 +399,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
           SECTION 3: TEXT SIZE & ACCESSIBILITY (RESPONSIVE LIVE SCALING)
          ========================================================================= */}
       <div className="bg-white rounded-[28px] border border-slate-200/80 p-6 sm:p-7 shadow-xs space-y-4">
-        <div className="flex items-center space-x-3 border-b border-slate-100 pb-4">
+        <div className="flex items-center space-x-3">
           <div className="w-10 h-10 rounded-2xl bg-indigo-50 border border-indigo-200/70 text-indigo-700 flex items-center justify-center">
             <Type className="w-5 h-5" />
           </div>
@@ -370,7 +413,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
           </div>
         </div>
 
-        <div className="grid grid-cols-3 gap-2.5 sm:gap-3 pt-1">
+        <div className="grid grid-cols-3 gap-2.5 sm:gap-3">
           <button
             onClick={() => onUpdateTextSize('normal')}
             className={`py-3.5 rounded-2xl border text-center transition-all cursor-pointer ${
@@ -413,20 +456,14 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
           SECTION 3.5: USER ACCOUNT & PROFILE (REDESIGNED: AVATAR ON LEFT, WATTANASHIRI FAMILY)
          ========================================================================= */}
       <div className="bg-white rounded-[28px] border border-slate-200/80 p-6 sm:p-7 shadow-xs text-left space-y-4">
-        <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-          <div className="flex items-center space-x-2">
-            <span className="text-sm font-bold text-slate-900">
-              {lang === 'en' ? 'User Account & Profile' : 'ข้อมูลบัญชีผู้ใช้งาน'}
-            </span>
-          </div>
-          <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2.5 py-0.5 rounded-full flex items-center space-x-1">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-            <span>{lang === 'en' ? 'AUTHENTICATED' : 'ยืนยันตัวตนแล้ว'}</span>
+        <div className="flex items-center space-x-2">
+          <span className="text-sm font-bold text-slate-900">
+            {lang === 'en' ? 'User Account & Profile' : 'ข้อมูลบัญชีผู้ใช้งาน'}
           </span>
         </div>
 
-        {/* Modern Profile Card: Avatar on Left, Clean Typographic Details & Family on Right */}
-        <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-slate-50/90 via-indigo-50/30 to-amber-50/20 border border-slate-200/80 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        {/* Modern Profile Card: Avatar on Left, Clean Typographic Details & Family */}
+        <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-slate-50/90 via-indigo-50/30 to-amber-50/20 border border-slate-200/80 flex items-center justify-between gap-4">
           <div className="flex items-center space-x-4">
             {/* Circular Avatar of Ann */}
             <div className="relative shrink-0">
@@ -443,23 +480,15 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
 
             {/* Profile Info */}
             <div className="space-y-1">
-              <div className="flex items-center space-x-2">
-                <h4 className="text-lg sm:text-xl font-extrabold text-slate-900 tracking-normal">
-                  แอน วัฒนศิริ
-                </h4>
-                <span className="text-xs font-bold text-indigo-700 bg-indigo-50 border border-indigo-200 px-2 py-0.5 rounded-full">
-                  Ann
-                </span>
-              </div>
+              <h4 className="text-lg sm:text-xl font-extrabold text-slate-900 tracking-normal">
+                แอน วัฒนศิริ (Ann)
+              </h4>
               <p className="text-xs sm:text-sm text-slate-500 font-mono">
                 ann@memora.app
               </p>
               <div className="flex flex-wrap items-center gap-1.5 pt-1">
                 <span className="text-[11px] font-bold text-amber-900 bg-amber-100/80 border border-amber-200/80 px-2.5 py-0.5 rounded-full">
                   ครอบครัววัฒนศิริ
-                </span>
-                <span className="text-[10px] font-mono text-slate-500 bg-slate-100 border border-slate-200 px-2 py-0.5 rounded-full">
-                  MEMORA-8821
                 </span>
                 <span className="text-[11px] font-semibold text-indigo-700 bg-indigo-50/80 border border-indigo-200/70 px-2.5 py-0.5 rounded-full">
                   {lang === 'en' ? 'Eldest Daughter • Primary Caregiver' : 'ลูกสาวคนโต • ผู้ดูแลหลัก'}
