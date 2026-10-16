@@ -380,7 +380,7 @@ export const ChildPortalView: React.FC<ChildPortalViewProps> = ({
         labelEn: distractor1,
         relation: lang === 'en' ? 'Acquaintance' : 'คนรู้จัก',
         relationEn: 'Acquaintance',
-        photoUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=400&q=80',
+        photoUrl: '/images/memories/daughter-green-wall.jpg',
         isCorrect: false,
       },
       {
@@ -389,7 +389,7 @@ export const ChildPortalView: React.FC<ChildPortalViewProps> = ({
         labelEn: distractor2,
         relation: lang === 'en' ? 'Old Friend' : 'เพื่อนเก่า',
         relationEn: 'Old Friend',
-        photoUrl: 'https://images.unsplash.com/photo-1516483638261-f4dbaf036963?auto=format&fit=crop&w=400&q=80',
+        photoUrl: '/images/memories/flower-garden-selfie.jpg',
         isCorrect: false,
       },
     ];

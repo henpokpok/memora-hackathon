@@ -9,7 +9,8 @@ import {
   CheckCircle2, 
   ArrowRight, 
   Check, 
-  Smile 
+  Smile,
+  Sparkles
 } from 'lucide-react';
 import { speakWithElevenLabs, stopSpeech } from '../../services/elevenlabs';
 import { soundFx } from '../../utils/soundEffects';
@@ -63,14 +64,415 @@ export interface MatchingPair {
   };
 }
 
-export type ChallengeStepType = 'quiz' | 'match';
+export type ChallengeStepType = 'quiz' | 'match' | 'wipe';
+
+export type FrameStyle = 'wood' | 'gold' | 'black';
+
+export interface DustWipePhotoItem {
+  id: string;
+  photoUrl: string;
+  captionTh: string;
+  captionEn: string;
+  relationTh?: string;
+  relationEn?: string;
+  frameStyle: FrameStyle;
+  glowColor: string;
+}
+
+export interface DustWipeData {
+  items: DustWipePhotoItem[];
+  photoUrl?: string;
+  captionTh?: string;
+  captionEn?: string;
+  frameStyle?: FrameStyle;
+  voicePrompt: { th: string; en: string };
+  voiceSuccess: { th: string; en: string };
+}
 
 export interface ChallengeStep {
   id: string;
   type: ChallengeStepType;
   question?: DynamicQuestion;
   matchPairs?: MatchingPair[];
+  wipeData?: DustWipeData;
 }
+
+interface DustWipePhotoCardProps {
+  item: DustWipePhotoItem;
+  index: number;
+  isCompleted: boolean;
+  onComplete: (id: string) => void;
+  onStartWipe?: () => void;
+  lang: Language;
+  showHandGuide: boolean;
+}
+
+const DustWipePhotoCard: React.FC<DustWipePhotoCardProps> = ({
+  item,
+  index,
+  isCompleted,
+  onComplete,
+  onStartWipe,
+  lang,
+  showHandGuide,
+}) => {
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const lastPointRef = useRef<{ x: number; y: number } | null>(null);
+  const isPointerDownRef = useRef(false);
+  const lastCheckTimeRef = useRef(0);
+  const lastSoundTimeRef = useRef(0);
+  const swipeCountRef = useRef(0);
+  const currentStrokeDistRef = useRef(0);
+  const totalDragDistRef = useRef(0);
+  const [photoRatio, setPhotoRatio] = useState<number>(1.48);
+
+  const handleImageLoad = (e: React.SyntheticEvent<HTMLImageElement>) => {
+    const { naturalWidth, naturalHeight } = e.currentTarget;
+    if (naturalWidth && naturalHeight && naturalHeight > 0) {
+      setPhotoRatio(naturalWidth / naturalHeight);
+    }
+  };
+
+  const initCanvas = () => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const rect = canvas.getBoundingClientRect();
+    if (rect.width === 0 || rect.height === 0) return;
+
+    swipeCountRef.current = 0;
+    currentStrokeDistRef.current = 0;
+    totalDragDistRef.current = 0;
+
+    const dpr = window.devicePixelRatio || 1;
+    const width = Math.round(rect.width * dpr);
+    const height = Math.round(rect.height * dpr);
+    canvas.width = width;
+    canvas.height = height;
+
+    const ctx = canvas.getContext('2d', { willReadFrequently: true });
+    if (!ctx) return;
+
+    // Reset transform to identity so all operations work in exact canvas backing store pixels
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+
+    // Translucent vintage dust layer (60% opacity) - allows underlying photo to be softly visible
+    const dustGrad = ctx.createLinearGradient(0, 0, width, height);
+    dustGrad.addColorStop(0, 'rgba(232, 224, 214, 0.62)');
+    dustGrad.addColorStop(0.5, 'rgba(216, 206, 194, 0.65)');
+    dustGrad.addColorStop(1, 'rgba(226, 218, 208, 0.60)');
+    ctx.fillStyle = dustGrad;
+    ctx.fillRect(0, 0, width, height);
+
+    // Fine, delicate dust particles (subtle misty specks, not sand blobs)
+    for (let i = 0; i < 90; i++) {
+      const x = Math.random() * width;
+      const y = Math.random() * height;
+      const r = (Math.random() * 1.2 + 0.4) * dpr;
+      ctx.fillStyle = i % 2 === 0 ? 'rgba(255, 255, 255, 0.32)' : 'rgba(125, 110, 95, 0.16)';
+      ctx.beginPath();
+      ctx.arc(x, y, r, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  };
+
+  useEffect(() => {
+    let animId: number;
+    const checkAndInit = () => {
+      const canvas = canvasRef.current;
+      if (!canvas) return;
+      const rect = canvas.getBoundingClientRect();
+      if (rect.width === 0 || rect.height === 0) {
+        animId = requestAnimationFrame(checkAndInit);
+        return;
+      }
+      initCanvas();
+    };
+
+    checkAndInit();
+    const handleResize = () => initCanvas();
+    window.addEventListener('resize', handleResize);
+
+    return () => {
+      cancelAnimationFrame(animId);
+      window.removeEventListener('resize', handleResize);
+    };
+  }, [item.id, photoRatio]);
+
+  // Buttery-smooth continuous stroke erasing
+  const eraseStroke = (x1: number, y1: number, x2: number, y2: number) => {
+    const canvas = canvasRef.current;
+    if (!canvas || isCompleted) return;
+
+    const ctx = canvas.getContext('2d', { willReadFrequently: true });
+    if (!ctx) return;
+
+    const dpr = window.devicePixelRatio || 1;
+    const isPortrait = photoRatio < 0.95;
+    const brushRadius = (isPortrait ? 30 : 36) * dpr;
+
+    const dist = Math.hypot(x2 - x1, y2 - y1);
+    currentStrokeDistRef.current += dist;
+    totalDragDistRef.current += dist;
+
+    ctx.save();
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.globalCompositeOperation = 'destination-out';
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    ctx.lineWidth = brushRadius * 2;
+
+    ctx.beginPath();
+    ctx.moveTo(x1, y1);
+    ctx.lineTo(x2, y2);
+    ctx.stroke();
+
+    // Soft feathered stamp at destination point
+    const radGrad = ctx.createRadialGradient(x2, y2, 0, x2, y2, brushRadius);
+    radGrad.addColorStop(0, 'rgba(0,0,0,1)');
+    radGrad.addColorStop(0.7, 'rgba(0,0,0,0.85)');
+    radGrad.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.fillStyle = radGrad;
+    ctx.beginPath();
+    ctx.arc(x2, y2, brushRadius, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+
+    // Throttle progress check to once every 140ms so drag stays buttery 60fps/120fps with zero lag
+    const now = performance.now();
+    if (now - lastCheckTimeRef.current > 140) {
+      lastCheckTimeRef.current = now;
+      checkWipeProgress();
+    }
+  };
+
+  const checkWipeProgress = () => {
+    if (isCompleted) return;
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    const ctx = canvas.getContext('2d', { willReadFrequently: true });
+    if (!ctx) return;
+
+    try {
+      const w = canvas.width;
+      const h = canvas.height;
+      if (w === 0 || h === 0) return;
+
+      const imgData = ctx.getImageData(0, 0, w, h);
+      let cleared = 0;
+      const samples = 160;
+
+      for (let i = 0; i < samples; i++) {
+        const randX = Math.floor(Math.random() * w);
+        const randY = Math.floor(Math.random() * h);
+        const alphaIndex = (randY * w + randX) * 4 + 3;
+        // Translucent dust alpha is ~160, cleared pixels drop below 40
+        if (imgData.data[alphaIndex] < 40) {
+          cleared++;
+        }
+      }
+
+      const ratio = cleared / samples;
+      
+      // Calculate effective swipes: combines discrete finger lifts and continuous back-and-forth scrubbing
+      const continuousSwipes = Math.floor(totalDragDistRef.current / (w * 0.65));
+      const effectiveSwipes = Math.max(swipeCountRef.current, continuousSwipes);
+
+      (window as any).__lastWipeMetrics = {
+        ratio,
+        cleared,
+        samples,
+        effectiveSwipes,
+        swipeCount: swipeCountRef.current,
+        continuousSwipes,
+        totalDragDist: totalDragDistRef.current,
+        w,
+        h,
+      };
+
+      // Calibrated specifically so that it takes ~3-4 natural swipes to clean the picture:
+      // - 1 or 2 swipes: not yet clean (reveals part of the photo, elder sees progress).
+      // - 3 swipes: if wiping broadly (effectiveSwipes >= 3 && ratio >= 0.35), cleans!
+      // - 4 swipes: guaranteed clean if effectiveSwipes >= 4 (ratio >= 0.28).
+      // - Safety fallback: if broad scrubbing clears >= 52% of the canvas.
+      const isClean = 
+        (effectiveSwipes >= 4 && ratio >= 0.28) ||
+        (effectiveSwipes >= 3 && ratio >= 0.35) ||
+        (ratio >= 0.52);
+
+      if (isClean) {
+        onComplete(item.id);
+      }
+    } catch (_) {}
+  };
+
+  const handlePointerDown = (e: React.PointerEvent<HTMLCanvasElement>) => {
+    isPointerDownRef.current = true;
+    currentStrokeDistRef.current = 0;
+    onStartWipe?.();
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const rect = canvas.getBoundingClientRect();
+    const dpr = window.devicePixelRatio || 1;
+    const x = (e.clientX - rect.left) * dpr;
+    const y = (e.clientY - rect.top) * dpr;
+    lastPointRef.current = { x, y };
+    eraseStroke(x, y, x, y);
+  };
+
+  const handlePointerMove = (e: React.PointerEvent<HTMLCanvasElement>) => {
+    if (!isPointerDownRef.current) return;
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const rect = canvas.getBoundingClientRect();
+    const dpr = window.devicePixelRatio || 1;
+    const x = (e.clientX - rect.left) * dpr;
+    const y = (e.clientY - rect.top) * dpr;
+
+    const last = lastPointRef.current || { x, y };
+    eraseStroke(last.x, last.y, x, y);
+    lastPointRef.current = { x, y };
+
+    const now = Date.now();
+    if (now - lastSoundTimeRef.current > 240) {
+      soundFx.playTap();
+      lastSoundTimeRef.current = now;
+    }
+  };
+
+  const handlePointerUp = () => {
+    isPointerDownRef.current = false;
+    lastPointRef.current = null;
+    const dpr = window.devicePixelRatio || 1;
+    // Count as a distinct stroke if dragged more than 35 CSS px
+    if (currentStrokeDistRef.current >= 35 * dpr) {
+      swipeCountRef.current += 1;
+    }
+    currentStrokeDistRef.current = 0;
+    checkWipeProgress();
+  };
+
+  const frameOuterClass =
+    item.frameStyle === 'wood'
+      ? 'border-[8px] sm:border-[10px] border-[#4a240e] bg-gradient-to-b from-[#6b3716] via-[#85471e] to-[#4a240e] shadow-2xl rounded-2xl ring-2 ring-[#a36235]/60'
+      : item.frameStyle === 'gold'
+      ? 'border-[8px] sm:border-[10px] border-[#8a610e] bg-gradient-to-tr from-[#8f6610] via-[#f5d061] to-[#a37515] shadow-2xl rounded-2xl ring-2 ring-yellow-200/90'
+      : 'border-[8px] sm:border-[10px] border-slate-950 bg-slate-900 shadow-2xl rounded-2xl ring-2 ring-slate-800';
+
+  const frameInnerMatting =
+    item.frameStyle === 'wood'
+      ? 'p-1.5 sm:p-2 bg-gradient-to-tr from-[#2d1407] via-[#4a240e] to-[#2d1407] rounded-xl'
+      : item.frameStyle === 'gold'
+      ? 'p-1.5 sm:p-2 bg-gradient-to-b from-[#5c4008] via-[#cf9c27] to-[#5c4008] rounded-xl'
+      : 'p-1.5 sm:p-2 bg-[#fbf9f5] rounded-xl shadow-inner border border-slate-200/90';
+
+  const frameLabel =
+    item.frameStyle === 'wood'
+      ? (lang === 'en' ? '🪵 Teak Wood' : '🪵 ไม้สัก')
+      : item.frameStyle === 'gold'
+      ? (lang === 'en' ? '✨ Vintage Gold' : '✨ ทองคำ')
+      : (lang === 'en' ? '🖼️ Gallery Black' : '🖼️ สีดำ');
+
+  const glowStyle: React.CSSProperties = isCompleted
+    ? {
+        boxShadow: `0 0 28px 8px ${item.glowColor}, 0 0 55px 16px ${item.glowColor.replace('0.5', '0.25')}`,
+        transition: 'box-shadow 0.8s ease, transform 0.5s ease',
+        transform: 'scale(1.015)',
+      }
+    : {
+        transition: 'box-shadow 0.5s ease, transform 0.5s ease',
+      };
+
+  const isPortrait = photoRatio < 0.95;
+
+  const frameHeightClass = isPortrait
+    ? 'h-[270px] xs:h-[300px] [@media(min-height:700px)]:h-[340px] [@media(min-height:780px)]:h-[390px] [@media(min-height:840px)]:h-[430px]'
+    : 'h-[210px] xs:h-[235px] [@media(min-height:700px)]:h-[265px] [@media(min-height:780px)]:h-[295px] [@media(min-height:840px)]:h-[325px]';
+
+  return (
+    <div className="w-full flex flex-col items-center select-none min-w-0">
+      {/* Framed Photo Container adhering strictly to the photo's real natural ratio */}
+      <div
+        className={`relative rounded-2xl overflow-hidden transition-all duration-500 cursor-pointer ${frameOuterClass} ${frameHeightClass} max-w-[90vw] xs:max-w-[350px] sm:max-w-[380px] w-auto`}
+        style={{
+          ...glowStyle,
+          aspectRatio: `${photoRatio}`,
+        }}
+      >
+        {/* Ornate Corner Brackets */}
+        <div className="absolute top-1.5 left-1.5 w-3.5 h-3.5 border-t-2 border-l-2 border-amber-300/90 rounded-tl-sm pointer-events-none z-10" />
+        <div className="absolute top-1.5 right-1.5 w-3.5 h-3.5 border-t-2 border-r-2 border-amber-300/90 rounded-tr-sm pointer-events-none z-10" />
+        <div className="absolute bottom-1.5 left-1.5 w-3.5 h-3.5 border-b-2 border-l-2 border-amber-300/90 rounded-bl-sm pointer-events-none z-10" />
+        <div className="absolute bottom-1.5 right-1.5 w-3.5 h-3.5 border-b-2 border-r-2 border-amber-300/90 rounded-br-sm pointer-events-none z-10" />
+
+        {/* Corner Rivets for Wood Frame */}
+        {item.frameStyle === 'wood' && (
+          <>
+            <div className="absolute top-2 left-2 w-2 h-2 rounded-full bg-yellow-300 border border-amber-900/60 shadow-xs z-10" />
+            <div className="absolute top-2 right-2 w-2 h-2 rounded-full bg-yellow-300 border border-amber-900/60 shadow-xs z-10" />
+            <div className="absolute bottom-2 left-2 w-2 h-2 rounded-full bg-yellow-300 border border-amber-900/60 shadow-xs z-10" />
+            <div className="absolute bottom-2 right-2 w-2 h-2 rounded-full bg-yellow-300 border border-amber-900/60 shadow-xs z-10" />
+          </>
+        )}
+
+        {/* Inner Matting Layer with true photo natural ratio */}
+        <div className={`relative w-full h-full ${frameInnerMatting}`}>
+          <div className="relative w-full h-full overflow-hidden rounded-lg bg-slate-200">
+            {/* Real Photo Underneath (softly visible through translucent dust) */}
+            <img
+              src={item.photoUrl}
+              alt={item.captionTh}
+              onLoad={handleImageLoad}
+              className="w-full h-full object-cover select-none pointer-events-none"
+            />
+
+            {/* Canvas for Dust Wiping */}
+            <canvas
+              ref={canvasRef}
+              onPointerDown={handlePointerDown}
+              onPointerMove={handlePointerMove}
+              onPointerUp={handlePointerUp}
+              onPointerCancel={handlePointerUp}
+              className={`absolute inset-0 w-full h-full rounded-md cursor-pointer touch-none select-none transition-opacity duration-700 ${
+                isCompleted ? 'opacity-0 pointer-events-none' : 'opacity-100'
+              }`}
+            />
+
+            {/* Hand Guide Indicator on first active photo */}
+            {showHandGuide && !isCompleted && (
+              <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none z-20 animate-fade-in p-2 text-center">
+                <div className="w-11 h-11 rounded-full bg-white/95 backdrop-blur-md shadow-lg border-2 border-amber-300 flex items-center justify-center animate-bounce mb-1">
+                  <span className="text-xl">👆</span>
+                </div>
+                <div className="bg-slate-950/85 backdrop-blur-md px-2.5 py-0.5 rounded-full border border-white/30 shadow-xs">
+                  <p className="text-xs font-bold text-white whitespace-nowrap">
+                    {lang === 'en' ? 'Wipe the dust' : 'ลูบหน้าจอปัดฝุ่น'}
+                  </p>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Realistic Wooden Picture Ledge Shelf (ชั้นวางภาพไม้สักทอง) */}
+      <div className="w-full max-w-[340px] xs:max-w-[360px] sm:max-w-[380px] h-3 sm:h-3.5 bg-gradient-to-r from-[#633314] via-[#85471e] to-[#4e270d] rounded-sm shadow-md border-t border-[#a15a28]/70 relative z-10 -mt-0.5" />
+      <div className="w-[88%] max-w-[310px] xs:max-w-[330px] h-2 bg-black/15 blur-[2px] rounded-full mx-auto" />
+
+      {/* Caption below the shelf */}
+      <div className="mt-1.5 text-center max-w-[340px] xs:max-w-[360px] px-2 space-y-0.5">
+        <h3 className="text-sm sm:text-base font-extrabold text-slate-900 truncate">
+          {lang === 'en' ? item.captionEn : item.captionTh}
+        </h3>
+        {item.relationTh && (
+          <p className="text-xs text-slate-500 font-medium">
+            {lang === 'en' ? item.relationEn : item.relationTh}
+          </p>
+        )}
+      </div>
+    </div>
+  );
+};
 
 export const TestView: React.FC<TestViewProps> = ({
   orbs,
@@ -100,6 +502,13 @@ export const TestView: React.FC<TestViewProps> = ({
   const [answerState, setAnswerState] = useState<'unanswered' | 'correct' | 'wrong'>('unanswered');
   const [showClue, setShowClue] = useState(false);
   const [isListeningMic, setIsListeningMic] = useState(false);
+  const [voiceTranscript, setVoiceTranscript] = useState('');
+  const recognitionRef = useRef<any>(null);
+
+  // State for Step Type 3: Dust Wipe Memory Reveal (Full-Screen Grand Framed Gallery)
+  const [wipedPhotoIds, setWipedPhotoIds] = useState<string[]>([]);
+  const [hasStartedWiping, setHasStartedWiping] = useState(false);
+  const [activeWipeIdx, setActiveWipeIdx] = useState(0);
 
   // Conversational trait formatter: tells who/what this person or item is ("เขาเป็น...") warmly
   const getChoiceStoryTrait = (
@@ -180,6 +589,11 @@ export const TestView: React.FC<TestViewProps> = ({
       if (voiceTimeoutRef.current) {
         clearTimeout(voiceTimeoutRef.current);
       }
+      if (recognitionRef.current) {
+        try {
+          recognitionRef.current.abort();
+        } catch (_) {}
+      }
       stopSpeech();
     };
   }, []);
@@ -192,7 +606,7 @@ export const TestView: React.FC<TestViewProps> = ({
       nameEn: 'Poom',
       relationTh: 'หลานชายคนโปรด',
       relationEn: 'Favorite Grandson',
-      photoUrl: 'https://images.unsplash.com/photo-1492562080023-ab3db95bfbce?auto=format&fit=crop&w=600&q=80',
+      photoUrl: '/images/memories/korean-bbq-siblings.jpg',
       icon: '💙',
       tagColor: {
         bg: 'bg-sky-50',
@@ -203,11 +617,11 @@ export const TestView: React.FC<TestViewProps> = ({
     },
     {
       id: 'match-2',
-      nameTh: 'น้องมินท์',
-      nameEn: 'Mint',
-      relationTh: 'หลานสาวคนเล็ก',
-      relationEn: 'Youngest Granddaughter',
-      photoUrl: 'https://images.unsplash.com/photo-1503454537195-1dcabb73ffb9?auto=format&fit=crop&w=600&q=80',
+      nameTh: 'น้องพิม',
+      nameEn: 'Pim',
+      relationTh: 'หลานสาวคนโต',
+      relationEn: 'Eldest Granddaughter',
+      photoUrl: '/images/memories/flower-garden-selfie.jpg',
       icon: '🌸',
       tagColor: {
         bg: 'bg-rose-50',
@@ -218,11 +632,11 @@ export const TestView: React.FC<TestViewProps> = ({
     },
     {
       id: 'match-5',
-      nameTh: 'เจ้าทองม้วน',
-      nameEn: 'Thong Muan',
-      relationTh: 'สุนัขแสนรู้ประจำบ้าน',
-      relationEn: 'Loyal Golden Retriever',
-      photoUrl: 'https://images.unsplash.com/photo-1552053831-71594a27632d?auto=format&fit=crop&w=600&q=80',
+      nameTh: 'เจ้าเหมียวตัวโปรด',
+      nameEn: 'Beloved Cat',
+      relationTh: 'สัตว์เลี้ยงแสนรักประจำบ้าน',
+      relationEn: 'Beloved Family Pet',
+      photoUrl: '/images/memories/beloved-pet-cat.jpg',
       icon: '🐾',
       tagColor: {
         bg: 'bg-amber-50',
@@ -233,11 +647,11 @@ export const TestView: React.FC<TestViewProps> = ({
     },
     {
       id: 'match-3',
-      nameTh: 'เจี๊ยบ',
-      nameEn: 'Jeab',
-      relationTh: 'หลานสาวคนเก่ง',
-      relationEn: 'Caring Granddaughter',
-      photoUrl: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=600&q=80',
+      nameTh: 'น้องก้อย',
+      nameEn: 'Koi',
+      relationTh: 'ลูกสาวคนโต',
+      relationEn: 'Eldest Daughter',
+      photoUrl: '/images/memories/daughter-green-wall.jpg',
       icon: '⭐',
       tagColor: {
         bg: 'bg-indigo-50',
@@ -250,9 +664,9 @@ export const TestView: React.FC<TestViewProps> = ({
       id: 'match-4',
       nameTh: 'น้องแอน',
       nameEn: 'Ann',
-      relationTh: 'ลูกสาวคนโต',
-      relationEn: 'Eldest Daughter',
-      photoUrl: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=600&q=80',
+      relationTh: 'ลูกสาวคนรอง',
+      relationEn: 'Second Daughter',
+      photoUrl: '/images/memories/airplane-cafe-drinks.jpg',
       icon: '🧡',
       tagColor: {
         bg: 'bg-orange-50',
@@ -449,7 +863,7 @@ export const TestView: React.FC<TestViewProps> = ({
   }, [activeOrb, lang]);
 
   // UNIFIED INTERLEAVED CHALLENGE STEPS:
-  // Alternates between Photo Quiz questions and Matching challenges in one seamless, natural flow!
+  // Dynamically alternates between Photo Quiz, Matching challenge, and Dust Wipe Memory Reveal!
   const sessionSteps: ChallengeStep[] = useMemo(() => {
     if (!activeOrb || currentQuestions.length === 0) return [];
 
@@ -460,39 +874,126 @@ export const TestView: React.FC<TestViewProps> = ({
     const matchSet1 = allMatchingPairs.slice(0, 3); // น้องภูมิ, น้องมินท์, เจ้าทองม้วน
     const matchSet2 = allMatchingPairs.slice(3, 5); // เจี๊ยบ, น้องแอน
 
-    return [
-      // Step 1: Photo Quiz - Identity / Person
+    const orbHash = Math.abs(activeOrb.id.split('').reduce((acc, c) => acc + c.charCodeAt(0), 0));
+
+    // 3 Photos for the Dust Wipe Step (Wood, Gold, Black frames on 3 vertical shelves)
+    const otherOrbs = orbs.filter((o) => o.id !== activeOrb.id);
+    const orb2 = otherOrbs[0];
+    const orb3 = otherOrbs[1];
+
+    const fallbackPair1 = allMatchingPairs.find((p) => !activeOrb.photoUrl.includes(p.photoUrl.split('?')[0])) || allMatchingPairs[1];
+    const fallbackPair2 = allMatchingPairs.find((p) => !activeOrb.photoUrl.includes(p.photoUrl.split('?')[0]) && p.id !== fallbackPair1?.id) || allMatchingPairs[2];
+
+    const photo2Url = orb2?.photoUrl || fallbackPair1?.photoUrl || '/images/memories/flower-garden-selfie.jpg';
+    const caption2Th = orb2?.title || fallbackPair1?.nameTh || 'น้องพิม';
+    const caption2En = orb2?.titleEn || fallbackPair1?.nameEn || 'Pim';
+    const relation2Th = orb2?.memoryYear || fallbackPair1?.relationTh || 'หลานสาวคนโต';
+    const relation2En = orb2?.memoryYearEn || fallbackPair1?.relationEn || 'Eldest Granddaughter';
+    const glow2 = orb2?.glowColor || 'rgba(244, 63, 94, 0.5)';
+
+    const photo3Url = orb3?.photoUrl || fallbackPair2?.photoUrl || '/images/memories/beloved-pet-cat.jpg';
+    const caption3Th = orb3?.title || fallbackPair2?.nameTh || 'เจ้าเหมียวตัวโปรด';
+    const caption3En = orb3?.titleEn || fallbackPair2?.nameEn || 'Beloved Cat';
+    const relation3Th = orb3?.memoryYear || fallbackPair2?.relationTh || 'สัตว์เลี้ยงแสนรักประจำบ้าน';
+    const relation3En = orb3?.memoryYearEn || fallbackPair2?.relationEn || 'Beloved Family Pet';
+    const glow3 = orb3?.glowColor || 'rgba(16, 185, 129, 0.5)';
+
+    const wipeItems: DustWipePhotoItem[] = [
       {
-        id: 'step-1-quiz-person',
-        type: 'quiz',
-        question: personQ,
+        id: `wipe-${activeOrb.id}`,
+        photoUrl: activeOrb.photoUrl,
+        captionTh: activeOrb.title,
+        captionEn: activeOrb.titleEn || activeOrb.title,
+        relationTh: activeOrb.memoryYear || 'ความทรงจำวันวาน',
+        relationEn: activeOrb.memoryYearEn || 'Precious Memory',
+        frameStyle: 'wood',
+        glowColor: activeOrb.glowColor || 'rgba(245, 158, 11, 0.5)',
       },
-      // Step 2: Matching Challenge - 3 Family Members
       {
-        id: 'step-2-match-family-1',
-        type: 'match',
-        matchPairs: matchSet1,
+        id: `wipe-${orb2?.id || fallbackPair1?.id || 'item-2'}`,
+        photoUrl: photo2Url,
+        captionTh: caption2Th,
+        captionEn: caption2En,
+        relationTh: relation2Th,
+        relationEn: relation2En,
+        frameStyle: 'gold',
+        glowColor: glow2,
       },
-      // Step 3: Photo Quiz - Place / Event
       {
-        id: 'step-3-quiz-context',
-        type: 'quiz',
-        question: placeOrEventQ,
-      },
-      // Step 4: Matching Challenge - 2 Family Members
-      {
-        id: 'step-4-match-family-2',
-        type: 'match',
-        matchPairs: matchSet2,
-      },
-      // Step 5: Photo Quiz - Emotion & Loving Message
-      {
-        id: 'step-5-quiz-feeling',
-        type: 'quiz',
-        question: emotionOrMsgQ,
+        id: `wipe-${orb3?.id || fallbackPair2?.id || 'item-3'}`,
+        photoUrl: photo3Url,
+        captionTh: caption3Th,
+        captionEn: caption3En,
+        relationTh: relation3Th,
+        relationEn: relation3En,
+        frameStyle: 'black',
+        glowColor: glow3,
       },
     ];
-  }, [activeOrb, currentQuestions, allMatchingPairs]);
+
+    const wipeStep: ChallengeStep = {
+      id: `step-wipe-${activeOrb.id}`,
+      type: 'wipe',
+      wipeData: {
+        items: wipeItems,
+        photoUrl: activeOrb.photoUrl,
+        captionTh: activeOrb.title,
+        captionEn: activeOrb.titleEn || activeOrb.title,
+        frameStyle: 'wood',
+        voicePrompt: {
+          th: 'คุณยายลองเอานิ้วลูบเบาๆ บนภาพ เพื่อปัดฝุ่นดูความทรงจำทั้ง 3 ภาพกันนะคะ 🌸',
+          en: 'Gently wipe the dust from all 3 photos with your finger Grandma, to reveal these warm memories... 🌸',
+        },
+        voiceSuccess: {
+          th: 'ความทรงจำทั้ง 3 ภาพสว่างสดใสขึ้นมาแล้วค่ะคุณยาย ยอดเยี่ยมมากค่ะ! ✨',
+          en: 'All 3 precious memories shine brightly again Grandma! Wonderful! ✨',
+        },
+      },
+    };
+
+    const quizPersonStep: ChallengeStep = {
+      id: 'step-quiz-person',
+      type: 'quiz',
+      question: personQ,
+    };
+
+    const matchStep1: ChallengeStep = {
+      id: 'step-match-family-1',
+      type: 'match',
+      matchPairs: matchSet1,
+    };
+
+    const quizContextStep: ChallengeStep = {
+      id: 'step-quiz-context',
+      type: 'quiz',
+      question: placeOrEventQ,
+    };
+
+    const matchStep2: ChallengeStep = {
+      id: 'step-match-family-2',
+      type: 'match',
+      matchPairs: matchSet2,
+    };
+
+    const quizEmotionStep: ChallengeStep = {
+      id: 'step-quiz-feeling',
+      type: 'quiz',
+      question: emotionOrMsgQ,
+    };
+
+    // Randomized interleaving so seniors don't memorize a repetitive quiz pattern
+    const variant = orbHash % 3;
+    if (variant === 0) {
+      // Variant 0: Quiz -> Wipe -> Match -> Quiz -> Quiz
+      return [quizPersonStep, wipeStep, matchStep1, quizContextStep, quizEmotionStep];
+    } else if (variant === 1) {
+      // Variant 1: Quiz -> Match -> Wipe -> Quiz -> Match
+      return [quizPersonStep, matchStep1, wipeStep, quizContextStep, matchStep2];
+    } else {
+      // Variant 2: Wipe -> Quiz -> Match -> Quiz -> Quiz
+      return [wipeStep, quizPersonStep, matchStep1, quizContextStep, quizEmotionStep];
+    }
+  }, [activeOrb, orbs, currentQuestions, allMatchingPairs]);
 
   const currentStep = sessionSteps[activeStepIndex] || sessionSteps[0];
 
@@ -517,6 +1018,12 @@ export const TestView: React.FC<TestViewProps> = ({
       clearTimeout(voiceTimeoutRef.current);
       voiceTimeoutRef.current = null;
     }
+    if (recognitionRef.current) {
+      try {
+        recognitionRef.current.abort();
+      } catch (_) {}
+      recognitionRef.current = null;
+    }
 
     // Reset interaction states for the new step
     setSelectedOptId(null);
@@ -524,11 +1031,15 @@ export const TestView: React.FC<TestViewProps> = ({
     setAnswerState('unanswered');
     setShowClue(false);
     setIsListeningMic(false);
+    setVoiceTranscript('');
     setSelectedMatchPhoto(null);
     setSelectedMatchLabel(null);
     setMatchedIds([]);
     setMismatchPair(null);
     setIsMatchCompleted(false);
+    setWipedPhotoIds([]);
+    setHasStartedWiping(false);
+    setActiveWipeIdx(0);
 
     // Read question prompt automatically
     const timer = setTimeout(() => {
@@ -540,6 +1051,12 @@ export const TestView: React.FC<TestViewProps> = ({
       if (voiceTimeoutRef.current) {
         clearTimeout(voiceTimeoutRef.current);
         voiceTimeoutRef.current = null;
+      }
+      if (recognitionRef.current) {
+        try {
+          recognitionRef.current.abort();
+        } catch (_) {}
+        recognitionRef.current = null;
       }
       stopSpeech();
     };
@@ -559,6 +1076,8 @@ export const TestView: React.FC<TestViewProps> = ({
     let speech = '';
     if (currentStep.type === 'quiz' && currentStep.question) {
       speech = lang === 'en' ? currentStep.question.voicePrompt.en : currentStep.question.voicePrompt.th;
+    } else if (currentStep.type === 'wipe' && currentStep.wipeData) {
+      speech = lang === 'en' ? currentStep.wipeData.voicePrompt.en : currentStep.wipeData.voicePrompt.th;
     } else {
       speech = lang === 'en'
         ? 'Take your time Grandma... Tap a photo, then tap their matching name!'
@@ -618,6 +1137,8 @@ export const TestView: React.FC<TestViewProps> = ({
     setSelectedTraitOption(null);
     setIsMatchCompleted(false);
     setMatchedIds([]);
+    setWipedPhotoIds([]);
+    setHasStartedWiping(false);
 
     if (activeStepIndex < sessionSteps.length - 1) {
       setActiveStepIndex((prev) => prev + 1);
@@ -640,33 +1161,135 @@ export const TestView: React.FC<TestViewProps> = ({
     speakWithElevenLabs(clueText, undefined, undefined, lang);
   };
 
-  // Voice speech answer via mic simulation
+  // Voice speech answer via Web Speech API + Elder-friendly interactive mode
   const handleVoiceAnswer = () => {
     if (!currentStep || currentStep.type !== 'quiz' || !currentStep.question) return;
     soundFx.playTap();
+    stopSpeech();
+    if (voiceTimeoutRef.current) {
+      clearTimeout(voiceTimeoutRef.current);
+      voiceTimeoutRef.current = null;
+    }
+
     setIsListeningMic(true);
+    setVoiceTranscript('');
 
-    const promptMsg = lang === 'en'
-      ? 'Go ahead and speak Grandma, I am listening with warm love...'
-      : 'คุณยายพูดชื่อหรือเล่าเรื่องได้เลยค่ะ... หนูฟังอยู่นะคะ 🎙️';
+    const SpeechRecognitionClass =
+      (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
 
-    speakWithElevenLabs(promptMsg, undefined, () => {
-      if (voiceTimeoutRef.current) {
-        clearTimeout(voiceTimeoutRef.current);
+    if (SpeechRecognitionClass) {
+      try {
+        const recognition = new SpeechRecognitionClass();
+        recognition.lang = lang === 'en' ? 'en-US' : 'th-TH';
+        recognition.continuous = true;
+        recognition.interimResults = true;
+
+        recognition.onresult = (event: any) => {
+          let fullTranscript = '';
+          for (let i = 0; i < event.results.length; i++) {
+            fullTranscript += event.results[i][0].transcript;
+          }
+          setVoiceTranscript(fullTranscript);
+
+          // Check if spoken words match target
+          const correctOption = currentStep.question?.options.find((o) => o.isCorrect);
+          if (correctOption) {
+            const targetWords = [
+              correctOption.label.toLowerCase(),
+              correctOption.sublabel?.toLowerCase() || '',
+              ...(correctOption.label.match(/[\u0E00-\u0E7F]+/g) || []),
+            ].filter(Boolean);
+
+            const lowerSpoken = fullTranscript.toLowerCase();
+            const isMatch = targetWords.some((w) => w && lowerSpoken.includes(w));
+            if (isMatch) {
+              handleFinishVoice();
+            }
+          }
+        };
+
+        recognition.onerror = (e: any) => {
+          console.warn('SpeechRecognition notice:', e);
+        };
+
+        recognition.onend = () => {
+          // Keep listening active until elder taps finish or cancel
+        };
+
+        recognition.start();
+        recognitionRef.current = recognition;
+      } catch (e) {
+        console.warn('SpeechRecognition could not start:', e);
       }
-      voiceTimeoutRef.current = setTimeout(() => {
-        setIsListeningMic(false);
-        soundFx.playSuccessChime();
-        setAnswerState('correct');
+    }
+  };
+
+  const handleFinishVoice = () => {
+    if (recognitionRef.current) {
+      try {
+        recognitionRef.current.stop();
+      } catch (_) {}
+      recognitionRef.current = null;
+    }
+    setIsListeningMic(false);
+    soundFx.playSuccessChime();
+    setAnswerState('correct');
+    if (activeOrb) {
+      onCorrectAnswer(activeOrb.id);
+    }
+    const successSpeech = lang === 'en' ? currentStep?.question?.voiceSuccess.en : currentStep?.question?.voiceSuccess.th;
+    if (successSpeech) {
+      speakWithElevenLabs(successSpeech, undefined, undefined, lang);
+    }
+  };
+
+  const handleCancelVoice = () => {
+    if (recognitionRef.current) {
+      try {
+        recognitionRef.current.abort();
+      } catch (_) {}
+      recognitionRef.current = null;
+    }
+    setIsListeningMic(false);
+    setVoiceTranscript('');
+    soundFx.playTap();
+  };
+
+  // ==========================================
+  // DUST WIPE MEMORY REVEAL HANDLERS (3 PHOTOS)
+  // ==========================================
+  const handlePhotoWiped = (photoId: string) => {
+    setWipedPhotoIds((prev) => {
+      if (prev.includes(photoId)) return prev;
+      const next = [...prev, photoId];
+      soundFx.playSuccessChime();
+
+      const totalRequired = currentStep?.wipeData?.items?.length || 3;
+      if (next.length >= totalRequired) {
+        setTimeout(() => {
+          soundFx.playCelebration();
+        }, 500);
         if (activeOrb) {
           onCorrectAnswer(activeOrb.id);
         }
-        const successSpeech = lang === 'en' ? currentStep.question?.voiceSuccess.en : currentStep.question?.voiceSuccess.th;
-        if (successSpeech) {
-          speakWithElevenLabs(successSpeech, undefined, undefined, lang);
+        const successVoice = lang === 'en'
+          ? currentStep?.wipeData?.voiceSuccess.en
+          : currentStep?.wipeData?.voiceSuccess.th;
+        if (successVoice) {
+          speakWithElevenLabs(successVoice, undefined, undefined, lang);
         }
-      }, 2600);
-    }, lang);
+      } else {
+        // Auto-advance to next unwiped photo after 1.5s delay so elder can admire the revealed photo
+        const items = currentStep?.wipeData?.items || [];
+        const nextUnwipedIdx = items.findIndex((it) => it.id !== photoId && !next.includes(it.id));
+        if (nextUnwipedIdx !== -1) {
+          setTimeout(() => {
+            setActiveWipeIdx(nextUnwipedIdx);
+          }, 1500);
+        }
+      }
+      return next;
+    });
   };
 
   // ==========================================
@@ -805,7 +1428,7 @@ export const TestView: React.FC<TestViewProps> = ({
 
             {/* Question Text (Clear, Senior-friendly) */}
             <div className="space-y-0.5">
-              <h2 className="text-base sm:text-lg font-bold text-slate-900 leading-snug tracking-tight">
+              <h2 className="text-base sm:text-lg font-bold text-slate-900 leading-snug tracking-normal">
                 {lang === 'en' ? currentStep.question.questionText.en : currentStep.question.questionText.th}
               </h2>
               <p className="text-[11px] sm:text-xs text-slate-500 font-medium">
@@ -904,7 +1527,7 @@ export const TestView: React.FC<TestViewProps> = ({
                     <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-amber-400 text-slate-950 flex items-center justify-center font-bold text-xs sm:text-sm shadow-2xs">
                       <span>🌸</span>
                     </div>
-                    <span className="text-xs sm:text-base font-extrabold text-amber-950 tracking-tight">
+                    <span className="text-xs sm:text-base font-extrabold text-amber-950 tracking-normal">
                       {traitInfo.title}
                     </span>
                   </div>
@@ -925,7 +1548,7 @@ export const TestView: React.FC<TestViewProps> = ({
                 </div>
 
                 <div className="space-y-1 pl-1">
-                  <p className="text-sm sm:text-base font-black text-slate-900 leading-snug">
+                  <p className="text-sm sm:text-base font-extrabold text-slate-900 leading-snug tracking-normal">
                     {traitInfo.detail}
                   </p>
                   <p className="text-xs sm:text-sm text-amber-900 font-semibold leading-relaxed flex items-center space-x-1">
@@ -938,26 +1561,70 @@ export const TestView: React.FC<TestViewProps> = ({
 
           {/* Quick Voice / Clue Auxiliary Controls */}
           {answerState !== 'correct' && (
-            <div className="flex items-center justify-center gap-2.5 pt-0.5">
-              <button
-                onClick={handleTriggerClue}
-                className="flex items-center space-x-1.5 px-4 py-2 rounded-full bg-white hover:bg-amber-50 border border-amber-200/90 text-amber-900 font-bold text-xs sm:text-sm active:scale-95 transition-all shadow-2xs hover:shadow-xs cursor-pointer"
-              >
-                <Lightbulb className="w-3.5 h-3.5 text-amber-600" />
-                <span>{lang === 'en' ? 'Get a Clue 💡' : 'ขอคำใบ้ 💡'}</span>
-              </button>
+            <div className="space-y-3 pt-0.5">
+              {/* If Listening Mic is active, display Interactive Voice Listening Card */}
+              {isListeningMic ? (
+                <div className="bg-gradient-to-br from-rose-50 via-amber-50/40 to-rose-50 border-2 border-rose-300/80 rounded-2xl p-3.5 sm:p-4 shadow-sm animate-fade-in space-y-2.5 text-center">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-2">
+                      <div className="relative flex items-center justify-center">
+                        <span className="w-3 h-3 rounded-full bg-rose-500 animate-ping absolute" />
+                        <span className="w-2.5 h-2.5 rounded-full bg-rose-600 relative" />
+                      </div>
+                      <span className="text-xs sm:text-sm font-bold text-rose-900">
+                        {lang === 'en' ? 'Listening to your voice...' : 'กำลังฟังคุณยายพูดอยู่นะคะ... 🎙️'}
+                      </span>
+                    </div>
+                    <button
+                      onClick={handleCancelVoice}
+                      className="text-xs font-semibold text-slate-500 hover:text-slate-800 px-2 py-1 rounded-lg hover:bg-slate-100/60 cursor-pointer"
+                    >
+                      {lang === 'en' ? 'Cancel' : 'ยกเลิก'}
+                    </button>
+                  </div>
 
-              <button
-                onClick={handleVoiceAnswer}
-                className={`flex items-center space-x-1.5 px-4 py-2 rounded-full border text-xs sm:text-sm font-bold transition-all active:scale-95 shadow-2xs hover:shadow-xs cursor-pointer ${
-                  isListeningMic
-                    ? 'bg-rose-50 border-rose-300 text-rose-800 ring-2 ring-rose-200 animate-pulse'
-                    : 'bg-white hover:bg-slate-50 border-slate-200/90 text-slate-700'
-                }`}
-              >
-                <Mic className={`w-3.5 h-3.5 ${isListeningMic ? 'text-rose-600' : 'text-slate-500'}`} />
-                <span>{isListeningMic ? (lang === 'en' ? 'Listening...' : 'กำลังฟังเสียง...') : (lang === 'en' ? 'Speak Answer 🎙️' : 'ตอบด้วยเสียงพูด 🎙️')}</span>
-              </button>
+                  {/* Live Speech Transcript / Guide */}
+                  <div className="bg-white/95 border border-rose-100 rounded-xl p-3 min-h-[50px] flex items-center justify-center shadow-2xs">
+                    {voiceTranscript ? (
+                      <p className="text-sm sm:text-base font-bold text-slate-900 animate-fade-in">
+                        "{voiceTranscript}"
+                      </p>
+                    ) : (
+                      <div className="flex items-center space-x-2 text-rose-600/70 text-xs sm:text-sm">
+                        <Mic className="w-4 h-4 animate-bounce" />
+                        <span>{lang === 'en' ? 'Speak a name or story now...' : 'พูดชื่อหรือเล่าเรื่องได้เลยค่ะ...'}</span>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Elder-friendly "Done Speaking" button */}
+                  <button
+                    onClick={() => handleFinishVoice()}
+                    className="w-full py-2.5 sm:py-3 px-4 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold text-xs sm:text-sm shadow-md shadow-emerald-600/20 active:scale-98 transition-all flex items-center justify-center space-x-1.5 cursor-pointer"
+                  >
+                    <Check className="w-4 h-4 stroke-[2.5]" />
+                    <span>{lang === 'en' ? "I'm done speaking ✨" : 'พูดเสร็จแล้วค่ะ ✨'}</span>
+                  </button>
+                </div>
+              ) : (
+                <div className="flex items-center justify-center gap-2.5">
+                  <button
+                    onClick={handleTriggerClue}
+                    className="flex items-center space-x-1.5 px-4 py-2 rounded-full bg-white hover:bg-amber-50 border border-amber-200/90 text-amber-900 font-bold text-xs sm:text-sm active:scale-95 transition-all shadow-2xs hover:shadow-xs cursor-pointer"
+                  >
+                    <Lightbulb className="w-3.5 h-3.5 text-amber-600" />
+                    <span>{lang === 'en' ? 'Get a Clue 💡' : 'ขอคำใบ้ 💡'}</span>
+                  </button>
+
+                  <button
+                    onClick={handleVoiceAnswer}
+                    className="flex items-center space-x-1.5 px-4 py-2 rounded-full border border-slate-200/90 bg-white hover:bg-slate-50 text-slate-700 font-bold text-xs sm:text-sm active:scale-95 transition-all shadow-2xs hover:shadow-xs cursor-pointer"
+                  >
+                    <Mic className="w-3.5 h-3.5 text-slate-500" />
+                    <span>{lang === 'en' ? 'Speak Answer 🎙️' : 'ตอบด้วยเสียงพูด 🎙️'}</span>
+                  </button>
+                </div>
+              )}
             </div>
           )}
         </div>
@@ -973,20 +1640,12 @@ export const TestView: React.FC<TestViewProps> = ({
           <div className="bg-white rounded-2xl sm:rounded-3xl border border-slate-200/80 px-4 py-3 sm:py-3.5 shadow-sm flex items-center justify-between">
             <div className="flex items-center space-x-2.5 min-w-0">
               <span className="text-xl sm:text-2xl shrink-0">🧩</span>
-              <h2 className="text-base sm:text-lg font-black text-slate-900 tracking-tight whitespace-nowrap">
+              <h2 className="text-base sm:text-lg font-extrabold text-slate-900 tracking-normal whitespace-nowrap">
                 {lang === 'en' ? 'Match people in the photos' : 'จับคู่คนในภาพถ่าย'}
               </h2>
             </div>
 
-            <div className="flex items-center space-x-2 shrink-0">
-              {/* Progress Count Badge */}
-              <div className="inline-flex items-center space-x-1 px-2.5 py-1 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-bold">
-                <span>✨</span>
-                <span>
-                  {matchedIds.length}/{currentStep.matchPairs.length}
-                </span>
-              </div>
-
+            <div className="flex items-center shrink-0">
               {/* Audio Speaker Button */}
               <button
                 onClick={handlePlayStepVoice}
@@ -1075,7 +1734,7 @@ export const TestView: React.FC<TestViewProps> = ({
                     key={item.id}
                     onClick={() => handleTapMatchLabel(item.id)}
                     disabled={isMatched}
-                    className={`w-full ${cardHeight} flex flex-col justify-between p-3.5 sm:p-4 rounded-2xl sm:rounded-3xl border-2 transition-all cursor-pointer text-left select-none relative active:scale-[0.98] ${
+                    className={`w-full ${cardHeight} flex flex-col justify-between p-3 sm:p-4 rounded-2xl sm:rounded-3xl border-2 overflow-hidden transition-all cursor-pointer text-left select-none relative min-w-0 active:scale-[0.98] ${
                       isMatched
                         ? 'bg-emerald-50/90 border-emerald-500 border-b-4 border-b-emerald-700 shadow-2xs opacity-95 cursor-default'
                         : isMismatch
@@ -1085,24 +1744,25 @@ export const TestView: React.FC<TestViewProps> = ({
                         : 'bg-white hover:bg-amber-50/30 border-slate-200/90 border-b-4 border-b-slate-300 shadow-2xs hover:shadow-xs'
                     }`}
                   >
-                    {/* Top: Relation Pill Tag */}
-                    <div className="flex items-center">
+                    {/* Top: Relation Pill Tag (Constrained to Card Bounds with Truncation) */}
+                    <div className="w-full flex items-center min-w-0">
                       <span
-                        className={`inline-flex items-center space-x-1.5 px-2.5 py-1 rounded-full text-[11px] sm:text-xs font-bold border ${
+                        className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10.5px] xs:text-[11px] sm:text-xs font-bold border max-w-full min-w-0 shadow-2xs ${
                           isMatched
                             ? 'bg-emerald-100 text-emerald-800 border-emerald-300'
                             : `${item.tagColor.bg} ${item.tagColor.text} ${item.tagColor.border}`
                         }`}
+                        title={displayRel}
                       >
-                        <span>{item.icon}</span>
-                        <span className="whitespace-nowrap">{displayRel}</span>
+                        <span className="shrink-0 text-xs leading-none">{item.icon}</span>
+                        <span className="truncate block min-w-0 leading-tight">{displayRel}</span>
                       </span>
                     </div>
 
                     {/* Bottom: Big bold Senior-friendly Name + Checkmark */}
-                    <div className="flex items-center justify-between gap-1">
+                    <div className="w-full flex items-center justify-between gap-1 min-w-0">
                       <span
-                        className={`text-xl sm:text-2xl font-black block truncate tracking-tight ${
+                        className={`text-xl sm:text-2xl font-extrabold block truncate tracking-normal min-w-0 ${
                           isMatched ? 'text-emerald-950' : 'text-slate-900'
                         }`}
                       >
@@ -1122,6 +1782,125 @@ export const TestView: React.FC<TestViewProps> = ({
           </div>
         </div>
       )}
+
+      {/* =========================================================================
+          STEP TYPE 3: DUST WIPE MEMORY REVEAL (ปัดฝุ่นฟื้นภาพวันวาน)
+          Touch/Drag canvas to wipe away vintage dust in 3 classic frames (wood, gold, black)
+          Reveals magic orb-color glow upon completion with 0 anxiety & 0 score pressure
+          ========================================================================= */}
+      {/* =========================================================================
+          STEP TYPE 3: DUST WIPE MEMORY REVEAL (ปัดฝุ่นฟื้นภาพวันวาน)
+          3 Classic Frames (Wood, Gold, Black) side-by-side in natural 3:4 portrait ratio
+          Translucent dust reveals underlying photo softly
+          Must wipe all 3 photos to proceed, 100% unscrollable within viewport
+          ========================================================================= */}
+      {currentStep.type === 'wipe' && currentStep.wipeData && (() => {
+        const items = currentStep.wipeData.items || [];
+        const isAllWiped = items.length > 0 && wipedPhotoIds.length >= items.length;
+        const currentPhoto = items[activeWipeIdx] || items[0];
+        const isCurrentPhotoWiped = currentPhoto && wipedPhotoIds.includes(currentPhoto.id);
+
+        return (
+          <div className="flex-1 flex flex-col justify-between py-0.5 select-none animate-fade-in max-w-[420px] sm:max-w-[480px] mx-auto w-full">
+            {/* Header Card */}
+            <div className="bg-white rounded-2xl border border-slate-200/80 px-3.5 py-1.5 shadow-xs flex items-center justify-between shrink-0 w-full">
+              <div className="flex items-center space-x-2.5 min-w-0">
+                <span className="text-xl sm:text-2xl shrink-0">🌸</span>
+                <div className="min-w-0">
+                  <h2 className="text-sm sm:text-base font-extrabold text-slate-900 tracking-normal truncate">
+                    {lang === 'en' ? 'Gently wipe the dust away' : 'ปัดฝุ่นฟื้นภาพวันวาน'}
+                  </h2>
+                  <p className="text-[11px] sm:text-xs text-slate-500 font-medium truncate">
+                    {lang === 'en'
+                      ? 'Wipe the framed memory to restore it'
+                      : 'ลูบปัดฝุ่นบนกรอบรูปเพื่อฟื้นความทรงจำนะคะ'}
+                  </p>
+                </div>
+              </div>
+
+              {/* Audio Speaker Button */}
+              <button
+                onClick={handlePlayStepVoice}
+                className={`w-8 h-8 sm:w-9 sm:h-9 rounded-full flex items-center justify-center transition-all cursor-pointer active:scale-95 shadow-2xs border shrink-0 ${
+                  isPlayingAudio
+                    ? 'bg-amber-400 border-amber-500 text-slate-950 ring-3 ring-amber-200 animate-pulse'
+                    : 'bg-amber-50/90 hover:bg-amber-100 border-amber-200/90 text-amber-900'
+                }`}
+                title={lang === 'en' ? 'Listen to instructions' : 'แตะเพื่อฟังเสียงแนะนำ'}
+                aria-label="Play speech"
+              >
+                {isPlayingAudio ? (
+                  <VolumeX className="w-3.5 h-3.5 text-slate-950" />
+                ) : (
+                  <Volume2 className="w-3.5 h-3.5 text-amber-700" />
+                )}
+              </button>
+            </div>
+
+            {/* Active Grand Framed Photo (แสดงแค่กรอบรูปใหญ่เต็มหน้าจอ) */}
+            <div className="flex-1 flex flex-col justify-center items-center py-1 w-full min-h-0">
+              {currentPhoto && (
+                <DustWipePhotoCard
+                  key={currentPhoto.id}
+                  item={currentPhoto}
+                  index={activeWipeIdx}
+                  isCompleted={wipedPhotoIds.includes(currentPhoto.id)}
+                  onComplete={handlePhotoWiped}
+                  onStartWipe={() => setHasStartedWiping(true)}
+                  lang={lang}
+                  showHandGuide={!hasStartedWiping && wipedPhotoIds.length === 0}
+                />
+              )}
+            </div>
+
+            {/* Bottom Controls / Clean Navigation */}
+            <div className="shrink-0 w-full py-1">
+              {isAllWiped ? (
+                // All 3 Photos Restored: Clean Green Continue Button
+                <div className="flex items-center justify-center py-1 animate-fade-in">
+                  <button
+                    onClick={handleNextStep}
+                    className="w-full max-w-[280px] py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 border-b-3 border-b-emerald-800 text-white font-extrabold tracking-normal text-sm shadow-md shadow-emerald-600/25 active:border-b-1 active:translate-y-[1px] transition-all flex items-center justify-center space-x-2 cursor-pointer"
+                  >
+                    <span>{lang === 'en' ? 'Continue' : 'ไปต่อ'}</span>
+                    <ArrowRight className="w-4 h-4 stroke-[2.5]" />
+                  </button>
+                </div>
+              ) : isCurrentPhotoWiped ? (
+                // Current Photo Wiped: Clean Next Photo Button
+                <div className="flex items-center justify-center py-1 animate-fade-in">
+                  <button
+                    onClick={() => {
+                      const nextIdx = (activeWipeIdx + 1) % items.length;
+                      setActiveWipeIdx(nextIdx);
+                    }}
+                    className="px-6 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 border-b-3 border-b-amber-700 text-slate-950 font-extrabold tracking-normal text-xs sm:text-sm shadow-md shadow-amber-500/25 active:border-b-1 active:translate-y-[1px] transition-all flex items-center space-x-2 cursor-pointer"
+                  >
+                    <span>{lang === 'en' ? 'Next Photo' : 'ภาพถัดไป'}</span>
+                    <ArrowRight className="w-4 h-4 stroke-[2.5]" />
+                  </button>
+                </div>
+              ) : (
+                // Wiping in progress: Clean progress dots
+                <div className="flex items-center justify-center space-x-2 py-1 animate-fade-in">
+                  {items.map((it, idx) => (
+                    <div
+                      key={it.id}
+                      className={`w-2.5 h-2.5 rounded-full transition-all duration-300 ${
+                        wipedPhotoIds.includes(it.id)
+                          ? 'bg-emerald-500 scale-110 shadow-xs'
+                          : activeWipeIdx === idx
+                          ? 'bg-amber-400 ring-2 ring-amber-200'
+                          : 'bg-slate-300'
+                      }`}
+                    />
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        );
+      })()}
 
       {/* =========================================================================
           POPUP เฉลย (Memory Solution & Story Reveal Modal)
@@ -1150,31 +1929,25 @@ export const TestView: React.FC<TestViewProps> = ({
                 currentStep.question.options.find((o) => o.isCorrect) ||
                 currentStep.question.options[0];
               const displayLabel =
-                currentStep.question.angle === 'person'
-                  ? (lang === 'en' ? `This is ${correctOpt.label}` : `นี่คือ ${correctOpt.label}`)
-                  : correctOpt.label;
+                lang === 'en'
+                  ? `This is ${correctOpt.labelEn || correctOpt.label}`
+                  : `นี่คือ ${correctOpt.label}`;
 
               return (
                 <>
-                  {/* Top Badge & Celebration */}
-                  <div className="space-y-1.5">
+                  {/* Top Celebration */}
+                  <div className="space-y-2">
                     <div className="w-14 h-14 sm:w-16 sm:h-16 mx-auto rounded-full bg-gradient-to-tr from-emerald-400 via-green-500 to-emerald-600 text-white flex items-center justify-center shadow-lg shadow-emerald-500/25">
                       <Check className="w-8 h-8 sm:w-9 sm:h-9 stroke-[3]" />
                     </div>
-                    <div>
-                      <div className="inline-flex items-center space-x-1 px-3 py-0.5 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-bold">
-                        <span>✨</span>
-                        <span>{lang === 'en' ? 'Memory Reveal' : 'เฉลยความทรงจำ'}</span>
-                      </div>
-                      <h3 className="text-xl sm:text-2xl font-black text-slate-900 mt-1 tracking-tight">
-                        {lang === 'en' ? 'Correct! Well Done! ✨' : 'ถูกต้องแล้วค่ะ! ✨'}
-                      </h3>
-                    </div>
+                    <h3 className="text-xl sm:text-2xl font-extrabold text-slate-900 tracking-normal">
+                      {lang === 'en' ? 'Well Done! 🌟' : 'Well Done! เยี่ยมมาก! 🌟'}
+                    </h3>
                   </div>
 
                   {/* Solution Card with photo thumbnail */}
-                  <div className="bg-emerald-50/80 border-2 border-emerald-400/90 rounded-2xl p-3.5 flex items-center space-x-3 text-left shadow-2xs">
-                    <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-full overflow-hidden shrink-0 border-2 border-white shadow-xs bg-slate-100 flex items-center justify-center">
+                  <div className="bg-emerald-50/80 border-2 border-emerald-400/90 rounded-2xl p-3.5 sm:p-4 flex items-center space-x-3.5 text-left shadow-2xs">
+                    <div className="w-16 h-16 sm:w-18 sm:h-18 rounded-full overflow-hidden shrink-0 border-2 border-white shadow-xs bg-slate-100 flex items-center justify-center">
                       {correctOpt.photoUrl ? (
                         <img
                           src={correctOpt.photoUrl}
@@ -1192,33 +1965,21 @@ export const TestView: React.FC<TestViewProps> = ({
                       )}
                     </div>
                     <div className="min-w-0 flex-1">
-                      <span className="text-[11px] sm:text-xs font-bold text-emerald-700 block uppercase tracking-wide">
-                        {lang === 'en' ? 'Correct Answer' : 'เฉลยคำตอบ'}
-                      </span>
-                      <span className="text-base sm:text-lg font-black text-slate-900 block truncate">
+                      <span className="text-lg sm:text-xl font-extrabold text-slate-900 block truncate tracking-normal">
                         {displayLabel}
                       </span>
                       {correctOpt.sublabel && (
-                        <span className="text-xs sm:text-sm text-slate-600 font-medium block truncate">
-                          {correctOpt.sublabel}
+                        <span className="text-xs sm:text-sm text-emerald-800 font-semibold block truncate mt-0.5">
+                          {lang === 'en' ? (correctOpt.sublabelEn || correctOpt.sublabel) : correctOpt.sublabel}
                         </span>
                       )}
                     </div>
                   </div>
 
-                  {/* Warm Story Explanation */}
-                  <div className="bg-slate-50 border border-slate-200/80 rounded-2xl p-3 text-center">
-                    <p className="text-xs sm:text-sm text-slate-700 font-medium leading-relaxed">
-                      {lang === 'en'
-                        ? currentStep.question.voiceSuccess.en
-                        : currentStep.question.voiceSuccess.th}
-                    </p>
-                  </div>
-
                   {/* Continue Button */}
                   <button
                     onClick={handleNextStep}
-                    className="w-full py-3.5 sm:py-4 rounded-2xl bg-emerald-600 hover:bg-emerald-500 border-b-4 border-b-emerald-800 text-white font-black text-base sm:text-lg shadow-lg shadow-emerald-600/25 active:border-b-1 active:translate-y-[2px] transition-all flex items-center justify-center space-x-2 cursor-pointer"
+                    className="w-full py-3.5 sm:py-4 rounded-2xl bg-emerald-600 hover:bg-emerald-500 border-b-4 border-b-emerald-800 text-white font-extrabold tracking-normal text-base sm:text-lg shadow-lg shadow-emerald-600/25 active:border-b-1 active:translate-y-[2px] transition-all flex items-center justify-center space-x-2 cursor-pointer"
                   >
                     <span>{lang === 'en' ? 'Continue' : 'ไปต่อ'}</span>
                     <ArrowRight className="w-5 h-5 stroke-[2.5]" />
@@ -1239,7 +2000,7 @@ export const TestView: React.FC<TestViewProps> = ({
                       <span>🧩</span>
                       <span>{lang === 'en' ? 'Matching Solution' : 'เฉลยการจับคู่'}</span>
                     </div>
-                    <h3 className="text-xl sm:text-2xl font-black text-slate-900 mt-1 tracking-tight">
+                    <h3 className="text-xl sm:text-2xl font-extrabold text-slate-900 mt-1 tracking-normal">
                       {lang === 'en' ? 'All Matched Perfectly! ✨' : 'จับคู่ถูกต้องครบทุกภาพ! ✨'}
                     </h3>
                   </div>
@@ -1262,7 +2023,7 @@ export const TestView: React.FC<TestViewProps> = ({
                           className="w-9 h-9 rounded-full object-cover shrink-0 border border-slate-200"
                         />
                         <div className="min-w-0 flex-1">
-                          <span className="text-xs sm:text-sm font-black text-slate-900 block truncate">
+                          <span className="text-xs sm:text-sm font-extrabold text-slate-900 block truncate tracking-normal">
                             {displayName}
                           </span>
                           <span className="text-[11px] sm:text-xs text-slate-500 font-medium block truncate">
@@ -1285,7 +2046,7 @@ export const TestView: React.FC<TestViewProps> = ({
                 {/* Continue Button */}
                 <button
                   onClick={handleNextStep}
-                  className="w-full py-3.5 sm:py-4 rounded-2xl bg-emerald-600 hover:bg-emerald-500 border-b-4 border-b-emerald-800 text-white font-black text-base sm:text-lg shadow-lg shadow-emerald-600/25 active:border-b-1 active:translate-y-[2px] transition-all flex items-center justify-center space-x-2 cursor-pointer"
+                  className="w-full py-3.5 sm:py-4 rounded-2xl bg-emerald-600 hover:bg-emerald-500 border-b-4 border-b-emerald-800 text-white font-extrabold tracking-normal text-base sm:text-lg shadow-lg shadow-emerald-600/25 active:border-b-1 active:translate-y-[2px] transition-all flex items-center justify-center space-x-2 cursor-pointer"
                 >
                   <span>{lang === 'en' ? 'Continue' : 'ไปต่อ'}</span>
                   <ArrowRight className="w-5 h-5 stroke-[2.5]" />

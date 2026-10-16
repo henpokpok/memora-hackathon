@@ -23,7 +23,7 @@ export const THAI_VOICE_PRESETS: VoicePreset[] = [
     descriptionEn: 'Kind aunt tone, authentic Thai accent, soothing and unhurried pace',
     gender: 'female',
     lang: 'th',
-    orbPhotoUrl: 'https://images.unsplash.com/photo-1492562080023-ab3db95bfbce?auto=format&fit=crop&w=400&q=80',
+    orbPhotoUrl: '/images/memories/airplane-cafe-drinks.jpg',
     glowColor: 'rgba(245, 158, 11, 0.45)'
   },
   {
@@ -36,7 +36,7 @@ export const THAI_VOICE_PRESETS: VoicePreset[] = [
     descriptionEn: 'Polite mature female voice, clear, respectful and comfortable to hear',
     gender: 'female',
     lang: 'th',
-    orbPhotoUrl: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=400&q=80',
+    orbPhotoUrl: '/images/memories/korean-sashimi-feast.jpg',
     glowColor: 'rgba(56, 189, 248, 0.45)'
   },
   {
@@ -49,7 +49,7 @@ export const THAI_VOICE_PRESETS: VoicePreset[] = [
     descriptionEn: 'Affectionate granddaughter voice, sweet, uplifting and friendly',
     gender: 'female',
     lang: 'th',
-    orbPhotoUrl: 'https://images.unsplash.com/photo-1563245372-f21724e3856d?auto=format&fit=crop&w=400&q=80',
+    orbPhotoUrl: '/images/memories/studio-six-ladies.jpg',
     glowColor: 'rgba(244, 63, 94, 0.45)'
   },
   {
@@ -62,7 +62,7 @@ export const THAI_VOICE_PRESETS: VoicePreset[] = [
     descriptionEn: 'Casual and friendly Thai male voice, clear articulation and reassuring',
     gender: 'male',
     lang: 'th',
-    orbPhotoUrl: 'https://images.unsplash.com/photo-1506126613408-eca07ce68773?auto=format&fit=crop&w=400&q=80',
+    orbPhotoUrl: '/images/memories/cable-car-banahills.jpg',
     glowColor: 'rgba(16, 185, 129, 0.45)'
   },
   {
@@ -75,7 +75,7 @@ export const THAI_VOICE_PRESETS: VoicePreset[] = [
     descriptionEn: 'Professional caregiver/physician tone, deep, calm and reassuring',
     gender: 'male',
     lang: 'th',
-    orbPhotoUrl: 'https://images.unsplash.com/photo-1531545514256-b1400bc00f31?auto=format&fit=crop&w=400&q=80',
+    orbPhotoUrl: '/images/memories/family-gala-night.jpg',
     glowColor: 'rgba(139, 92, 246, 0.45)'
   }
 ];
@@ -91,7 +91,7 @@ export const ENGLISH_VOICE_PRESETS: VoicePreset[] = [
     descriptionEn: 'Soothing, gentle female voice, perfect for calm listening',
     gender: 'female',
     lang: 'en',
-    orbPhotoUrl: 'https://images.unsplash.com/photo-1511632765486-a01980e01a18?auto=format&fit=crop&w=400&q=80',
+    orbPhotoUrl: '/images/memories/baby-beach-grandparents.jpg',
     glowColor: 'rgba(245, 158, 11, 0.45)'
   },
   {
@@ -104,7 +104,7 @@ export const ENGLISH_VOICE_PRESETS: VoicePreset[] = [
     descriptionEn: 'Professional, articulate American English voice',
     gender: 'female',
     lang: 'en',
-    orbPhotoUrl: 'https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?auto=format&fit=crop&w=400&q=80',
+    orbPhotoUrl: '/images/memories/mon-bridge-sangkhla.jpg',
     glowColor: 'rgba(14, 165, 233, 0.45)'
   },
   {
@@ -117,7 +117,7 @@ export const ENGLISH_VOICE_PRESETS: VoicePreset[] = [
     descriptionEn: 'Warm and expressive, like a daughter or grandchild',
     gender: 'female',
     lang: 'en',
-    orbPhotoUrl: 'https://images.unsplash.com/photo-1491438590914-bc09fcaaf77a?auto=format&fit=crop&w=400&q=80',
+    orbPhotoUrl: '/images/memories/wheelchair-race-park.jpg',
     glowColor: 'rgba(244, 63, 94, 0.45)'
   },
   {
@@ -130,7 +130,7 @@ export const ENGLISH_VOICE_PRESETS: VoicePreset[] = [
     descriptionEn: 'Gentle, reassuring tone suitable for caregiving',
     gender: 'male',
     lang: 'en',
-    orbPhotoUrl: 'https://images.unsplash.com/photo-1519741497674-611481863552?auto=format&fit=crop&w=400&q=80',
+    orbPhotoUrl: '/images/memories/dimsum-roundtable.jpg',
     glowColor: 'rgba(99, 102, 241, 0.45)'
   }
 ];

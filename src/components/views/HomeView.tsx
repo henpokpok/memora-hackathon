@@ -483,11 +483,14 @@ export const HomeView: React.FC<HomeViewProps> = ({
 
     if (closeTimerRef.current) clearTimeout(closeTimerRef.current);
     closeTimerRef.current = setTimeout(() => {
-      setIsTrayPaused(false);
-      setAnimationPhase('idle');
       setExpandedOrb(null);
       setSelectedKey(null);
-    }, 440);
+      setAnimationPhase('idle');
+      // Gentle settling pause before resuming rail shelf scroll
+      setTimeout(() => {
+        setIsTrayPaused(false);
+      }, 150);
+    }, 480);
   };
 
   // Ensure enough orbs in the track so Set 1 spans >= 1200px (wider than any tablet/desktop container)
@@ -503,7 +506,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
   // Helper to render an individual orb button on the rail with 100% consistent, uniform styling
   const renderOrbItem = (orb: MemoryOrb, itemKey: string, orbIndex: number) => {
     const style = emotionStyles[orb.emotion] || emotionStyles.joy;
-    const isSelected = selectedKey === itemKey && animationPhase !== 'idle';
+    const isSelected = selectedKey === itemKey && (animationPhase === 'floating-to-center' || animationPhase === 'morphed');
     const isAutoTarget = activeOrbKey === itemKey && isMiniPreviewVisible;
 
     return (
@@ -515,7 +518,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
       >
         <button
           onClick={(e) => handleOrbClick(orb, itemKey, e)}
-          className={`group/ball absolute inset-0 w-full h-full rounded-full flex items-center justify-center focus:outline-none transition-transform duration-200 ${
+          className={`group/ball absolute inset-0 w-full h-full rounded-full flex items-center justify-center focus:outline-none transition-[opacity,transform] duration-500 ease-out ${
             isSelected
               ? 'opacity-0 pointer-events-none'
               : 'opacity-100 hover:scale-115 active:scale-95'
@@ -554,22 +557,45 @@ export const HomeView: React.FC<HomeViewProps> = ({
               `,
             }}
           >
-            {/* Swirling Inner Mist Gradient */}
+            {/* 1. Deep Emotional Base Mist (มนๆ mix) */}
             <div
-              className={`w-full h-full rounded-full bg-gradient-to-tr ${style.gradient} animate-mist-swirl opacity-90 filter blur-[0.6px] shadow-inner`}
+              className={`w-full h-full rounded-full bg-gradient-to-tr ${style.gradient} animate-mist-swirl opacity-45 filter blur-[0.6px] shadow-inner`}
             />
 
-            {/* Faint, dreamy memory image inside the glass (soft & hazy reflection, not sharp) */}
-            <div className="absolute inset-1 aspect-square rounded-full overflow-hidden opacity-30 mix-blend-overlay pointer-events-none filter blur-[0.6px]">
+            {/* 2. Clear Memory Photo Projection (Suspended inside crystal ball with soft radial vignette) */}
+            <div 
+              className="absolute inset-1 sm:inset-1.5 aspect-square rounded-full overflow-hidden pointer-events-none orb-faint-projection"
+              style={{
+                opacity: 0.82,
+              }}
+            >
               <img
                 src={orb.photoUrl}
                 alt=""
                 decoding="async"
-                className="w-full h-full aspect-square rounded-full object-cover"
+                className="w-full h-full aspect-square rounded-full object-cover scale-105"
               />
             </div>
 
-            {/* 3D Glass Sphere Highlights */}
+            {/* 3. Subtle emotional tint wash to harmonize photo with orb emotion */}
+            <div
+              className={`absolute inset-1 sm:inset-1.5 rounded-full bg-gradient-to-tr ${style.gradient} opacity-20 mix-blend-color pointer-events-none orb-faint-projection`}
+            />
+
+            {/* 4. Counter-Rotating Caustic Liquid Wave ("วิ่งๆ") */}
+            <div
+              className={`absolute inset-0 rounded-full bg-gradient-to-br ${style.gradient} opacity-40 animate-orb-caustic filter blur-[0.8px] mix-blend-screen pointer-events-none`}
+            />
+
+            {/* 5. Orbiting Prismatic Light Stream ("วิ่งๆ") */}
+            <div
+              className="absolute -inset-1 rounded-full opacity-50 animate-orb-stream mix-blend-screen filter blur-[0.6px] pointer-events-none"
+              style={{
+                background: `conic-gradient(from 0deg, transparent 0%, ${style.glowHex} 35%, rgba(255,255,255,0.9) 50%, transparent 65%)`,
+              }}
+            />
+
+            {/* 6. 3D Glass Sphere Highlights */}
             <div className="orb-shine-light" />
             <div className="orb-bottom-rim-light" />
 
@@ -595,7 +621,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
           1. GREETING (Flush to the left, No "Grandma", Just "Good Morning, Name")
          ========================================================================= */}
       <div className="text-left px-2 sm:px-1 space-y-1">
-        <h1 className="text-3xl sm:text-4xl font-extrabold text-slate-900 tracking-tight">
+        <h1 className="text-3xl sm:text-4xl font-extrabold text-slate-900 tracking-normal">
           {getGreeting()}
         </h1>
         <p className="text-sm sm:text-base text-slate-500 font-medium">
@@ -752,6 +778,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
                 borderRadius: `${orbSize / 2}px`,
                 zIndex: 50,
                 scale: 1,
+                opacity: 1,
               }}
               animate={
                 animationPhase === 'floating-to-center'
@@ -766,6 +793,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
                       borderRadius: '42px',
                       zIndex: 50,
                       scale: 1,
+                      opacity: 1,
                       transition: {
                         duration: 0.36,
                         ease: [0.22, 1, 0.36, 1],
@@ -783,6 +811,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
                       borderRadius: '24px',
                       zIndex: 50,
                       scale: 1,
+                      opacity: 1,
                       transition: {
                         duration: 0.42,
                         ease: [0.16, 1, 0.3, 1],
@@ -799,23 +828,29 @@ export const HomeView: React.FC<HomeViewProps> = ({
                       borderRadius: `${orbSize / 2}px`,
                       zIndex: 50,
                       scale: 1,
+                      opacity: [1, 1, 0],
                       transition: {
-                        duration: 0.44,
+                        duration: 0.48,
                         ease: [0.22, 1, 0.36, 1],
+                        opacity: {
+                          duration: 0.48,
+                          times: [0, 0.55, 1],
+                          ease: 'easeInOut',
+                        },
                       },
                     }
               }
               onClick={handleCloseOrb}
               className="cursor-pointer flex items-center justify-center relative select-none"
               style={{
-                willChange: 'transform, width, height, border-radius',
+                willChange: 'transform, width, height, border-radius, opacity',
                 isolation: 'isolate',
               }}
             >
               {/* Primary soft aura glow emanating directly from the photo frame in the orb color */}
               <motion.div
                 animate={{
-                  opacity: animationPhase === 'closing' ? 0.6 : animationPhase === 'morphed' ? 0.95 : 0.7,
+                  opacity: animationPhase === 'closing' ? 0.3 : animationPhase === 'morphed' ? 0.95 : 0.7,
                   borderRadius: animationPhase === 'morphed' ? '24px' : '9999px',
                 }}
                 transition={{ duration: animationPhase === 'closing' ? 0.44 : 0.35, ease: 'easeOut' }}
@@ -868,53 +903,23 @@ export const HomeView: React.FC<HomeViewProps> = ({
                   backfaceVisibility: 'hidden',
                 }}
               >
-                {/* 1. Swirling Inner Mist Gradient (fades out when morphed, fades in over 0.44s during closing) */}
-                <motion.div
-                  animate={{
-                    opacity: animationPhase === 'morphed' ? 0 : 0.9,
-                    borderRadius: animationPhase === 'morphed' ? '24px' : '9999px',
-                  }}
-                  transition={{
-                    duration: animationPhase === 'closing' ? 0.44 : 0.35,
-                    ease: 'easeOut',
-                  }}
-                  className="absolute inset-0 w-full h-full overflow-hidden pointer-events-none rounded-[inherit]"
-                >
-                  <div
-                    className={`w-full h-full bg-gradient-to-tr ${activeStyle.gradient} animate-mist-swirl filter blur-[0.6px] shadow-inner`}
-                  />
-                </motion.div>
-
-                {/* 2. Memory Photograph: crisp when morphed; soft, dreamy & blended when orb */}
-                <motion.div
-                  animate={{
-                    opacity: animationPhase === 'morphed' ? 1 : 0.3,
-                    borderRadius: animationPhase === 'morphed' ? '24px' : '9999px',
-                    filter: animationPhase === 'morphed' ? 'blur(0px)' : 'blur(0.6px)',
-                  }}
-                  transition={{
-                    duration: animationPhase === 'closing' ? 0.44 : 0.35,
-                    ease: 'easeOut',
-                  }}
-                  className={`absolute inset-0 w-full h-full pointer-events-none ${
-                    animationPhase === 'morphed' ? '' : 'mix-blend-overlay'
-                  }`}
-                >
+                {/* 1. Pure, Crisp Memory Photograph (Clean, zero rotating artifacts) */}
+                <div className="absolute inset-0 w-full h-full pointer-events-none">
                   <img
                     src={expandedOrb.photoUrl}
                     alt={expandedOrb.title}
                     decoding="async"
                     className="w-full h-full object-cover"
                   />
-                </motion.div>
+                </div>
 
-                {/* 3. 3D Glass Highlights (top shine & bottom rim) */}
+                {/* 2. 3D Glass Highlights (Visible only while floating as a sphere, completely hidden when morphed into photo) */}
                 <motion.div
                   animate={{
                     opacity: animationPhase === 'morphed' ? 0 : 1,
                   }}
                   transition={{
-                    duration: animationPhase === 'closing' ? 0.44 : 0.32,
+                    duration: animationPhase === 'closing' ? 0.35 : 0.25,
                     ease: 'easeOut',
                   }}
                   className="absolute inset-0 pointer-events-none rounded-[inherit] overflow-hidden z-20"
@@ -948,7 +953,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
                   className="text-center space-y-2 px-2 pointer-events-auto flex flex-col items-center justify-center"
                 >
                   {/* Title */}
-                  <h3 className="text-2xl sm:text-3xl font-black text-white tracking-tight drop-shadow-md text-center">
+                  <h3 className="text-2xl sm:text-3xl font-extrabold text-white tracking-normal drop-shadow-md text-center">
                     {lang === 'en' && expandedOrb.titleEn ? expandedOrb.titleEn : expandedOrb.title}
                   </h3>
 
@@ -974,7 +979,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
                         stopSpeech();
                         onSelectOrbForTest(expandedOrb.id);
                       }}
-                      className="flex items-center justify-center space-x-2.5 px-8 py-3.5 rounded-full bg-gradient-to-r from-amber-400 via-amber-300 to-yellow-300 text-slate-950 font-black text-base shadow-xl shadow-amber-500/30 hover:scale-105 active:scale-95 transition-all cursor-pointer"
+                      className="flex items-center justify-center space-x-2.5 px-8 py-3.5 rounded-full bg-gradient-to-r from-amber-400 via-amber-300 to-yellow-300 text-slate-950 font-extrabold text-base shadow-xl shadow-amber-500/30 hover:scale-105 active:scale-95 transition-all cursor-pointer"
                     >
                       <Play className="w-5 h-5 fill-slate-950" />
                       <span>{lang === 'en' ? 'Recall This Memory' : 'เริ่มทบทวนความทรงจำนี้'}</span>
@@ -1142,7 +1147,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
                     />
 
                     {/* Pure Date/Year text directly on photo */}
-                    <div className="absolute top-2.5 right-3 z-10 text-xs font-bold text-white/95 drop-shadow-[0_1px_3px_rgba(0,0,0,0.85)] pointer-events-none tracking-tight">
+                    <div className="absolute top-2.5 right-3 z-10 text-xs font-bold text-white/95 drop-shadow-[0_1px_3px_rgba(0,0,0,0.85)] pointer-events-none tracking-normal">
                       {(() => {
                         const rawDate =
                           lang === 'en'
@@ -1164,7 +1169,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
                   transition={{ delay: 0.55, duration: 0.75, ease: 'easeOut' }}
                   className="mt-3.5 sm:mt-4 text-center space-y-1.5 max-w-[320px] sm:max-w-[360px] pointer-events-auto select-none flex flex-col items-center px-2"
                 >
-                  <h4 className="text-base sm:text-lg font-extrabold text-slate-900 tracking-tight leading-snug drop-shadow-xs line-clamp-1">
+                  <h4 className="text-base sm:text-lg font-extrabold text-slate-900 tracking-normal leading-snug drop-shadow-xs line-clamp-1">
                     {lang === 'en' && miniPreviewOrb.titleEn ? miniPreviewOrb.titleEn : miniPreviewOrb.title}
                   </h4>
 
@@ -1202,7 +1207,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
             <Sparkles className="w-3.5 h-3.5 text-amber-600 animate-pulse" />
             <span>{lang === 'en' ? "Today's Recap" : 'บันทึกเรื่องราววันนี้'}</span>
           </div>
-          <h3 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight text-left">
+          <h3 className="text-xl sm:text-2xl font-extrabold text-slate-900 tracking-normal text-left">
             {lang === 'en' ? 'How are you feeling today?' : 'วันนี้คุณเป็นยังไงบ้าง'}
           </h3>
           <p className="text-sm sm:text-base text-slate-600 font-medium text-left">

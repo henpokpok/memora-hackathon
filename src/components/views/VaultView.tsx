@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { MemoryOrb, OrbEmotion, Language, DailyRecapMemory, NavigationPage } from '../../types';
+import { MemoryOrb as MemoryOrbView } from '../common/MemoryOrb';
 import {
   Sparkles,
   Heart,
@@ -60,7 +61,7 @@ const emotionStyles: Record<OrbEmotion, CategoryStyle> = {
     auraColor: 'rgba(14, 165, 233, 0.85)',
     glowHex: '#0EA5E9',
     radialGradient: 'radial-gradient(circle, rgba(14,165,233,0.55) 0%, rgba(2,132,199,0.18) 55%, transparent 100%)',
-    labelTh: 'คิดถึงวันวาน',
+    labelTh: 'วันวาน',
     labelEn: 'Nostalgia',
     emoji: '🌊',
     descTh: 'สถานที่และความหลัง',
@@ -82,7 +83,7 @@ const emotionStyles: Record<OrbEmotion, CategoryStyle> = {
     auraColor: 'rgba(16, 185, 129, 0.85)',
     glowHex: '#10B981',
     radialGradient: 'radial-gradient(circle, rgba(16,185,129,0.55) 0%, rgba(5,150,105,0.18) 55%, transparent 100%)',
-    labelTh: 'สดชื่น',
+    labelTh: 'มีชีวิตชีวา',
     labelEn: 'Vitality',
     emoji: '🌿',
     descTh: 'ธรรมชาติและชีวิตชีวา',
@@ -94,7 +95,7 @@ const emotionStyles: Record<OrbEmotion, CategoryStyle> = {
     glowHex: '#8B5CF6',
     radialGradient: 'radial-gradient(circle, rgba(139,92,246,0.55) 0%, rgba(124,58,237,0.18) 55%, transparent 100%)',
     labelTh: 'ภาคภูมิใจ',
-    labelEn: 'Pride',
+    labelEn: 'Celebration',
     emoji: '🎉',
     descTh: 'วันสำคัญและความสำเร็จ',
     descEn: 'Milestones',
@@ -174,10 +175,11 @@ const OrbCardPhoto: React.FC<{
   photoUrl: string;
   title: string;
   style: CategoryStyle;
-  year: string;
+  emotion: OrbEmotion;
+  year?: string;
   lang: Language;
   isPriority?: boolean;
-}> = ({ photoUrl, title, style, year, lang, isPriority = false }) => {
+}> = ({ photoUrl, title, style, emotion, lang, isPriority = false }) => {
   const [isLoaded, setIsLoaded] = useState(() => isImagePreloaded(photoUrl));
   const [hasError, setHasError] = useState(false);
   const imgRef = useRef<HTMLImageElement | null>(null);
@@ -251,23 +253,12 @@ const OrbCardPhoto: React.FC<{
 
         <div className="absolute inset-0 bg-gradient-to-t from-slate-950/70 via-transparent to-black/20 pointer-events-none" />
 
-        {/* Top-Left: Emotion Badge on Photo */}
-        <div
-          className="absolute top-3 left-3 px-3 py-1 rounded-full text-xs font-black shadow-md flex items-center space-x-1.5 backdrop-blur-md z-20"
-          style={{
-            backgroundColor: 'rgba(255, 255, 255, 0.94)',
-            border: `1.5px solid ${style.glowHex}`,
-            color: '#0f172a',
-          }}
-        >
-          <span>{style.emoji}</span>
-          <span className="font-extrabold">{lang === 'en' ? style.labelEn : style.labelTh}</span>
-        </div>
-
-        {/* Top-Right: Memory Year Badge on Photo */}
-        <div className="absolute top-3 right-3 bg-black/65 backdrop-blur-md px-3 py-1 rounded-full text-xs font-bold text-white shadow-sm border border-white/20 flex items-center space-x-1 z-20">
-          <Calendar className="w-3.5 h-3.5 text-amber-300" />
-          <span>{year}</span>
+        {/* Top-Right: 3D Glowing Memory Orb Emotion Badge on Photo (Styled to match reference design) */}
+        <div className="absolute top-3 right-3 px-2.5 py-1 rounded-full text-xs font-bold shadow-md flex items-center space-x-1.5 backdrop-blur-md z-20 bg-white/90 border border-white/60 text-slate-800">
+          <MemoryOrbView emotion={emotion} size="xs" />
+          <span className="tracking-normal font-bold">
+            {style.labelEn} • {style.labelTh}
+          </span>
         </div>
       </div>
     </div>
@@ -478,7 +469,7 @@ export const VaultView: React.FC<VaultViewProps> = ({
       {/* 1. WARM HEADER */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 px-2">
         <div className="text-left space-y-1">
-          <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight flex items-center space-x-2">
+          <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-normal flex items-center space-x-2">
             <span>🖼️ {lang === 'en' ? 'Family Photo Vault' : 'รูปครอบครัวและความทรงจำ'}</span>
           </h2>
           <p className="text-sm text-slate-500 font-medium">
@@ -514,7 +505,7 @@ export const VaultView: React.FC<VaultViewProps> = ({
         >
           <BookOpen className="w-4 h-4 text-amber-500" />
           <span>{lang === 'en' ? 'Daily Stories' : 'บันทึกเรื่องราวประจำวัน'}</span>
-          <span className="px-2 py-0.5 rounded-full bg-amber-100 text-amber-900 text-[10px] font-black">
+          <span className="px-2 py-0.5 rounded-full bg-amber-100 text-amber-900 text-xs font-bold">
             {recaps.length}
           </span>
         </button>
@@ -532,7 +523,7 @@ export const VaultView: React.FC<VaultViewProps> = ({
         >
           <Sparkles className="w-4 h-4 text-amber-500" />
           <span>{lang === 'en' ? 'Memory Orbs' : 'ลูกแก้วความทรงจำ'}</span>
-          <span className="px-2 py-0.5 rounded-full bg-slate-100 text-slate-700 text-[10px] font-black">
+          <span className="px-2 py-0.5 rounded-full bg-slate-100 text-slate-700 text-xs font-bold">
             {orbs.length}
           </span>
         </button>
@@ -578,7 +569,7 @@ export const VaultView: React.FC<VaultViewProps> = ({
                       <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-2xl bg-amber-500 text-slate-950 flex items-center justify-center font-bold shadow-xs">
                         <Sparkles className="w-4 h-4 sm:w-5 sm:h-5 text-slate-950" />
                       </div>
-                      <h3 className="text-base sm:text-lg font-black text-slate-900 tracking-tight">
+                      <h3 className="text-base sm:text-lg font-extrabold text-slate-900 tracking-normal">
                         {lang === 'en' ? activeSlide.periodTitleEn : activeSlide.periodTitleTh}
                       </h3>
                     </div>
@@ -778,7 +769,7 @@ export const VaultView: React.FC<VaultViewProps> = ({
                 <div className="flex items-center justify-between px-1">
                   <div className="flex items-center space-x-2">
                     <div className="w-2.5 h-2.5 rounded-full bg-amber-500 animate-pulse" />
-                    <h3 className="text-base sm:text-lg font-black text-slate-900 tracking-tight">
+                    <h3 className="text-base sm:text-lg font-extrabold text-slate-900 tracking-normal">
                       {lang === 'en' ? 'All Past Daily Stories' : 'บันทึกเรื่องราวประจำวันทั้งหมด (ย้อนหลัง)'}
                     </h3>
                   </div>
@@ -989,7 +980,7 @@ export const VaultView: React.FC<VaultViewProps> = ({
                           <Calendar className="w-3.5 h-3.5 text-amber-600" />
                           <span>{lang === 'en' ? selectedRecap.displayDateEn : selectedRecap.displayDateTh}</span>
                         </span>
-                        <h3 className="text-xl sm:text-2xl font-black text-slate-900">
+                        <h3 className="text-xl sm:text-2xl font-extrabold tracking-normal text-slate-900">
                           {lang === 'en' ? "Today's Family Story" : 'เรื่องราวความทรงจำประจำวัน'}
                         </h3>
                       </div>
@@ -1096,7 +1087,7 @@ export const VaultView: React.FC<VaultViewProps> = ({
           {/* Section Header */}
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 px-1 text-left">
             <div>
-              <h3 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight flex items-center space-x-2">
+              <h3 className="text-xl sm:text-2xl font-extrabold text-slate-900 tracking-normal flex items-center space-x-2">
                 <Sparkles className="w-5 h-5 text-amber-500 fill-amber-400" />
                 <span>{lang === 'en' ? 'Memory Orbs Vault' : 'ลูกแก้วความทรงจำ'}</span>
               </h3>
@@ -1129,13 +1120,6 @@ export const VaultView: React.FC<VaultViewProps> = ({
               {emotionCategoryList.map((cat) => {
                 const isSelected = activeFilter === cat.id;
 
-                // Pick representative orb photo for inside orb glass reflection
-                const repOrb =
-                  cat.id === 'all'
-                    ? orbs[0]
-                    : orbs.find((o) => o.emotion === cat.id);
-                const repPhoto = repOrb?.photoUrl;
-
                 return (
                   <button
                     key={cat.id}
@@ -1152,86 +1136,13 @@ export const VaultView: React.FC<VaultViewProps> = ({
                         isSelected ? 'scale-110' : 'hover:scale-108 active:scale-95'
                       }`}
                     >
-                      {/* Living Atmospheric Aura Glow breathing behind the orb */}
-                      <div
-                        className={`absolute -inset-1 sm:-inset-1.5 rounded-full pointer-events-none filter blur-[6px] animate-aura-breathe-soft transition-all duration-500 ${
-                          isSelected ? 'opacity-85 scale-105' : 'opacity-35 group-hover:opacity-60'
-                        }`}
-                        style={{
-                          background: cat.rainbowAura
-                            ? cat.rainbowAura
-                            : `radial-gradient(circle, ${cat.auraColor} 30%, ${cat.glowHex} 65%, transparent 85%)`,
-                        }}
+                      <MemoryOrbView
+                        emotion={cat.id}
+                        size="responsive"
+                        isSelected={isSelected}
+                        showAura={true}
+                        className="w-full h-full"
                       />
-                      <div
-                        className={`absolute -inset-2 sm:-inset-2.5 rounded-full pointer-events-none filter blur-[10px] transition-opacity duration-500 ${
-                          isSelected ? 'opacity-60 animate-pulse' : 'opacity-20 group-hover:opacity-35'
-                        }`}
-                        style={{
-                          background: cat.secondaryRainbowAura
-                            ? cat.secondaryRainbowAura
-                            : `radial-gradient(circle, ${cat.glowHex} 25%, ${cat.auraColor} 50%, transparent 80%)`,
-                        }}
-                      />
-
-                      {/* Glass Orb Sphere (Real 3D Glass Surface + Inside Out Swirling Core) */}
-                      <div
-                        className={`w-full h-full rounded-full relative glass-memory-orb-light flex items-center justify-center p-0.5 overflow-hidden transition-all duration-300 ${
-                          isSelected
-                            ? 'ring-2 ring-amber-400/90 shadow-[0_0_16px_rgba(251,191,36,0.7)]'
-                            : 'group-hover:shadow-[0_0_12px_rgba(251,191,36,0.4)]'
-                        }`}
-                        style={{
-                          boxShadow: isSelected
-                            ? `0 0 14px 2px ${cat.auraColor}, inset 0 3px 10px rgba(255,255,255,0.9), inset 0 -6px 14px rgba(15,23,42,0.3)`
-                            : `0 0 6px 1px ${cat.auraColor}, inset 0 2px 7px rgba(255,255,255,0.85), inset 0 -4px 8px rgba(15,23,42,0.2)`,
-                          border: '1.5px solid rgba(255, 255, 255, 0.85)',
-                        }}
-                      >
-                        {/* Swirling Emotion Core inside the glass marble */}
-                        <div
-                          className={`w-full h-full rounded-full bg-gradient-to-tr ${cat.gradient} animate-mist-swirl opacity-95 filter blur-[0.4px] shadow-inner`}
-                        />
-
-                        {/* Representative memory image suspended inside the sphere */}
-                        {repPhoto && (
-                          <div className="absolute inset-1 aspect-square rounded-full overflow-hidden opacity-40 mix-blend-overlay pointer-events-none">
-                            <img
-                              src={repPhoto}
-                              alt=""
-                              className="w-full h-full aspect-square rounded-full object-cover"
-                            />
-                          </div>
-                        )}
-
-                        {/* Photorealistic 3D Spherical Light Refraction Overlay */}
-                        <div
-                          className="absolute inset-0 rounded-full pointer-events-none"
-                          style={{
-                            background:
-                              'radial-gradient(circle at 35% 28%, rgba(255,255,255,0.8) 0%, rgba(255,255,255,0.2) 28%, transparent 52%, rgba(15,23,42,0.25) 80%, rgba(15,23,42,0.6) 100%)',
-                          }}
-                        />
-
-                        {/* Specular Highlight (Hotspot Glare at top-left) */}
-                        <div className="orb-shine-light" />
-
-                        {/* Caustic Bottom Light (Bounce reflection at bottom-rim) */}
-                        <div className="orb-bottom-rim-light" />
-
-                        {/* Inner Glass Glow Ring */}
-                        <div
-                          className="absolute inset-0 rounded-full pointer-events-none"
-                          style={{
-                            boxShadow: 'inset 0 0 8px 1px rgba(255,255,255,0.65)',
-                          }}
-                        />
-
-                        {/* Active Selection Golden/White Core Ring */}
-                        {isSelected && (
-                          <div className="absolute inset-0 rounded-full ring-2 ring-white/90 shadow-[inset_0_0_12px_rgba(255,255,255,0.85)] pointer-events-none" />
-                        )}
-                      </div>
                     </div>
 
                     {/* Label: Only category title (ความสุข, คิดถึงวันวาน, ความรัก, etc.) */}
@@ -1279,7 +1190,7 @@ export const VaultView: React.FC<VaultViewProps> = ({
                     🔮
                   </div>
                   <div className="space-y-1">
-                    <h4 className="text-lg font-black text-slate-800">
+                    <h4 className="text-lg font-bold tracking-normal text-slate-800">
                       {lang === 'en' ? 'No memories in this emotion yet' : 'ยังไม่มีลูกแก้วความทรงจำในหมวดนี้'}
                     </h4>
                     <p className="text-sm text-slate-500">
@@ -1340,6 +1251,7 @@ export const VaultView: React.FC<VaultViewProps> = ({
                             photoUrl={orb.photoUrl}
                             title={orbTitle}
                             style={style}
+                            emotion={orb.emotion}
                             year={orbYear}
                             lang={lang}
                             isPriority={index < 2}
@@ -1348,8 +1260,16 @@ export const VaultView: React.FC<VaultViewProps> = ({
                           {/* Content Section: Title, Description, Voice Prompt, Action Buttons */}
                           <div className="flex-1 flex flex-col justify-between space-y-4 text-left">
                             <div className="space-y-2.5">
+                              {/* Date & Location outside photo */}
+                              {orbYear && (
+                                <div className="flex items-center space-x-1.5 text-xs sm:text-sm font-bold text-slate-500">
+                                  <Calendar className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-amber-600 shrink-0" />
+                                  <span>{orbYear}</span>
+                                </div>
+                              )}
+
                               <div className="flex items-start justify-between gap-2">
-                                <h4 className="text-xl sm:text-2xl font-black text-slate-900 leading-snug">
+                                <h4 className="text-xl sm:text-2xl font-extrabold tracking-normal text-slate-900 leading-snug">
                                   {orbTitle}
                                 </h4>
                               </div>

@@ -5,25 +5,25 @@ const STORAGE_KEY = 'memora_daily_recaps';
 export const recentGalleryPhotos = [
   {
     id: 'gallery-recent-1',
-    url: 'https://images.unsplash.com/photo-1516205651411-aef33a44f7c2?auto=format&fit=crop&w=600&q=80',
-    titleTh: 'ดอกมะลิเช้านี้',
-    titleEn: 'Morning Jasmine',
+    url: '/images/memories/river-merit-fish.jpg',
+    titleTh: 'ทำบุญปล่อยปลาริมน้ำรับอรุณ',
+    titleEn: 'Morning River Merit',
     timeTh: '08:30 น.',
     timeEn: '08:30 AM',
   },
   {
     id: 'gallery-recent-2',
-    url: 'https://images.unsplash.com/photo-1576765608535-5f04d1e3f289?auto=format&fit=crop&w=600&q=80',
-    titleTh: 'น้ำชายามบ่าย',
-    titleEn: 'Afternoon Tea',
+    url: '/images/memories/korean-bbq-siblings.jpg',
+    titleTh: 'พี่น้องเอ็นจอยปิ้งย่างเกาหลี',
+    titleEn: 'Korean BBQ with Siblings',
     timeTh: '14:15 น.',
     timeEn: '02:15 PM',
   },
   {
     id: 'gallery-recent-3',
-    url: 'https://images.unsplash.com/photo-1492562080023-ab3db95bfbce?auto=format&fit=crop&w=600&q=80',
-    titleTh: 'หลานชายยิ้มสดใส',
-    titleEn: 'Smiling Grandson',
+    url: '/images/memories/flower-garden-selfie.jpg',
+    titleTh: 'หลานๆ เซลฟี่ในสวนดอกไม้',
+    titleEn: 'Floral Garden Selfie',
     timeTh: '16:40 น.',
     timeEn: '04:40 PM',
   },
@@ -32,33 +32,33 @@ export const recentGalleryPhotos = [
 export const presetGalleryPhotos = [
   {
     id: 'preset-1',
-    url: 'https://images.unsplash.com/photo-1492562080023-ab3db95bfbce?auto=format&fit=crop&w=600&q=80',
-    titleTh: 'หลานชายวิ่งเล่น',
-    titleEn: 'Grandson playing',
+    url: '/images/memories/wheelchair-family-bridge.jpg',
+    titleTh: 'ครอบครัวเคียงข้างข้ามสะพาน',
+    titleEn: 'Family Crossing Bridge',
   },
   {
     id: 'preset-2',
-    url: 'https://images.unsplash.com/photo-1516205651411-aef33a44f7c2?auto=format&fit=crop&w=600&q=80',
-    titleTh: 'ดอกมะลิสวนหน้าบ้าน',
-    titleEn: 'Garden Jasmine Flowers',
+    url: '/images/memories/airplane-cafe-family.jpg',
+    titleTh: 'รวมพลังบนคาเฟ่เครื่องบิน 747',
+    titleEn: '747 Airplane Cafe Gathering',
   },
   {
     id: 'preset-3',
-    url: 'https://images.unsplash.com/photo-1576765608535-5f04d1e3f289?auto=format&fit=crop&w=600&q=80',
-    titleTh: 'น้ำชายามบ่ายและขนม',
-    titleEn: 'Afternoon tea & snacks',
+    url: '/images/memories/hue-restaurant-family.jpg',
+    titleTh: 'มื้ออร่อยร้านอาหารเวียดนาม',
+    titleEn: 'Vietnamese Restaurant Feast',
   },
   {
     id: 'preset-4',
-    url: 'https://images.unsplash.com/photo-1511895426328-dc8714191300?auto=format&fit=crop&w=600&q=80',
-    titleTh: 'ครอบครัวพร้อมหน้า',
-    titleEn: 'Family together',
+    url: '/images/memories/vietnam-temple-selfie.jpg',
+    titleTh: 'หมู่คณะครอบครัวศาลาวัดโบราณ',
+    titleEn: 'Temple Pavilion Gathering',
   },
   {
     id: 'preset-5',
-    url: 'https://images.unsplash.com/photo-1581579438747-1dc8d17bbce4?auto=format&fit=crop&w=600&q=80',
-    titleTh: 'เดินรับลมสวนสาธารณะ',
-    titleEn: 'Park walk',
+    url: '/images/memories/dinosaur-park-trip.jpg',
+    titleTh: 'ก๊วนคุณยายตะลุยสวนไดโนเสาร์',
+    titleEn: 'Dinosaur Park Adventure',
   },
 ];
 
@@ -68,12 +68,12 @@ export const initialDailyRecaps: DailyRecapMemory[] = [
     date: '2026-10-14',
     displayDateTh: 'เมื่อวานนี้, 14 ต.ค. 2569',
     displayDateEn: 'Yesterday, Oct 14, 2026',
-    transcript: 'เมื่อวานช่วงบ่าย นั่งรดน้ำต้นมะลิหน้าบ้าน ได้ยินเสียงนกกระจอกร้องเพลินใจ ลูกสาวนำบัวลอยน้ำกะทิอุ่นๆ มาฝาก หวานละมุนกำลังดี อิ่มอกอิ่มใจมากจ้ะ',
+    transcript: 'เมื่อวานช่วงบ่าย พากันไปทำบุญปล่อยปลาที่ริมแม่น้ำ ลมพัดเย็นสบายสดชื่น หลานๆ ช่วยกันถือร่มและปล่อยปลาลงน้ำ อิ่มอกอิ่มใจ ได้ยินเสียงหัวเราะอย่างมีความสุข',
     photos: [
-      'https://images.unsplash.com/photo-1516205651411-aef33a44f7c2?auto=format&fit=crop&w=600&q=80',
-      'https://images.unsplash.com/photo-1576765608535-5f04d1e3f289?auto=format&fit=crop&w=600&q=80',
+      '/images/memories/river-merit-fish.jpg',
+      '/images/memories/flower-garden-selfie.jpg',
     ],
-    emotion: 'joy',
+    emotion: 'vitality',
     timestamp: Date.now() - 86400000,
     audioDurationSec: 42,
   },
@@ -82,9 +82,9 @@ export const initialDailyRecaps: DailyRecapMemory[] = [
     date: '2026-10-13',
     displayDateTh: '13 ต.ค. 2569 (วันอาทิตย์)',
     displayDateEn: 'Oct 13, 2026 (Sunday)',
-    transcript: 'น้องภูมิหลานชายคนโปรดมาหา ช่วยคุณยายแกะถั่วฝักยาวและวาดรูปแมวสีส้มใส่กระดาษแผ่นใหญ่ หัวเราะร่าเริงกันทั้งบ่าย มีความสุขที่สุดเลย',
+    transcript: 'หลานๆ พาคุณยายไปทานปิ้งย่างเกาหลีมื้อค่ำ พี่น้องกุมมือยิ้มแย้มแย่งกันคีบหมูย่างร้อนๆ ให้คุณยาย บรรยากาศอบอุ่นหัวใจและเต็มไปด้วยเสียงหัวเราะ',
     photos: [
-      'https://images.unsplash.com/photo-1492562080023-ab3db95bfbce?auto=format&fit=crop&w=600&q=80',
+      '/images/memories/korean-bbq-siblings.jpg',
     ],
     emotion: 'love',
     timestamp: Date.now() - 172800000,
@@ -95,10 +95,10 @@ export const initialDailyRecaps: DailyRecapMemory[] = [
     date: '2026-09-16',
     displayDateTh: '16 ก.ย. 2569 (1 เดือนที่แล้ว)',
     displayDateEn: 'Sep 16, 2026 (1 month ago)',
-    transcript: 'ทริปไปทำบุญไหว้พระอยุธยา ลมพัดเย็นสบายที่ริมแม่น้ำ แวะกินกุ้งเผาตัวโตกับน้ำจิ้มซีฟู้ดรสเด็ด น้องภูมิกับลูกสาวตักอาหารให้ไม่หยุด ยิ้มแก้มปริทั้งวันเลย',
+    transcript: 'ทริปเที่ยวคาเฟ่เครื่องบินโบอิ้ง 747 นั่งจิบม็อกเทลสีฟ้าเย็นฉ่ำในเคบินสุดหรู ล้อมรอบด้วยลูกหลานทุกคนที่คอยดูแลคุณยายเป็นอย่างดี ยิ้มแก้มปริทั้งวันเลย',
     photos: [
-      'https://images.unsplash.com/photo-1552465011-b4e21bf6e79a?auto=format&fit=crop&w=600&q=80',
-      'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=600&q=80',
+      '/images/memories/airplane-cafe-family.jpg',
+      '/images/memories/airplane-cafe-drinks.jpg',
     ],
     emotion: 'joy',
     timestamp: Date.now() - 30 * 86400000,
@@ -109,12 +109,12 @@ export const initialDailyRecaps: DailyRecapMemory[] = [
     date: '2026-07-16',
     displayDateTh: '16 ก.ค. 2569 (3 เดือนที่แล้ว)',
     displayDateEn: 'Jul 16, 2026 (3 months ago)',
-    transcript: 'วันเกิดน้องพิม หลานสาวคนสวย ครอบครัวเรามาฉลองกันพร้อมหน้า คุณยายช่วยจัดดอกบัวถวายพระตอนเช้า พอตกเย็นเป่าเค้กวานิลลา หลานเข้ามากอดหอมแก้มชื่นใจที่สุด',
+    transcript: 'ทริปเวียดนามสุดประทับใจ นั่งกระเช้าลอยฟ้าทะลุสายหมอกขึ้นยอดเขาบานาฮิลล์ และแวะถ่ายรูปหน้าพระราชวังโบราณเมืองเว้ คุณยายกับหลานสาวโพสท่ากางแขนเต้นร่าเริง สนุกสนานมาก',
     photos: [
-      'https://images.unsplash.com/photo-1511895426328-dc8714191300?auto=format&fit=crop&w=600&q=80',
-      'https://images.unsplash.com/photo-1492562080023-ab3db95bfbce?auto=format&fit=crop&w=600&q=80',
+      '/images/memories/cable-car-banahills.jpg',
+      '/images/memories/hue-citadel-dance.jpg',
     ],
-    emotion: 'love',
+    emotion: 'vitality',
     timestamp: Date.now() - 90 * 86400000,
     audioDurationSec: 45,
   },
@@ -123,10 +123,10 @@ export const initialDailyRecaps: DailyRecapMemory[] = [
     date: '2025-10-16',
     displayDateTh: '16 ต.ค. 2568 (1 ปีที่แล้ว)',
     displayDateEn: 'Oct 16, 2025 (1 year ago)',
-    transcript: 'วันแห่งความภาคภูมิใจที่สุดในชีวิต ลูกสาวคนโตเข้ารับพระราชทานปริญญาบัตร คุณยายตัดชุดผ้าไหมสีฟ้าอ่อนไปร่วมแสดงความยินดี น้ำตาแห่งความสุขไหลซึ้งจนบอกไม่ถูก',
+    transcript: 'ค่ำคืนงานราตรีกาล่ารวมญาติครั้งยิ่งใหญ่ 11 คน ครอบครัวเราทุกคนแต่งตัวในชุดราตรีและสูทหรูหรา คุณยายสวมชุดราตรีสีกรมท่าและมงกุฎเพชร เป็นวันที่อบอุ่นและภาคภูมิใจที่สุดในชีวิต',
     photos: [
-      'https://images.unsplash.com/photo-1523240795612-9a054b0db644?auto=format&fit=crop&w=600&q=80',
-      'https://images.unsplash.com/photo-1516205651411-aef33a44f7c2?auto=format&fit=crop&w=600&q=80',
+      '/images/memories/family-gala-night.jpg',
+      '/images/memories/studio-six-ladies.jpg',
     ],
     emotion: 'celebration',
     timestamp: Date.now() - 365 * 86400000,
@@ -143,6 +143,15 @@ export function getDailyRecaps(): DailyRecapMemory[] {
     }
     const parsed = JSON.parse(raw);
     if (Array.isArray(parsed) && parsed.length > 0) {
+      // Auto-migrate any old Unsplash URLs found in localStorage cache
+      const hasLegacyUnsplash = parsed.some((item: DailyRecapMemory) =>
+        item.photos && item.photos.some((p: string) => p.includes('unsplash.com'))
+      );
+      if (hasLegacyUnsplash) {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(initialDailyRecaps));
+        return initialDailyRecaps;
+      }
+
       // Ensure seed flashback memories are present if missing
       const existingIds = new Set(parsed.map((item: DailyRecapMemory) => item.id));
       let hasMissing = false;

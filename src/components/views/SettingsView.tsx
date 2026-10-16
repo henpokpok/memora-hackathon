@@ -475,7 +475,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
             {/* Circular Avatar of Ann */}
             <div className="relative shrink-0">
               <img
-                src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=300&q=80"
+                src="/images/memories/daughter-green-wall.jpg"
                 alt="Ann Wattanashiri"
                 className="w-16 h-16 sm:w-18 sm:h-18 rounded-full object-cover border-2 border-white shadow-sm ring-2 ring-indigo-200/70"
               />

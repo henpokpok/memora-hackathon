@@ -46,7 +46,7 @@ export class ErrorBoundary extends Component<Props, State> {
           </div>
 
           <div className="space-y-1">
-            <h3 className="text-xl font-black text-slate-900">
+            <h3 className="text-xl font-bold tracking-normal text-slate-900">
               {this.props.fallbackTitle || 'กำลังเปิดหน้าความทรงจำ...'}
             </h3>
             <p className="text-xs sm:text-sm text-slate-500 font-medium">

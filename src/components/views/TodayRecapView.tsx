@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { NavigationPage, Language, DailyRecapMemory, OrbEmotion } from '../../types';
+import { MemoryOrb } from '../common/MemoryOrb';
 import {
   Mic,
   MicOff,
@@ -43,13 +44,13 @@ const postItConfigs: PostItConfig[] = [
   { rotate: 3.5, yOffset: 12, tapeColor: 'bg-amber-100/90 border-amber-300/60', tapeRotate: 2.0 },
 ];
 
-// Emotion choices with big emoji and small label underneath
+// Emotion choices with 3D Glowing Gradient Memory Orbs
 const emotionChoices: { id: OrbEmotion; emoji: string; labelTh: string; labelEn: string }[] = [
-  { id: 'joy', emoji: '☀️', labelTh: 'มีความสุข', labelEn: 'Joyful' },
-  { id: 'love', emoji: '💖', labelTh: 'อบอุ่นใจ', labelEn: 'Warm Love' },
-  { id: 'nostalgia', emoji: '🌊', labelTh: 'คิดถึงวันวาน', labelEn: 'Nostalgic' },
-  { id: 'vitality', emoji: '🌿', labelTh: 'สดชื่น', labelEn: 'Peaceful' },
-  { id: 'celebration', emoji: '🎉', labelTh: 'ภาคภูมิใจ', labelEn: 'Proud' },
+  { id: 'joy', emoji: '☀️', labelTh: 'ความสุข', labelEn: 'Joy' },
+  { id: 'love', emoji: '💖', labelTh: 'ความรัก', labelEn: 'Love' },
+  { id: 'nostalgia', emoji: '🌊', labelTh: 'วันวาน', labelEn: 'Nostalgia' },
+  { id: 'vitality', emoji: '🌿', labelTh: 'มีชีวิตชีวา', labelEn: 'Vitality' },
+  { id: 'celebration', emoji: '🎉', labelTh: 'ภาคภูมิใจ', labelEn: 'Celebration' },
 ];
 
 // Progressive storytelling fallback when Web Speech API is blocked, silent, or unsupported
@@ -497,7 +498,7 @@ export const TodayRecapView: React.FC<TodayRecapViewProps> = ({ onNavigate, lang
           <Sparkles className="w-3.5 h-3.5 text-amber-600 animate-pulse" />
           <span>{lang === 'en' ? "Today's Storytelling" : 'เล่าเรื่องราววันนี้'}</span>
         </div>
-        <h2 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
+        <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-normal">
           {lang === 'en' ? 'How are you feeling today?' : 'วันนี้คุณเป็นยังไงบ้าง'}
         </h2>
         <p className="text-sm sm:text-base text-slate-600 font-medium max-w-xl mx-auto leading-relaxed">
@@ -811,7 +812,7 @@ export const TodayRecapView: React.FC<TodayRecapViewProps> = ({ onNavigate, lang
       <div className="pt-6 pb-12">
         <button
           onClick={() => setIsPreviewOpen(true)}
-          className="w-full py-6 sm:py-7 min-h-[76px] sm:min-h-[86px] rounded-3xl bg-gradient-to-r from-amber-500 via-amber-400 to-yellow-400 hover:from-amber-400 hover:to-yellow-300 text-slate-950 font-black text-2xl sm:text-3xl shadow-[0_14px_34px_-6px_rgba(245,158,11,0.6)] hover:shadow-[0_18px_42px_-6px_rgba(245,158,11,0.75)] hover:scale-[1.01] active:scale-[0.98] active:translate-y-1 transition-all flex items-center justify-center space-x-4 cursor-pointer border-2 border-amber-300/90 relative overflow-hidden group"
+          className="w-full py-6 sm:py-7 min-h-[76px] sm:min-h-[86px] rounded-3xl bg-gradient-to-r from-amber-500 via-amber-400 to-yellow-400 hover:from-amber-400 hover:to-yellow-300 text-slate-950 font-extrabold tracking-normal text-2xl sm:text-3xl shadow-[0_14px_34px_-6px_rgba(245,158,11,0.6)] hover:shadow-[0_18px_42px_-6px_rgba(245,158,11,0.75)] hover:scale-[1.01] active:scale-[0.98] active:translate-y-1 transition-all flex items-center justify-center space-x-4 cursor-pointer border-2 border-amber-300/90 relative overflow-hidden group"
         >
           {/* Subtle light sheen effect */}
           <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/25 to-white/0 -translate-x-full group-hover:translate-x-full transition-transform duration-1000 pointer-events-none" />
@@ -869,7 +870,7 @@ export const TodayRecapView: React.FC<TodayRecapViewProps> = ({ onNavigate, lang
                   <div className="w-16 h-16 rounded-full bg-slate-950 text-amber-300 flex items-center justify-center shadow-lg">
                     <Check className="w-10 h-10 stroke-[3]" />
                   </div>
-                  <h3 className="text-2xl font-black">
+                  <h3 className="text-2xl font-extrabold tracking-normal">
                     {lang === 'en' ? 'Saved to Family Album!' : 'บันทึกความทรงจำเรียบร้อยแล้ว!'}
                   </h3>
                   <p className="text-sm font-bold text-amber-950">
@@ -885,7 +886,7 @@ export const TodayRecapView: React.FC<TodayRecapViewProps> = ({ onNavigate, lang
                 <span className="text-xs font-bold uppercase tracking-wider text-amber-800">
                   {lang === 'en' ? 'Preview Today’s Recap' : 'พรีวิวสรุปเรื่องราววันนี้'}
                 </span>
-                <h3 className="text-xl sm:text-2xl font-black text-slate-900">
+                <h3 className="text-xl sm:text-2xl font-extrabold tracking-normal text-slate-900">
                   {lang === 'en' ? 'Review & Confirm' : 'ตรวจสอบและยืนยันการบันทึก'}
                 </h3>
                 <p className="text-xs text-slate-500 font-medium">
@@ -994,15 +995,15 @@ export const TodayRecapView: React.FC<TodayRecapViewProps> = ({ onNavigate, lang
                           isSelected ? 'scale-110' : 'hover:scale-105 opacity-70 hover:opacity-100'
                         }`}
                       >
-                        {/* Round Emoji Button */}
-                        <div
-                          className={`w-13 h-13 sm:w-14 sm:h-14 rounded-full flex items-center justify-center text-2xl sm:text-3xl shadow-sm transition-all ${
-                            isSelected
-                              ? 'bg-amber-100 ring-3 ring-amber-500 shadow-md scale-105'
-                              : 'bg-slate-100 hover:bg-slate-200/80'
-                          }`}
-                        >
-                          <span>{emo.emoji}</span>
+                        {/* 3D Glowing Memory Orb Sphere */}
+                        <div className="py-1 flex items-center justify-center">
+                          <MemoryOrb
+                            emotion={emo.id}
+                            size={44}
+                            isSelected={isSelected}
+                            isInteractive
+                            showAura
+                          />
                         </div>
 
                         {/* Small Text Label Underneath */}

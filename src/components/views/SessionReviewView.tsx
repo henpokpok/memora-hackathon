@@ -127,7 +127,7 @@ export const SessionReviewView: React.FC<SessionReviewViewProps> = ({
             </div>
 
             {/* Title */}
-            <h1 className="text-2xl sm:text-4xl font-extrabold tracking-tight text-slate-950 leading-tight">
+            <h1 className="text-2xl sm:text-4xl font-extrabold tracking-normal text-slate-950 leading-snug">
               {lang === 'en'
                 ? `Wonderful, Grandma ${seniorName}! 👵✨`
                 : `ยอดเยี่ยมที่สุดเลยค่ะคุณยาย${seniorName}! 👵✨`}

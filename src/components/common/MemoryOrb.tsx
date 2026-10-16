@@ -3,7 +3,7 @@ import { OrbEmotion } from '../../types';
 
 export interface MemoryOrbProps {
   emotion: OrbEmotion | 'all';
-  size?: 'xs' | 'sm' | 'md' | 'lg' | 'xl' | number;
+  size?: 'xs' | 'sm' | 'md' | 'lg' | 'xl' | 'responsive' | number;
   photoUrl?: string;
   isSelected?: boolean;
   isInteractive?: boolean;
@@ -13,76 +13,66 @@ export interface MemoryOrbProps {
   title?: string;
 }
 
-interface OrbTheme {
+export interface OrbTheme {
   primary: string;
   glowHex: string;
   auraColor: string;
-  coreGradient: string;
-  swirlGradient: string;
-  harmonicGradient: string;
+  gradient: string;
   labelEn: string;
   labelTh: string;
+  rainbowAura?: string;
+  secondaryRainbowAura?: string;
 }
 
 export const ORB_THEMES: Record<OrbEmotion | 'all', OrbTheme> = {
   joy: {
     primary: '#F59E0B',
     glowHex: '#FBBF24',
-    auraColor: 'rgba(251, 191, 36, 0.55)',
-    coreGradient: 'radial-gradient(circle at 35% 30%, #FEF08A 0%, #FBBF24 32%, #D97706 68%, #78350F 100%)',
-    swirlGradient: 'from-amber-200 via-amber-400 to-yellow-600',
-    harmonicGradient: 'from-yellow-300 via-orange-400 to-amber-600',
+    auraColor: 'rgba(251, 191, 36, 0.85)',
+    gradient: 'from-amber-300 via-amber-500 to-yellow-600',
     labelEn: 'Joy',
     labelTh: 'ความสุข',
   },
   nostalgia: {
     primary: '#0284C7',
     glowHex: '#0EA5E9',
-    auraColor: 'rgba(14, 165, 233, 0.55)',
-    coreGradient: 'radial-gradient(circle at 35% 30%, #BAE6FD 0%, #38BDF8 32%, #0284C7 68%, #0C4A6E 100%)',
-    swirlGradient: 'from-sky-200 via-cyan-400 to-blue-600',
-    harmonicGradient: 'from-teal-300 via-sky-400 to-indigo-600',
+    auraColor: 'rgba(14, 165, 233, 0.85)',
+    gradient: 'from-sky-300 via-cyan-500 to-blue-600',
     labelEn: 'Nostalgia',
     labelTh: 'วันวาน',
   },
   love: {
     primary: '#E11D48',
     glowHex: '#F43F5E',
-    auraColor: 'rgba(244, 63, 94, 0.55)',
-    coreGradient: 'radial-gradient(circle at 35% 30%, #FECDD3 0%, #FB7185 32%, #E11D48 68%, #4C0519 100%)',
-    swirlGradient: 'from-rose-200 via-pink-400 to-rose-600',
-    harmonicGradient: 'from-pink-300 via-rose-400 to-red-600',
+    auraColor: 'rgba(244, 63, 94, 0.85)',
+    gradient: 'from-rose-300 via-pink-500 to-rose-600',
     labelEn: 'Love',
     labelTh: 'ความรัก',
   },
   vitality: {
     primary: '#059669',
     glowHex: '#10B981',
-    auraColor: 'rgba(16, 185, 129, 0.55)',
-    coreGradient: 'radial-gradient(circle at 35% 30%, #A7F3D0 0%, #34D399 32%, #059669 68%, #064E3B 100%)',
-    swirlGradient: 'from-emerald-200 via-teal-400 to-green-600',
-    harmonicGradient: 'from-lime-300 via-emerald-400 to-teal-700',
+    auraColor: 'rgba(16, 185, 129, 0.85)',
+    gradient: 'from-emerald-300 via-teal-500 to-green-600',
     labelEn: 'Vitality',
-    labelTh: 'มีชีวิตชีวา',
+    labelTh: 'สดชื่น',
   },
   celebration: {
     primary: '#7C3AED',
     glowHex: '#8B5CF6',
-    auraColor: 'rgba(139, 92, 246, 0.55)',
-    coreGradient: 'radial-gradient(circle at 35% 30%, #DDD6FE 0%, #A78BFA 32%, #7C3AED 68%, #2E1065 100%)',
-    swirlGradient: 'from-purple-200 via-violet-400 to-indigo-600',
-    harmonicGradient: 'from-fuchsia-300 via-purple-400 to-violet-700',
+    auraColor: 'rgba(139, 92, 246, 0.85)',
+    gradient: 'from-purple-300 via-violet-500 to-indigo-600',
     labelEn: 'Celebration',
     labelTh: 'ภาคภูมิใจ',
   },
   all: {
-    primary: '#6366F1',
-    glowHex: '#A855F7',
-    auraColor: 'rgba(168, 85, 247, 0.55)',
-    coreGradient: 'radial-gradient(circle at 35% 30%, #FFFFFF 0%, #FDE047 22%, #F43F5E 45%, #6366F1 70%, #065F46 100%)',
-    swirlGradient: 'from-amber-300 via-rose-400 to-indigo-500',
-    harmonicGradient: 'from-cyan-300 via-indigo-400 to-pink-500',
-    labelEn: 'All Orbs',
+    primary: '#EC4899',
+    glowHex: '#EC4899',
+    auraColor: 'rgba(236, 72, 153, 0.45)',
+    gradient: 'from-rose-400 via-amber-300 via-emerald-400 via-sky-400 to-purple-500',
+    rainbowAura: 'conic-gradient(from 0deg, rgba(244,63,94,0.65), rgba(245,158,11,0.65), rgba(16,185,129,0.65), rgba(14,165,233,0.65), rgba(139,92,246,0.65), rgba(236,72,153,0.65), rgba(244,63,94,0.65))',
+    secondaryRainbowAura: 'radial-gradient(circle, rgba(251,191,36,0.25) 0%, rgba(16,185,129,0.2) 35%, rgba(14,165,233,0.2) 60%, rgba(139,92,246,0.18) 80%, transparent 95%)',
+    labelEn: 'All',
     labelTh: 'ทั้งหมด',
   },
 };
@@ -106,135 +96,124 @@ export const MemoryOrb: React.FC<MemoryOrbProps> = ({
   onClick,
   title,
 }) => {
-  const pixelSize = typeof size === 'number' ? size : SIZE_MAP[size];
+  const pixelSize = typeof size === 'number' ? size : size === 'responsive' ? undefined : SIZE_MAP[size];
   const theme = ORB_THEMES[emotion] || ORB_THEMES.joy;
 
   return (
     <div
       onClick={onClick}
       title={title || `${theme.labelEn} • ${theme.labelTh}`}
-      style={{
-        width: pixelSize,
-        height: pixelSize,
-      }}
+      style={
+        pixelSize
+          ? {
+              width: pixelSize,
+              height: pixelSize,
+            }
+          : undefined
+      }
       className={`relative inline-flex items-center justify-center select-none shrink-0 ${
         isInteractive ? 'cursor-pointer group' : 'pointer-events-none'
       } ${className}`}
     >
-      {/* 1. Ambient Atmospheric Aura Glow (Breathing light matching emotion) */}
+      {/* 1. Dual Atmospheric Aura Glow breathing behind the orb */}
       {showAura && (
-        <div
-          className={`absolute rounded-full pointer-events-none transition-all duration-500 ${
-            isSelected
-              ? 'opacity-90 scale-125 blur-[10px]'
-              : isInteractive
-              ? 'opacity-40 group-hover:opacity-75 blur-[6px] group-hover:scale-115'
-              : 'opacity-45 blur-[5px]'
-          }`}
-          style={{
-            inset: -pixelSize * 0.15,
-            background: `radial-gradient(circle, ${theme.auraColor} 20%, ${theme.glowHex}40 60%, transparent 80%)`,
-          }}
-        />
+        <>
+          <div
+            className={`absolute rounded-full pointer-events-none filter blur-[6px] animate-aura-breathe-soft transition-all duration-500 ${
+              isSelected ? 'opacity-85 scale-105' : 'opacity-35 group-hover:opacity-60'
+            }`}
+            style={{
+              inset: pixelSize ? -Math.max(3, pixelSize * 0.1) : '-10%',
+              background: theme.rainbowAura
+                ? theme.rainbowAura
+                : `radial-gradient(circle, ${theme.auraColor} 30%, ${theme.glowHex} 65%, transparent 85%)`,
+            }}
+          />
+          <div
+            className={`absolute rounded-full pointer-events-none filter blur-[10px] transition-opacity duration-500 ${
+              isSelected ? 'opacity-60 animate-pulse' : 'opacity-20 group-hover:opacity-35'
+            }`}
+            style={{
+              inset: pixelSize ? -Math.max(5, pixelSize * 0.18) : '-18%',
+              background: theme.secondaryRainbowAura
+                ? theme.secondaryRainbowAura
+                : `radial-gradient(circle, ${theme.glowHex} 25%, ${theme.auraColor} 50%, transparent 80%)`,
+            }}
+          />
+        </>
       )}
 
-      {/* 2. Glass Sphere Outer Shell with Volumetric Depth */}
+      {/* 2. Glass Orb Sphere (Real 3D Glass Surface + Inside Out Swirling Core) */}
       <div
-        className={`w-full h-full rounded-full relative overflow-hidden transition-all duration-300 ${
+        className={`w-full h-full rounded-full relative glass-memory-orb-light flex items-center justify-center p-0.5 overflow-hidden transition-all duration-300 ${
           isInteractive ? 'group-hover:scale-105 active:scale-95' : ''
         } ${
           isSelected
-            ? 'ring-2 ring-white/90 shadow-[0_0_16px_rgba(255,255,255,0.85)]'
-            : ''
+            ? 'ring-2 ring-amber-400/90 shadow-[0_0_16px_rgba(251,191,36,0.7)]'
+            : 'group-hover:shadow-[0_0_12px_rgba(251,191,36,0.4)]'
         }`}
         style={{
-          background: theme.coreGradient,
-          boxShadow: `
-            inset 0 2px 5px rgba(255, 255, 255, 0.95),
-            inset 0 -4px 10px rgba(15, 23, 42, 0.4),
-            0 4px 12px -2px rgba(0, 0, 0, 0.2),
-            0 0 10px 1px ${theme.auraColor}
-          `,
-          border: '1px solid rgba(255, 255, 255, 0.85)',
+          boxShadow: isSelected
+            ? `0 0 14px 2px ${theme.auraColor}, inset 0 3px 10px rgba(255,255,255,0.9), inset 0 -6px 14px rgba(15,23,42,0.3)`
+            : `0 0 6px 1px ${theme.auraColor}, inset 0 2px 7px rgba(255,255,255,0.85), inset 0 -4px 8px rgba(15,23,42,0.2)`,
+          border: '1.5px solid rgba(255, 255, 255, 0.85)',
         }}
       >
-        {/* 3.1 Primary Swirling Nebula (มนๆ Mix - Organic liquid color swirl) */}
+        {/* Swirling Emotion Core inside the glass marble */}
         <div
-          className={`absolute inset-0 rounded-full bg-gradient-to-tr ${theme.swirlGradient} opacity-75 animate-mist-swirl filter blur-[0.6px] mix-blend-screen pointer-events-none`}
+          className={`w-full h-full rounded-full bg-gradient-to-tr ${theme.gradient} animate-mist-swirl opacity-95 filter blur-[0.4px] shadow-inner`}
         />
 
-        {/* 3.2 Counter-Rotating Caustic Sweep ("วิ่งๆ" - Liquid light stream) */}
+        {/* Luminous Inner Core bloom (Privacy-Safe Normal Version) */}
         <div
-          className={`absolute inset-0 rounded-full bg-gradient-to-br ${theme.harmonicGradient} opacity-60 animate-orb-caustic filter blur-[0.8px] mix-blend-color-dodge pointer-events-none`}
-        />
-
-        {/* 3.3 Orbiting Light Beam ("วิ่งๆ" - Dynamic prismatic beam stream) */}
-        <div
-          className="absolute -inset-1 rounded-full opacity-65 animate-orb-stream mix-blend-screen filter blur-[0.6px] pointer-events-none"
+          className="absolute inset-[18%] rounded-full opacity-65 filter blur-[1px] pointer-events-none"
           style={{
-            background: `conic-gradient(from 0deg, transparent 0%, ${theme.glowHex} 35%, rgba(255,255,255,0.9) 50%, transparent 65%)`,
+            background: `radial-gradient(circle at 45% 40%, rgba(255,255,255,0.95) 0%, ${theme.glowHex} 50%, transparent 80%)`,
           }}
         />
 
-        {/* 4. Memory Image (Only present if photoUrl provided, with radial vignette mask) */}
+        {/* Optional photo if provided */}
         {photoUrl && (
-          <>
-            <div
-              className="absolute inset-1.5 aspect-square rounded-full overflow-hidden pointer-events-none orb-faint-projection"
-              style={{
-                opacity: 0.82,
-              }}
-            >
-              <img
-                src={photoUrl}
-                alt=""
-                decoding="async"
-                className="w-full h-full aspect-square rounded-full object-cover scale-105"
-              />
-            </div>
-            {/* Subtle emotion tint wash over photo */}
-            <div
-              className={`absolute inset-1.5 rounded-full bg-gradient-to-tr ${theme.swirlGradient} opacity-20 mix-blend-color pointer-events-none orb-faint-projection`}
-            />
-          </>
-        )}
-
-        {/* 5. Bright Center Light Core (Inner Radiance bloom for abstract orbs) */}
-        {!photoUrl && (
           <div
-            className="absolute inset-[20%] rounded-full opacity-65 filter blur-[1px] pointer-events-none"
-            style={{
-              background: `radial-gradient(circle at 45% 40%, rgba(255,255,255,0.98) 0%, ${theme.glowHex} 50%, transparent 80%)`,
-            }}
-          />
+            className="absolute inset-1 sm:inset-1.5 aspect-square rounded-full overflow-hidden pointer-events-none orb-faint-projection"
+            style={{ opacity: 0.82 }}
+          >
+            <img
+              src={photoUrl}
+              alt=""
+              decoding="async"
+              className="w-full h-full aspect-square rounded-full object-cover scale-105"
+            />
+          </div>
         )}
 
-        {/* 8. Primary Glass Specular Highlight (Crisp top-left glossy crescent) */}
+        {/* Photorealistic 3D Spherical Light Refraction Overlay */}
         <div
-          className="absolute pointer-events-none rounded-full"
+          className="absolute inset-0 rounded-full pointer-events-none"
           style={{
-            top: '8%',
-            left: '14%',
-            width: '46%',
-            height: '28%',
-            background: 'radial-gradient(ellipse at center, rgba(255, 255, 255, 0.98) 0%, rgba(255, 255, 255, 0) 75%)',
-            transform: 'rotate(-32deg)',
-            filter: pixelSize > 30 ? 'blur(0.2px)' : 'none',
+            background:
+              'radial-gradient(circle at 35% 28%, rgba(255,255,255,0.8) 0%, rgba(255,255,255,0.2) 28%, transparent 52%, rgba(15,23,42,0.25) 80%, rgba(15,23,42,0.6) 100%)',
           }}
         />
 
-        {/* 9. Caustic Bounce Rim Reflection (Bottom-right glass curvature reflection) */}
+        {/* Specular Highlight (Hotspot Glare at top-left) */}
+        <div className="orb-shine-light" />
+
+        {/* Caustic Bottom Light (Bounce reflection at bottom-rim) */}
+        <div className="orb-bottom-rim-light" />
+
+        {/* Inner Glass Glow Ring */}
         <div
-          className="absolute pointer-events-none rounded-full"
+          className="absolute inset-0 rounded-full pointer-events-none"
           style={{
-            bottom: '6%',
-            right: '14%',
-            width: '44%',
-            height: '22%',
-            background: 'radial-gradient(ellipse at center, rgba(255, 255, 255, 0.55) 0%, rgba(255, 255, 255, 0) 72%)',
-            transform: 'rotate(28deg)',
+            boxShadow: 'inset 0 0 8px 1px rgba(255,255,255,0.65)',
           }}
         />
+
+        {/* Active Selection Golden/White Core Ring */}
+        {isSelected && (
+          <div className="absolute inset-0 rounded-full ring-2 ring-white/90 shadow-[inset_0_0_12px_rgba(255,255,255,0.85)] pointer-events-none" />
+        )}
       </div>
     </div>
   );

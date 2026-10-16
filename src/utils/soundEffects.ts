@@ -1,4 +1,4 @@
-// Zero-dependency Web Audio API Sound Synthesizer for Duolingo-style playful interactions
+// Web Audio API Sound Synthesizer: Warm, gentle acoustic tones for seniors (No arcade/game sounds)
 
 class SoundManager {
   private ctx: AudioContext | null = null;
@@ -6,7 +6,9 @@ class SoundManager {
   private getContext(): AudioContext | null {
     if (typeof window === 'undefined') return null;
     if (!this.ctx) {
-      const AudioCtx = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+      const AudioCtx =
+        window.AudioContext ||
+        (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
       if (AudioCtx) {
         this.ctx = new AudioCtx();
       }
@@ -18,7 +20,8 @@ class SoundManager {
   }
 
   /**
-   * Cheerful Duolingo-style correct answer chime (Major Triad arpeggio: C5 -> E5 -> G5 -> C6)
+   * Warm, peaceful acoustic bell chime (Mindful, gentle, comforting)
+   * Strummed soft harmonic chord with lingering natural acoustic decay
    */
   playSuccessChime(): void {
     try {
@@ -26,26 +29,38 @@ class SoundManager {
       if (!ctx) return;
 
       const now = ctx.currentTime;
-      const notes = [523.25, 659.25, 783.99, 1046.5]; // C5, E5, G5, C6
-      const noteDuration = 0.09;
+      // Gentle warm pentatonic harmony: D4 (293.66Hz), A4 (440Hz), F#5 (739.99Hz)
+      const tones = [
+        { freq: 293.66, delay: 0.0, gainVal: 0.09 },
+        { freq: 440.0, delay: 0.08, gainVal: 0.08 },
+        { freq: 739.99, delay: 0.16, gainVal: 0.07 },
+      ];
 
-      notes.forEach((freq, idx) => {
+      tones.forEach(({ freq, delay, gainVal }) => {
         const osc = ctx.createOscillator();
         const gain = ctx.createGain();
+        const filter = ctx.createBiquadFilter();
 
-        osc.type = 'triangle';
-        osc.frequency.setValueAtTime(freq, now + idx * noteDuration);
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(freq, now + delay);
 
-        // Soft envelope
-        gain.gain.setValueAtTime(0, now + idx * noteDuration);
-        gain.gain.linearRampToValueAtTime(0.18, now + idx * noteDuration + 0.02);
-        gain.gain.exponentialRampToValueAtTime(0.001, now + idx * noteDuration + 0.28);
+        // Warm acoustic lowpass filter
+        filter.type = 'lowpass';
+        filter.frequency.setValueAtTime(1200, now + delay);
+        filter.Q.setValueAtTime(0.8, now + delay);
 
-        osc.connect(gain);
+        // Smooth, soft attack + gentle lingering acoustic decay
+        const startTime = now + delay;
+        gain.gain.setValueAtTime(0, startTime);
+        gain.gain.linearRampToValueAtTime(gainVal, startTime + 0.04);
+        gain.gain.exponentialRampToValueAtTime(0.0005, startTime + 1.4);
+
+        osc.connect(filter);
+        filter.connect(gain);
         gain.connect(ctx.destination);
 
-        osc.start(now + idx * noteDuration);
-        osc.stop(now + idx * noteDuration + 0.3);
+        osc.start(startTime);
+        osc.stop(startTime + 1.45);
       });
     } catch {
       // Audio context might be restricted, ignore silently
@@ -53,7 +68,7 @@ class SoundManager {
   }
 
   /**
-   * Tactile soft pop / tap sound for card selection
+   * Tactile soft felt / wooden touch (No arcade pop or electronic chirp)
    */
   playTap(): void {
     try {
@@ -63,26 +78,31 @@ class SoundManager {
       const now = ctx.currentTime;
       const osc = ctx.createOscillator();
       const gain = ctx.createGain();
+      const filter = ctx.createBiquadFilter();
 
       osc.type = 'sine';
-      osc.frequency.setValueAtTime(420, now);
-      osc.frequency.exponentialRampToValueAtTime(260, now + 0.07);
+      osc.frequency.setValueAtTime(180, now);
+      osc.frequency.exponentialRampToValueAtTime(140, now + 0.05);
 
-      gain.gain.setValueAtTime(0.12, now);
-      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.07);
+      filter.type = 'lowpass';
+      filter.frequency.setValueAtTime(500, now);
 
-      osc.connect(gain);
+      gain.gain.setValueAtTime(0.06, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.055);
+
+      osc.connect(filter);
+      filter.connect(gain);
       gain.connect(ctx.destination);
 
       osc.start(now);
-      osc.stop(now + 0.08);
+      osc.stop(now + 0.06);
     } catch {
       // Ignore
     }
   }
 
   /**
-   * Gentle retry wobble tone (not harsh, friendly encouraging tone)
+   * Gentle, comforting reassurance note (Soft warm major chord, non-judgmental)
    */
   playGentleRetry(): void {
     try {
@@ -90,28 +110,39 @@ class SoundManager {
       if (!ctx) return;
 
       const now = ctx.currentTime;
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
+      // Soft calming two-note harmony: F4 (349.23Hz) + A4 (440Hz)
+      const freqs = [349.23, 440.0];
 
-      osc.type = 'sine';
-      osc.frequency.setValueAtTime(320, now);
-      osc.frequency.linearRampToValueAtTime(280, now + 0.15);
+      freqs.forEach((freq) => {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        const filter = ctx.createBiquadFilter();
 
-      gain.gain.setValueAtTime(0.08, now);
-      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.2);
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(freq, now);
 
-      osc.connect(gain);
-      gain.connect(ctx.destination);
+        filter.type = 'lowpass';
+        filter.frequency.setValueAtTime(800, now);
 
-      osc.start(now);
-      osc.stop(now + 0.22);
+        gain.gain.setValueAtTime(0, now);
+        gain.gain.linearRampToValueAtTime(0.045, now + 0.03);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.35);
+
+        osc.connect(filter);
+        filter.connect(gain);
+        gain.connect(ctx.destination);
+
+        osc.start(now);
+        osc.stop(now + 0.38);
+      });
     } catch {
       // Ignore
     }
   }
 
   /**
-   * Fanfare / Milestone celebration chord
+   * Heartwarming acoustic music box / wind chime celebration
+   * Uplifting, serene arpeggio with warm ringing resonance
    */
   playCelebration(): void {
     try {
@@ -119,33 +150,37 @@ class SoundManager {
       if (!ctx) return;
 
       const now = ctx.currentTime;
-      // Strummed cheerful chord
-      const chords = [
-        [523.25, 659.25, 783.99],       // C
-        [587.33, 739.99, 880.00],       // D
-        [659.25, 830.61, 987.77],       // E
-        [1046.50, 1318.51, 1567.98],    // C high
+      // Gentle music box pentatonic progression: C4, G4, C5, E5, G5
+      const notes = [
+        { freq: 261.63, delay: 0.0, gainVal: 0.07 },
+        { freq: 392.0, delay: 0.14, gainVal: 0.065 },
+        { freq: 523.25, delay: 0.28, gainVal: 0.06 },
+        { freq: 659.25, delay: 0.42, gainVal: 0.055 },
+        { freq: 783.99, delay: 0.56, gainVal: 0.05 },
       ];
 
-      chords.forEach((chord, chordIdx) => {
-        chord.forEach((freq) => {
-          const osc = ctx.createOscillator();
-          const gain = ctx.createGain();
+      notes.forEach(({ freq, delay, gainVal }) => {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        const filter = ctx.createBiquadFilter();
 
-          osc.type = 'triangle';
-          osc.frequency.setValueAtTime(freq, now + chordIdx * 0.12);
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(freq, now + delay);
 
-          const startTime = now + chordIdx * 0.12;
-          gain.gain.setValueAtTime(0.001, startTime);
-          gain.gain.linearRampToValueAtTime(0.12, startTime + 0.03);
-          gain.gain.exponentialRampToValueAtTime(0.001, startTime + 0.45);
+        filter.type = 'lowpass';
+        filter.frequency.setValueAtTime(1100, now + delay);
 
-          osc.connect(gain);
-          gain.connect(ctx.destination);
+        const startTime = now + delay;
+        gain.gain.setValueAtTime(0, startTime);
+        gain.gain.linearRampToValueAtTime(gainVal, startTime + 0.035);
+        gain.gain.exponentialRampToValueAtTime(0.0005, startTime + 1.6);
 
-          osc.start(startTime);
-          osc.stop(startTime + 0.5);
-        });
+        osc.connect(filter);
+        filter.connect(gain);
+        gain.connect(ctx.destination);
+
+        osc.start(startTime);
+        osc.stop(startTime + 1.65);
       });
     } catch {
       // Ignore

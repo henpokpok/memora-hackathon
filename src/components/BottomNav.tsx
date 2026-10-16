@@ -1,7 +1,7 @@
 import React from 'react';
 import { NavigationPage, Language } from '../types';
 import { translations } from '../data/translations';
-import { Home, Brain, Image as ImageIcon } from 'lucide-react';
+import { Home, Brain, Images } from 'lucide-react';
 
 interface BottomNavProps {
   currentPage: NavigationPage;
@@ -37,17 +37,62 @@ export const BottomNav: React.FC<BottomNavProps> = ({
     {
       id: 'vault' as NavigationPage,
       label: lang === 'en' ? 'Family Photos' : 'รูปครอบครัว',
-      icon: ImageIcon,
+      icon: Images,
       badge: null,
     },
   ];
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-xl border-t border-slate-200/80 shadow-[0_-4px_20px_rgba(0,0,0,0.04)]">
+    <div className="fixed bottom-0 left-0 right-0 z-40 bg-white/90 backdrop-blur-2xl border-t border-slate-200/70 shadow-[0_-4px_24px_rgba(0,0,0,0.05)]">
+      <style>{`
+        @keyframes nav-rainbow-shift {
+          0% {
+            color: #4f46e5;
+            filter: drop-shadow(0 0 6px rgba(79, 70, 229, 0.45));
+          }
+          20% {
+            color: #db2777;
+            filter: drop-shadow(0 0 6px rgba(219, 39, 119, 0.45));
+          }
+          40% {
+            color: #d97706;
+            filter: drop-shadow(0 0 6px rgba(217, 119, 6, 0.45));
+          }
+          60% {
+            color: #059669;
+            filter: drop-shadow(0 0 6px rgba(5, 150, 105, 0.45));
+          }
+          80% {
+            color: #0284c7;
+            filter: drop-shadow(0 0 6px rgba(2, 132, 199, 0.45));
+          }
+          100% {
+            color: #4f46e5;
+            filter: drop-shadow(0 0 6px rgba(79, 70, 229, 0.45));
+          }
+        }
+        @keyframes nav-ambient-aura {
+          0%, 100% {
+            opacity: 0.3;
+            transform: scale(0.95);
+          }
+          50% {
+            opacity: 0.6;
+            transform: scale(1.15);
+          }
+        }
+        .nav-icon-rainbow {
+          animation: nav-rainbow-shift 8s linear infinite;
+        }
+        .nav-aura-pulse {
+          animation: nav-ambient-aura 4s ease-in-out infinite;
+        }
+      `}</style>
+
       <div className="max-w-md mx-auto px-6">
         <nav
           aria-label="Bottom Navigation"
-          className="flex items-center justify-around py-3 sm:py-3.5"
+          className="flex items-center justify-around py-2.5 sm:py-3"
         >
           {navItems.map((item) => {
             const Icon = item.icon;
@@ -57,14 +102,19 @@ export const BottomNav: React.FC<BottomNavProps> = ({
               <button
                 key={item.id}
                 onClick={() => onNavigate(item.id)}
-                className="group relative flex-1 flex flex-col items-center justify-center py-1 focus:outline-none transition-all active:scale-95"
+                className="group relative flex-1 flex flex-col items-center justify-center py-1 focus:outline-none transition-all active:scale-95 cursor-pointer"
               >
-                {/* Plain Minimal Icon */}
-                <div className="relative flex items-center justify-center">
+                {/* Icon Container with Ambient Glow */}
+                <div className="relative flex items-center justify-center w-10 h-10">
+                  {/* Ambient Soft Aura behind active icon */}
+                  {isActive && (
+                    <div className="absolute inset-0 rounded-full bg-gradient-to-tr from-indigo-300/30 via-pink-300/25 to-amber-300/30 blur-md pointer-events-none nav-aura-pulse" />
+                  )}
+
                   <Icon
-                    className={`w-7 h-7 sm:w-7.5 sm:h-7.5 transition-colors ${
+                    className={`relative z-10 w-7 h-7 sm:w-7.5 sm:h-7.5 transition-all duration-300 ${
                       isActive
-                        ? 'text-slate-950 stroke-[2.4]'
+                        ? 'nav-icon-rainbow stroke-[2.4] scale-105'
                         : 'text-slate-400 group-hover:text-slate-600 stroke-[1.8]'
                     }`}
                   />
@@ -72,7 +122,7 @@ export const BottomNav: React.FC<BottomNavProps> = ({
                   {/* Badge */}
                   {item.badge && (
                     <span
-                      className={`absolute -top-1.5 -right-3 text-[10px] font-mono font-bold px-1.5 py-0.2 rounded-full border shadow-2xs ${
+                      className={`absolute -top-1 -right-2 text-[10px] font-mono font-bold px-1.5 py-0.2 rounded-full border shadow-2xs z-20 ${
                         isActive
                           ? 'bg-amber-400 text-slate-950 border-amber-300'
                           : 'bg-slate-100 text-slate-600 border-slate-200'
@@ -85,9 +135,9 @@ export const BottomNav: React.FC<BottomNavProps> = ({
 
                 {/* Minimal Text Label */}
                 <span
-                  className={`mt-1 text-xs tracking-tight transition-colors ${
+                  className={`mt-0.5 text-xs tracking-normal transition-colors ${
                     isActive
-                      ? 'text-slate-950 font-extrabold'
+                      ? 'text-slate-900 font-bold'
                       : 'text-slate-400 font-medium group-hover:text-slate-600'
                   }`}
                 >
