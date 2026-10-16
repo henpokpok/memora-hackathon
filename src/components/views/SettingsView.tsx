@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Language, NavigationPage } from '../../types';
 import { 
   ArrowLeft, 
@@ -9,39 +9,44 @@ import {
   Check, 
   HeartHandshake,
   ChevronRight,
-  ShieldCheck,
-  Sparkles,
-  Key,
-  Eye,
-  EyeOff,
-  AlertCircle,
-  RefreshCw,
-  ExternalLink,
-  Sliders,
   VolumeX
 } from 'lucide-react';
 import { 
-  speakWithElevenLabs, 
   stopSpeech,
-  getApiKey,
-  setApiKey,
   getThaiVoiceId,
   setThaiVoiceId,
   getEnglishVoiceId,
   setEnglishVoiceId,
-  getAllowSiriFallback,
-  setAllowSiriFallback,
   isSpeechGloballyMuted,
   setSpeechGloballyMuted,
-  testElevenLabsConnection,
   THAI_VOICE_PRESETS,
   ENGLISH_VOICE_PRESETS
 } from '../../services/elevenlabs';
+
+// Official ElevenLabs SVG wordmark logo
+const ElevenLabsLogo: React.FC<{ className?: string }> = ({ className = "h-3.5 w-auto" }) => (
+  <svg viewBox="0 0 694 90" fill="currentColor" className={className} aria-label="ElevenLabs">
+    <path d="M248.261 22.1901H230.466L251.968 88.5124H271.123L292.625 22.1901H274.83L261.365 72.1488L248.261 22.1901Z" />
+    <path d="M0 0H18.413V88.5124H0V0Z" />
+    <path d="M36.5788 0H54.9917V88.5124H36.5788V0Z" />
+    <path d="M73.1551 0H127.652V14.7521H91.568V35.8264H125.181V50.5785H91.568V73.7603H127.652V88.5124H73.1551V0Z" />
+    <path d="M138.896 0H156.32V88.5124H138.896V0Z" />
+    <path d="M166.824 55.2893C166.824 31.1157 178.811 20.7025 197.471 20.7025C216.131 20.7025 226.759 30.9917 226.759 55.5372V59.5041H184.001C184.619 73.8843 188.944 78.719 197.224 78.719C203.773 78.719 207.851 74.876 208.593 68.1818H226.017C224.905 82.8099 212.795 90 197.224 90C177.452 90 166.824 79.4628 166.824 55.2893ZM209.582 47.9752C208.717 35.8264 204.515 31.8595 197.224 31.8595C189.933 31.8595 185.36 35.9504 184.125 47.9752H209.582Z" />
+    <path d="M295.962 55.2893C295.962 31.1157 307.949 20.7025 326.609 20.7025C345.269 20.7025 355.897 30.9917 355.897 55.5372V59.5041H313.139C313.757 73.8843 318.082 78.719 326.362 78.719C332.911 78.719 336.989 74.876 337.731 68.1818H355.155C354.043 82.8099 341.932 90 326.362 90C306.589 90 295.962 79.4628 295.962 55.2893ZM338.719 47.9752C337.854 35.8264 333.653 31.8595 326.362 31.8595C319.071 31.8595 314.498 35.9504 313.263 47.9752H338.719Z" />
+    <path d="M438.443 0H456.856V73.7603H491.457V88.5124H438.443V0Z" />
+    <path fillRule="evenodd" clipRule="evenodd" d="M495.783 55.2893C495.783 30 507.399 20.7025 522.352 20.7025C529.766 20.7025 536.563 24.9174 539.282 29.3802V22.1901H557.077V88.5124H539.776V80.7025C537.181 85.9091 529.89 90 521.857 90C506.04 90 495.783 79.8347 495.783 55.2893ZM526.924 33.719C535.574 33.719 540.27 40.2893 540.27 55.2893C540.27 70.2893 535.574 76.9835 526.924 76.9835C518.274 76.9835 513.331 70.2893 513.331 55.2893C513.331 40.2893 518.274 33.719 526.924 33.719Z" />
+    <path fillRule="evenodd" clipRule="evenodd" d="M587.847 80.7025V88.5124H570.547V0H587.971V29.3802C590.937 24.7934 597.857 20.7025 605.272 20.7025C619.854 20.7025 631.47 30 631.47 55.2893C631.47 80.5785 620.101 90 604.901 90C596.869 90 590.319 85.9091 587.847 80.7025ZM600.329 33.843C608.979 33.843 613.922 40.2893 613.922 55.2893C613.922 70.2893 608.979 76.9835 600.329 76.9835C591.678 76.9835 586.982 70.2893 586.982 55.2893C586.982 40.2893 591.678 33.843 600.329 33.843Z" />
+    <path d="M638.638 68.8017H656.062C656.309 75.7438 660.016 79.0909 666.566 79.0909C673.115 79.0909 676.823 76.1157 676.823 70.9091C676.823 66.1983 673.981 64.4628 667.802 62.9752L662.488 61.6116C647.412 57.7686 639.873 53.6777 639.873 41.157C639.873 28.6364 651.49 20.7025 666.319 20.7025C681.148 20.7025 692.394 26.5289 692.888 40.2893H675.463C675.093 34.2149 671.385 31.6116 666.072 31.6116C660.758 31.6116 657.05 34.2149 657.05 39.1736C657.05 43.7603 660.016 45.4959 665.207 46.7355L670.644 48.0992C684.979 51.6942 694 55.2893 694 68.6777C694 82.0661 682.137 90 666.072 90C648.647 90 639.008 83.4297 638.638 68.8017Z" />
+    <path d="M384.072 49.4628C384.072 39.0496 389.015 33.3471 396.677 33.3471C402.979 33.3471 406.563 37.314 406.563 45.8678V88.5124H423.987V43.1405C423.987 27.7686 415.337 20.7025 402.732 20.7025C394.205 20.7025 387.162 25.0413 384.072 30.7438V22.1901H366.401V88.5124H384.072V49.4628Z" />
+  </svg>
+);
 
 interface SettingsViewProps {
   onNavigate: (page: NavigationPage) => void;
   lang: Language;
   onToggleLang: () => void;
+  textSize: 'normal' | 'large' | 'huge';
+  onUpdateTextSize: (size: 'normal' | 'large' | 'huge') => void;
   onResetOrbs?: () => void;
   onUnlockAllOrbs?: () => void;
 }
@@ -50,49 +55,20 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
   onNavigate,
   lang,
   onToggleLang,
+  textSize,
+  onUpdateTextSize,
   onResetOrbs,
   onUnlockAllOrbs,
 }) => {
-  const [textSize, setTextSize] = useState<'normal' | 'large' | 'huge'>('large');
   const [soundEnabled, setSoundEnabled] = useState(!isSpeechGloballyMuted());
-  const [voiceSpeed, setVoiceSpeed] = useState<'slow' | 'normal'>('normal');
-  const [isTestingSpeech, setIsTestingSpeech] = useState(false);
-
-  // ElevenLabs Voice & API Configuration (Separated by Language)
-  const [elevenLabsKey, setElevenLabsKeyState] = useState(getApiKey());
-  const [showApiKey, setShowApiKey] = useState(false);
   const [selectedThaiVoiceId, setSelectedThaiVoiceIdState] = useState(getThaiVoiceId());
   const [selectedEnglishVoiceId, setSelectedEnglishVoiceIdState] = useState(getEnglishVoiceId());
   const [voiceTab, setVoiceTab] = useState<'th' | 'en'>(lang === 'en' ? 'en' : 'th');
-  const [customVoiceInput, setCustomVoiceInput] = useState('');
-  const [allowSiri, setAllowSiriState] = useState(getAllowSiriFallback());
-  const [isConfigOpen, setIsConfigOpen] = useState(false);
-  const [connectionStatus, setConnectionStatus] = useState<{
-    status: 'idle' | 'checking' | 'success' | 'error';
-    message: string;
-  }>({ status: 'idle', message: '' });
-  const [keySavedToast, setKeySavedToast] = useState(false);
 
-  const handleSaveApiKey = async (customKey?: string) => {
-    const key = (customKey !== undefined ? customKey : elevenLabsKey).trim();
-    setApiKey(key);
-    setElevenLabsKeyState(key);
-    setKeySavedToast(true);
-    setTimeout(() => setKeySavedToast(false), 2500);
-
-    setConnectionStatus({
-      status: 'checking',
-      message: lang === 'en' ? 'Verifying with ElevenLabs...' : 'กำลังทดสอบเชื่อมต่อกับ ElevenLabs...'
-    });
-
-    const activeVoiceId = voiceTab === 'en' ? selectedEnglishVoiceId : selectedThaiVoiceId;
-    const result = await testElevenLabsConnection(key, activeVoiceId, voiceTab);
-    if (result.success) {
-      setConnectionStatus({ status: 'success', message: result.message });
-    } else {
-      setConnectionStatus({ status: 'error', message: result.message });
-    }
-  };
+  // Synchronize active voice tab whenever display language changes
+  useEffect(() => {
+    setVoiceTab(lang === 'en' ? 'en' : 'th');
+  }, [lang]);
 
   const handleSelectThaiVoice = (voiceId: string) => {
     setSelectedThaiVoiceIdState(voiceId);
@@ -104,23 +80,6 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
     setEnglishVoiceId(voiceId);
   };
 
-  const handleApplyCustomVoice = (voiceId: string) => {
-    const trimmed = voiceId.trim();
-    if (!trimmed) return;
-    if (voiceTab === 'th') {
-      setSelectedThaiVoiceIdState(trimmed);
-      setThaiVoiceId(trimmed);
-    } else {
-      setSelectedEnglishVoiceIdState(trimmed);
-      setEnglishVoiceId(trimmed);
-    }
-  };
-
-  const handleToggleSiri = (val: boolean) => {
-    setAllowSiriState(val);
-    setAllowSiriFallback(val);
-  };
-
   const handleToggleSoundMaster = () => {
     const nextState = !soundEnabled;
     setSoundEnabled(nextState);
@@ -128,36 +87,6 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
     if (!nextState) {
       stopSpeech();
     }
-  };
-
-  const handleTestSpeech = async (targetLang: 'th' | 'en') => {
-    if (!soundEnabled) {
-      setSoundEnabled(true);
-      setSpeechGloballyMuted(false);
-    }
-    setIsTestingSpeech(true);
-
-    const activeVoiceId = targetLang === 'en' ? selectedEnglishVoiceId : selectedThaiVoiceId;
-
-    if (connectionStatus.status === 'idle') {
-      const check = await testElevenLabsConnection(elevenLabsKey, activeVoiceId, targetLang);
-      if (!check.success) {
-        setConnectionStatus({ status: 'error', message: check.message });
-        setIsTestingSpeech(false);
-        setIsConfigOpen(true);
-        return;
-      } else {
-        setConnectionStatus({ status: 'success', message: check.message });
-      }
-    }
-
-    const text = targetLang === 'en'
-      ? 'Hello, this is Memora gentle voice assistant. Ready to accompany you today.'
-      : 'สวัสดีค่ะคุณยาย วันนี้รู้สึกเป็นอย่างไรบ้างคะ เมโมร่าพร้อมอยู่เป็นเพื่อนและดูแลความทรงจำของคุณยายแล้วนะคะ';
-
-    speakWithElevenLabs(text, activeVoiceId, () => {
-      setIsTestingSpeech(false);
-    }, targetLang);
   };
 
   return (
@@ -182,7 +111,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
 
       {/* Page Title */}
       <div className="text-left space-y-1">
-        <h1 className="text-3xl sm:text-4xl font-extrabold text-slate-900 tracking-tight">
+        <h1 className="text-3xl sm:text-4xl font-extrabold text-slate-900 tracking-normal">
           {lang === 'en' ? 'Comfort & Settings' : 'ตั้งค่าการใช้งาน'}
         </h1>
         <p className="text-sm sm:text-base text-slate-500 font-medium">
@@ -193,7 +122,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
       </div>
 
       {/* =========================================================================
-          SECTION 1: LANGUAGE PREFERENCE (MOVED FROM TOPBAR TO SETTINGS)
+          SECTION 1: LANGUAGE PREFERENCE (MINIMAL: NO EMOJIS, NO DESCRIPTION)
          ========================================================================= */}
       <div className="bg-white rounded-[28px] border border-slate-200/80 p-6 sm:p-7 shadow-xs space-y-4">
         <div className="flex items-center space-x-3 border-b border-slate-100 pb-4">
@@ -202,7 +131,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
           </div>
           <div className="text-left">
             <h3 className="text-lg font-bold text-slate-900">
-              {lang === 'en' ? 'Language / ภาษา' : 'ภาษาของแอปพลิเคชัน (Language)'}
+              {lang === 'en' ? 'Language' : 'ภาษาของระบบ'}
             </h3>
             <p className="text-xs sm:text-sm text-slate-500">
               {lang === 'en' ? 'Choose display language' : 'เลือกภาษาที่สะดวกสำหรับการใช้งาน'}
@@ -216,22 +145,16 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
             onClick={() => {
               if (lang !== 'th') onToggleLang();
             }}
-            className={`flex items-center justify-between p-4 rounded-2xl border text-left transition-all active:scale-98 cursor-pointer ${
+            className={`flex items-center justify-between px-5 py-4 rounded-2xl border text-left transition-all active:scale-98 cursor-pointer ${
               lang === 'th'
                 ? 'bg-amber-50/70 border-amber-300 ring-2 ring-amber-300/60 shadow-xs'
-                : 'bg-slate-50 hover:bg-white border-slate-200 text-slate-700'
+                : 'bg-slate-50/80 hover:bg-white border-slate-200 text-slate-700'
             }`}
           >
-            <div className="flex items-center space-x-3">
-              <span className="text-2xl">🇹🇭</span>
-              <div>
-                <span className="font-extrabold text-slate-900 block text-base sm:text-lg">ภาษาไทย</span>
-                <span className="text-xs text-slate-500">Thai</span>
-              </div>
-            </div>
+            <span className="font-extrabold text-slate-900 text-base sm:text-lg">ภาษาไทย</span>
             {lang === 'th' && (
-              <div className="w-6 h-6 rounded-full bg-amber-500 text-white flex items-center justify-center">
-                <Check className="w-4 h-4 stroke-[3]" />
+              <div className="w-5 h-5 rounded-full bg-amber-500 text-white flex items-center justify-center shrink-0">
+                <Check className="w-3.5 h-3.5 stroke-[3]" />
               </div>
             )}
           </button>
@@ -241,22 +164,16 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
             onClick={() => {
               if (lang !== 'en') onToggleLang();
             }}
-            className={`flex items-center justify-between p-4 rounded-2xl border text-left transition-all active:scale-98 cursor-pointer ${
+            className={`flex items-center justify-between px-5 py-4 rounded-2xl border text-left transition-all active:scale-98 cursor-pointer ${
               lang === 'en'
                 ? 'bg-amber-50/70 border-amber-300 ring-2 ring-amber-300/60 shadow-xs'
-                : 'bg-slate-50 hover:bg-white border-slate-200 text-slate-700'
+                : 'bg-slate-50/80 hover:bg-white border-slate-200 text-slate-700'
             }`}
           >
-            <div className="flex items-center space-x-3">
-              <span className="text-2xl">🇺🇸</span>
-              <div>
-                <span className="font-extrabold text-slate-900 block text-base sm:text-lg">English</span>
-                <span className="text-xs text-slate-500">อังกฤษ</span>
-              </div>
-            </div>
+            <span className="font-extrabold text-slate-900 text-base sm:text-lg">English</span>
             {lang === 'en' && (
-              <div className="w-6 h-6 rounded-full bg-amber-500 text-white flex items-center justify-center">
-                <Check className="w-4 h-4 stroke-[3]" />
+              <div className="w-5 h-5 rounded-full bg-amber-500 text-white flex items-center justify-center shrink-0">
+                <Check className="w-3.5 h-3.5 stroke-[3]" />
               </div>
             )}
           </button>
@@ -264,23 +181,23 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
       </div>
 
       {/* =========================================================================
-          SECTION 2: VOICE & SOUND GUIDANCE (ELEVENLABS BACKEND)
+          SECTION 2: VOICE GUIDANCE & AI NARRATOR (MINIMAL & ELEVENLABS WORDMARK LOGO)
          ========================================================================= */}
       <div className="bg-white rounded-[28px] border border-slate-200/80 p-6 sm:p-7 shadow-xs space-y-6">
         <div className="flex items-center justify-between border-b border-slate-100 pb-4">
-          <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 rounded-2xl bg-amber-50 border border-amber-200/70 text-amber-700 flex items-center justify-center">
+          <div className="flex items-center space-x-3.5">
+            <div className="w-10 h-10 rounded-2xl bg-amber-50 border border-amber-200/70 text-amber-700 flex items-center justify-center shrink-0">
               <Volume2 className="w-5 h-5" />
             </div>
-            <div className="text-left">
-              <h3 className="text-lg font-bold text-slate-900 flex items-center space-x-2">
-                <span>{lang === 'en' ? 'Voice Guidance & AI Narrator' : 'ระบบเสียงพูดและคุณหมอ AI'}</span>
-                <span className="text-[10px] font-black tracking-wide uppercase px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 border border-amber-200">
-                  ElevenLabs
-                </span>
+            <div className="text-left space-y-1">
+              <div className="inline-flex items-center px-2 py-0.5 rounded-md bg-slate-100 border border-slate-200/80 w-fit">
+                <ElevenLabsLogo className="h-3.5 w-auto text-slate-800" />
+              </div>
+              <h3 className="text-lg font-bold text-slate-900 leading-tight">
+                {lang === 'en' ? 'Voice Guidance & AI Narrator' : 'ระบบเสียงพูดและคุณหมอ AI'}
               </h3>
               <p className="text-xs sm:text-sm text-slate-500">
-                {lang === 'en' ? 'Natural warm speech powered by ElevenLabs Multilingual V2' : 'เสียงพูดภาษาไทยที่เป็นธรรมชาติ อบอุ่น ฟังสบาย'}
+                {lang === 'en' ? 'Natural warm speech powered by ElevenLabs' : 'เสียงพูดภาษาไทยและอังกฤษที่เป็นธรรมชาติ ฟังสบาย'}
               </p>
             </div>
           </div>
@@ -291,7 +208,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
             className={`w-14 h-8 rounded-full transition-colors relative p-1 cursor-pointer ${
               soundEnabled ? 'bg-amber-500' : 'bg-slate-300'
             }`}
-            title={soundEnabled ? 'เปิดเสียงอยู่ (คลิกเพื่อปิดเสียงพักประหยัดโควต้า)' : 'ปิดเสียงอยู่ (คลิกเพื่อเปิดใช้งาน)'}
+            title={soundEnabled ? (lang === 'en' ? 'Mute Speech' : 'ปิดเสียงชั่วคราว') : (lang === 'en' ? 'Enable Speech' : 'เปิดใช้งานเสียง')}
           >
             <div
               className={`w-6 h-6 rounded-full bg-white shadow-sm transition-transform ${
@@ -301,86 +218,47 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
           </button>
         </div>
 
-        {/* API Credits Protection Banner */}
+        {/* Minimal Voice System Paused Banner (No description paragraph, no parens in title) */}
         {!soundEnabled && (
-          <div className="p-4 rounded-2xl border border-amber-300/80 bg-amber-50/90 text-amber-950 text-left flex items-start space-x-3 shadow-xs">
-            <VolumeX className="w-5 h-5 text-amber-700 shrink-0 mt-0.5" />
-            <div className="text-xs sm:text-sm font-medium">
-              <span className="font-bold block mb-0.5 text-amber-950 flex items-center space-x-1.5">
-                <span>🛡️ {lang === 'en' ? 'Voice System Paused (Credits Protected)' : 'พักระบบเสียงไว้ชั่วคราว (ประหยัด API Credits)'}</span>
-              </span>
-              <p className="opacity-90 leading-relaxed text-amber-900">
-                {lang === 'en'
-                  ? 'All ElevenLabs speech calls are completely muted. Zero API quota is being consumed while designing questions and prototyping.'
-                  : 'ปิดการเรียกใช้เสียงทั้งหมดในแอปเรียบร้อยแล้ว จะไม่มีการยิง ElevenLabs API ระหว่างแต่งโจทย์และภาพ Prototype (สามารถเปิดสวิตช์ข้างบนได้ทุกเมื่อเมื่อพร้อม)'}
-              </p>
-            </div>
+          <div className="px-4 py-3 rounded-2xl border border-amber-200/80 bg-amber-50/70 text-amber-900 text-left flex items-center space-x-3 shadow-2xs">
+            <VolumeX className="w-4 h-4 text-amber-700 shrink-0" />
+            <span className="text-xs sm:text-sm font-bold text-amber-950">
+              {lang === 'en' ? 'Voice System Paused' : 'พักระบบเสียงชั่วคราว'}
+            </span>
           </div>
         )}
 
-        {/* ElevenLabs Connection Status Banner */}
-        {connectionStatus.status !== 'idle' && (
-          <div className={`p-4 rounded-2xl border text-left flex items-start space-x-3 transition-all ${
-            connectionStatus.status === 'success'
-              ? 'bg-emerald-50/80 border-emerald-200 text-emerald-900'
-              : connectionStatus.status === 'checking'
-              ? 'bg-sky-50/80 border-sky-200 text-sky-900'
-              : 'bg-rose-50/80 border-rose-200 text-rose-900'
-          }`}>
-            {connectionStatus.status === 'success' ? (
-              <Check className="w-5 h-5 text-emerald-600 shrink-0 mt-0.5" />
-            ) : connectionStatus.status === 'checking' ? (
-              <RefreshCw className="w-5 h-5 text-sky-600 animate-spin shrink-0 mt-0.5" />
-            ) : (
-              <AlertCircle className="w-5 h-5 text-rose-600 shrink-0 mt-0.5" />
-            )}
-            <div className="flex-1 text-xs sm:text-sm font-medium">
-              <span className="font-bold block mb-0.5">
-                {connectionStatus.status === 'success'
-                  ? (lang === 'en' ? 'Connected to ElevenLabs' : 'เชื่อมต่อ ElevenLabs สำเร็จ')
-                  : connectionStatus.status === 'checking'
-                  ? (lang === 'en' ? 'Testing Connection...' : 'กำลังทดสอบการเชื่อมต่อ...')
-                  : (lang === 'en' ? 'ElevenLabs Connection Issue' : 'แจ้งเตือนการเชื่อมต่อ ElevenLabs')}
-              </span>
-              <p className="opacity-90">{connectionStatus.message}</p>
-            </div>
-          </div>
-        )}
-
-        {/* Dual Language Voice Tabs */}
+        {/* Choose your comfortable sound */}
         <div className="space-y-4 text-left">
           <div className="flex items-center justify-between">
-            <span className="text-sm font-bold text-slate-800">
-              {lang === 'en' ? 'Voice Accent & Model by Language' : 'เลือกเสียงแยกตามภาษา (Thai / English)'}
-            </span>
-            <span className="text-xs text-amber-600 font-semibold">
-              {voiceTab === 'th' ? 'Multilingual V2 (Thai Natural)' : 'Turbo V2.5 (English Fluent)'}
+            <span className="text-sm font-bold text-slate-900">
+              {lang === 'en' ? 'Choose your comfortable sound' : 'เลือกน้ำเสียงที่คุณฟังแล้วสบายใจ'}
             </span>
           </div>
 
-          {/* Language Selector Tabs */}
-          <div className="flex bg-slate-100 p-1 rounded-2xl border border-slate-200">
+          {/* Language Selector Tabs (Minimal, no emojis) */}
+          <div className="flex bg-slate-100 p-1 rounded-2xl border border-slate-200/80">
             <button
               type="button"
               onClick={() => setVoiceTab('th')}
-              className={`flex-1 flex items-center justify-center space-x-2 py-2.5 rounded-xl font-bold text-xs transition-all cursor-pointer ${
+              className={`flex-1 flex items-center justify-center py-2.5 rounded-xl font-bold text-xs transition-all cursor-pointer ${
                 voiceTab === 'th'
                   ? 'bg-white text-slate-900 shadow-xs'
-                  : 'text-slate-600 hover:text-slate-900'
+                  : 'text-slate-500 hover:text-slate-900'
               }`}
             >
-              <span>🇹🇭 ภาษาไทย (Thai Voice)</span>
+              <span>ภาษาไทย</span>
             </button>
             <button
               type="button"
               onClick={() => setVoiceTab('en')}
-              className={`flex-1 flex items-center justify-center space-x-2 py-2.5 rounded-xl font-bold text-xs transition-all cursor-pointer ${
+              className={`flex-1 flex items-center justify-center py-2.5 rounded-xl font-bold text-xs transition-all cursor-pointer ${
                 voiceTab === 'en'
                   ? 'bg-white text-slate-900 shadow-xs'
-                  : 'text-slate-600 hover:text-slate-900'
+                  : 'text-slate-500 hover:text-slate-900'
               }`}
             >
-              <span>🇺🇸 English Voice</span>
+              <span>English</span>
             </button>
           </div>
 
@@ -389,6 +267,9 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-1">
               {THAI_VOICE_PRESETS.map((preset) => {
                 const isSelected = selectedThaiVoiceId === preset.id;
+                const displayName = lang === 'en' && preset.nameEn ? preset.nameEn : preset.name;
+                const displayLabel = lang === 'en' ? (preset.labelEn || preset.label) : preset.label;
+                const displayDesc = lang === 'en' ? (preset.descriptionEn || preset.description) : preset.description;
                 return (
                   <button
                     key={preset.id}
@@ -400,17 +281,17 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                     }`}
                   >
                     <div className="flex items-start justify-between">
-                      <div>
+                      <div className="pr-2">
                         <div className="flex items-center space-x-1.5">
-                          <span className="font-bold text-slate-900 text-sm">{preset.name}</span>
+                          <span className="font-bold text-slate-900 text-sm">{displayName}</span>
                           {preset.id === 'B4NdgwdU97lHqA8Udh2D' && (
                             <span className="text-[10px] bg-emerald-100 text-emerald-800 font-extrabold px-2 py-0.5 rounded-full border border-emerald-200">
-                              {lang === 'en' ? 'Top Recommended' : 'แนะนำสูงสุด'}
+                              {lang === 'en' ? 'Recommended' : 'แนะนำสูงสุด'}
                             </span>
                           )}
                         </div>
-                        <p className="text-xs font-semibold text-slate-700 mt-0.5">{preset.label}</p>
-                        <p className="text-[11px] text-slate-500 mt-1">{preset.description}</p>
+                        <p className="text-xs font-semibold text-slate-700 mt-0.5">{displayLabel}</p>
+                        <p className="text-[11px] text-slate-500 mt-1 leading-relaxed">{displayDesc}</p>
                       </div>
 
                       {isSelected && (
@@ -430,6 +311,9 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-1">
               {ENGLISH_VOICE_PRESETS.map((preset) => {
                 const isSelected = selectedEnglishVoiceId === preset.id;
+                const displayName = lang === 'en' && preset.nameEn ? preset.nameEn : preset.name;
+                const displayLabel = lang === 'en' ? (preset.labelEn || preset.label) : (preset.label || preset.labelEn);
+                const displayDesc = lang === 'en' ? (preset.descriptionEn || preset.description) : (preset.description || preset.descriptionEn);
                 return (
                   <button
                     key={preset.id}
@@ -441,17 +325,17 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                     }`}
                   >
                     <div className="flex items-start justify-between">
-                      <div>
+                      <div className="pr-2">
                         <div className="flex items-center space-x-1.5">
-                          <span className="font-bold text-slate-900 text-sm">{preset.name}</span>
+                          <span className="font-bold text-slate-900 text-sm">{displayName}</span>
                           {preset.id === 'pFZP5JQG7iQjIQuC4Bku' && (
                             <span className="text-[10px] bg-sky-100 text-sky-800 font-extrabold px-2 py-0.5 rounded-full border border-sky-200">
-                              Recommended
+                              {lang === 'en' ? 'Recommended' : 'แนะนำ'}
                             </span>
                           )}
                         </div>
-                        <p className="text-xs font-semibold text-slate-700 mt-0.5">{preset.label}</p>
-                        <p className="text-[11px] text-slate-500 mt-1">{preset.description}</p>
+                        <p className="text-xs font-semibold text-slate-700 mt-0.5">{displayLabel}</p>
+                        <p className="text-[11px] text-slate-500 mt-1 leading-relaxed">{displayDesc}</p>
                       </div>
 
                       {isSelected && (
@@ -465,191 +349,11 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
               })}
             </div>
           )}
-
-          {/* Custom Voice ID Option */}
-          <div className="pt-1">
-            <div className="p-3.5 rounded-2xl border bg-slate-50/50 border-slate-200">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-xs font-bold text-slate-800">
-                  {lang === 'en'
-                    ? `Custom Voice ID for ${voiceTab === 'th' ? 'Thai' : 'English'}`
-                    : `หรือใส่รหัสเสียงที่โคลนไว้เองสำหรับ${voiceTab === 'th' ? 'ภาษาไทย' : 'ภาษาอังกฤษ'} (Custom Voice ID)`}
-                </span>
-              </div>
-              <div className="flex gap-2">
-                <input
-                  type="text"
-                  placeholder="เช่น B4NdgwdU97lHqA8Udh2D"
-                  value={customVoiceInput}
-                  onChange={(e) => setCustomVoiceInput(e.target.value)}
-                  className="flex-1 bg-white border border-slate-300 rounded-xl px-3 py-2 text-xs font-mono text-slate-800 focus:outline-none focus:ring-2 focus:ring-amber-400"
-                />
-                <button
-                  type="button"
-                  onClick={() => handleApplyCustomVoice(customVoiceInput)}
-                  className="px-3 py-2 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold rounded-xl transition-all active:scale-95 cursor-pointer"
-                >
-                  {lang === 'en' ? 'Use ID' : 'ใช้เสียงนี้'}
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* ElevenLabs API Key Settings Accordion / Panel */}
-        <div className="border border-slate-200/90 rounded-2xl p-4 bg-slate-50/50 space-y-3 text-left">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-2">
-              <Key className="w-4 h-4 text-slate-700" />
-              <span className="text-sm font-bold text-slate-900">
-                {lang === 'en' ? 'ElevenLabs API Key Configuration' : 'การตั้งค่า ElevenLabs API Key'}
-              </span>
-            </div>
-            <button
-              onClick={() => setIsConfigOpen(!isConfigOpen)}
-              className="text-xs font-bold text-amber-600 hover:text-amber-700 transition-colors cursor-pointer"
-            >
-              {isConfigOpen
-                ? (lang === 'en' ? 'Hide' : 'ซ่อนการตั้งค่า')
-                : (lang === 'en' ? 'Edit Key' : 'จัดการ Key')}
-            </button>
-          </div>
-
-          {isConfigOpen && (
-            <div className="space-y-3 pt-2 border-t border-slate-200/80">
-              <p className="text-xs text-slate-600">
-                {lang === 'en'
-                  ? 'Paste your ElevenLabs API Key here. Ensure the key has "Text to Speech" permission enabled on elevenlabs.io.'
-                  : 'ใส่ ElevenLabs API Key เพื่อใช้ระบบเสียงจริง (โปรดตรวจสอบว่า Key มีสิทธิ์ "Text to Speech" บนแดชบอร์ด elevenlabs.io)'}
-              </p>
-
-              <div className="relative">
-                <input
-                  type={showApiKey ? 'text' : 'password'}
-                  placeholder="sk_..."
-                  value={elevenLabsKey}
-                  onChange={(e) => setElevenLabsKeyState(e.target.value)}
-                  className="w-full bg-white border border-slate-300 rounded-xl pl-3 pr-10 py-2.5 text-xs font-mono text-slate-800 focus:outline-none focus:ring-2 focus:ring-amber-400"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowApiKey(!showApiKey)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 cursor-pointer"
-                >
-                  {showApiKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                </button>
-              </div>
-
-              <div className="flex items-center justify-between pt-1">
-                <button
-                  onClick={() => handleSaveApiKey()}
-                  className="flex items-center space-x-1.5 px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs rounded-xl shadow-xs transition-all active:scale-95 cursor-pointer"
-                >
-                  <Check className="w-3.5 h-3.5 stroke-[3]" />
-                  <span>{lang === 'en' ? 'Save & Verify Key' : 'บันทึกและตรวจสอบ Key'}</span>
-                </button>
-
-                {keySavedToast && (
-                  <span className="text-xs font-bold text-emerald-600 animate-fade-in">
-                    ✓ {lang === 'en' ? 'Saved to app!' : 'บันทึกเรียบร้อย!'}
-                  </span>
-                )}
-              </div>
-            </div>
-          )}
-        </div>
-
-        {/* Prevent Siri Fallback Toggle */}
-        <div className="flex items-center justify-between p-3.5 rounded-2xl bg-slate-50/70 border border-slate-200/80 text-left">
-          <div className="pr-4">
-            <span className="text-xs sm:text-sm font-bold text-slate-800 block">
-              {lang === 'en' ? 'Allow Browser Siri as Fallback' : 'เปิดเสียงสิริสำรองของเครื่องเมื่อเกิดข้อผิดพลาด'}
-            </span>
-            <span className="text-[11px] text-slate-500 block">
-              {lang === 'en'
-                ? 'When disabled, only high-quality ElevenLabs voice will be played (No Siri).'
-                : 'เมื่อปิดไว้ แอปจะเล่นเฉพาะเสียง ElevenLabs เท่านั้น จะไม่มีเสียงสิริหุ่นยนต์กวนใจ'}
-            </span>
-          </div>
-
-          <button
-            onClick={() => handleToggleSiri(!allowSiri)}
-            className={`w-12 h-7 rounded-full transition-colors relative p-0.5 shrink-0 cursor-pointer ${
-              allowSiri ? 'bg-amber-500' : 'bg-slate-300'
-            }`}
-          >
-            <div
-              className={`w-6 h-6 rounded-full bg-white shadow-sm transition-transform ${
-                allowSiri ? 'translate-x-5' : 'translate-x-0'
-              }`}
-            />
-          </button>
-        </div>
-
-        {/* Voice Speed */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-left">
-          <div>
-            <span className="text-sm font-bold text-slate-800">
-              {lang === 'en' ? 'Voice Speed' : 'ความเร็วในการพูด'}
-            </span>
-            <p className="text-xs text-slate-500">
-              {lang === 'en' ? 'Gentle pacing for easy understanding' : 'ปรับให้พูดช้าลงเพื่อให้ฟังง่ายขึ้น'}
-            </p>
-          </div>
-
-          <div className="flex items-center space-x-2">
-            <button
-              onClick={() => setVoiceSpeed('slow')}
-              className={`px-4 py-2 rounded-full text-xs font-bold transition-all cursor-pointer ${
-                voiceSpeed === 'slow'
-                  ? 'bg-slate-900 text-white shadow-xs'
-                  : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
-              }`}
-            >
-              {lang === 'en' ? 'Slower (0.85x)' : 'ช้าลง ฟังสบาย'}
-            </button>
-            <button
-              onClick={() => setVoiceSpeed('normal')}
-              className={`px-4 py-2 rounded-full text-xs font-bold transition-all cursor-pointer ${
-                voiceSpeed === 'normal'
-                  ? 'bg-slate-900 text-white shadow-xs'
-                  : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
-              }`}
-            >
-              {lang === 'en' ? 'Normal (1.0x)' : 'ความเร็วปกติ'}
-            </button>
-          </div>
-        </div>
-
-        {/* Test Voice Buttons */}
-        <div className="pt-2 space-y-2.5">
-          {/* Thai Voice Test */}
-          <button
-            onClick={() => handleTestSpeech('th')}
-            disabled={isTestingSpeech || !soundEnabled}
-            className="w-full flex items-center justify-center space-x-2 py-4 px-4 rounded-2xl bg-linear-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white font-bold text-sm shadow-sm transition-all active:scale-98 cursor-pointer disabled:opacity-50"
-          >
-            <Volume2 className={`w-5 h-5 ${isTestingSpeech ? 'animate-bounce text-amber-200' : ''}`} />
-            <span>
-              {isTestingSpeech
-                ? (lang === 'en' ? 'Playing Thai Voice Sample...' : 'กำลังเล่นเสียงพูดภาษาไทย...')
-                : `🇹🇭 ทดสอบเสียงพูดภาษาไทย (${THAI_VOICE_PRESETS.find(p => p.id === selectedThaiVoiceId)?.name || 'Custom'})`}
-            </span>
-          </button>
-
-          {/* English Voice Test */}
-          <button
-            onClick={() => handleTestSpeech('en')}
-            disabled={isTestingSpeech || !soundEnabled}
-            className="w-full flex items-center justify-center space-x-2 py-2.5 px-4 rounded-xl border border-slate-200 hover:border-slate-300 bg-slate-50 hover:bg-slate-100 text-slate-700 font-semibold text-xs transition-all active:scale-98 cursor-pointer disabled:opacity-50"
-          >
-            <span>🇺🇸 Test English Voice ({ENGLISH_VOICE_PRESETS.find(p => p.id === selectedEnglishVoiceId)?.name || 'Custom'})</span>
-          </button>
         </div>
       </div>
 
       {/* =========================================================================
-          SECTION 3: TEXT SIZE & ACCESSIBILITY
+          SECTION 3: TEXT SIZE & ACCESSIBILITY (RESPONSIVE LIVE SCALING)
          ========================================================================= */}
       <div className="bg-white rounded-[28px] border border-slate-200/80 p-6 sm:p-7 shadow-xs space-y-4">
         <div className="flex items-center space-x-3 border-b border-slate-100 pb-4">
@@ -668,10 +372,10 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
 
         <div className="grid grid-cols-3 gap-2.5 sm:gap-3 pt-1">
           <button
-            onClick={() => setTextSize('normal')}
-            className={`py-3 rounded-2xl border text-center transition-all cursor-pointer ${
+            onClick={() => onUpdateTextSize('normal')}
+            className={`py-3.5 rounded-2xl border text-center transition-all cursor-pointer ${
               textSize === 'normal'
-                ? 'bg-slate-900 text-white border-slate-900 shadow-xs'
+                ? 'bg-slate-900 text-white border-slate-900 shadow-xs ring-2 ring-slate-900/20'
                 : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-white'
             }`}
           >
@@ -680,10 +384,10 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
           </button>
 
           <button
-            onClick={() => setTextSize('large')}
-            className={`py-3 rounded-2xl border text-center transition-all cursor-pointer ${
+            onClick={() => onUpdateTextSize('large')}
+            className={`py-3.5 rounded-2xl border text-center transition-all cursor-pointer ${
               textSize === 'large'
-                ? 'bg-slate-900 text-white border-slate-900 shadow-xs'
+                ? 'bg-slate-900 text-white border-slate-900 shadow-xs ring-2 ring-slate-900/20'
                 : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-white'
             }`}
           >
@@ -692,10 +396,10 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
           </button>
 
           <button
-            onClick={() => setTextSize('huge')}
-            className={`py-3 rounded-2xl border text-center transition-all cursor-pointer ${
+            onClick={() => onUpdateTextSize('huge')}
+            className={`py-3.5 rounded-2xl border text-center transition-all cursor-pointer ${
               textSize === 'huge'
-                ? 'bg-slate-900 text-white border-slate-900 shadow-xs'
+                ? 'bg-slate-900 text-white border-slate-900 shadow-xs ring-2 ring-slate-900/20'
                 : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-white'
             }`}
           >
@@ -706,51 +410,62 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
       </div>
 
       {/* =========================================================================
-          SECTION 3.5: USER ACCOUNT & ACTIVE PROFILE
+          SECTION 3.5: USER ACCOUNT & PROFILE (REDESIGNED: AVATAR ON LEFT, WATTANASHIRI FAMILY)
          ========================================================================= */}
       <div className="bg-white rounded-[28px] border border-slate-200/80 p-6 sm:p-7 shadow-xs text-left space-y-4">
         <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-          <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 rounded-2xl bg-indigo-50 border border-indigo-200/70 text-indigo-700 flex items-center justify-center font-bold">
-              👤
-            </div>
-            <div>
-              <h3 className="text-base sm:text-lg font-bold text-slate-900">
-                {lang === 'en' ? 'User Account & Profile' : 'ข้อมูลบัญชีผู้ใช้งาน (User Profile)'}
-              </h3>
-              <p className="text-xs text-slate-500">
-                {lang === 'en' ? 'Logged-in user profile & family association' : 'บัญชีที่เชื่อมโยงกับครอบครัวและฐานข้อมูล'}
-              </p>
-            </div>
+          <div className="flex items-center space-x-2">
+            <span className="text-sm font-bold text-slate-900">
+              {lang === 'en' ? 'User Account & Profile' : 'ข้อมูลบัญชีผู้ใช้งาน'}
+            </span>
           </div>
-          <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2.5 py-0.5 rounded-full">
-            AUTHENTICATED
+          <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2.5 py-0.5 rounded-full flex items-center space-x-1">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+            <span>{lang === 'en' ? 'AUTHENTICATED' : 'ยืนยันตัวตนแล้ว'}</span>
           </span>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 pt-1">
-          <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-1">
-            <span className="text-[11px] font-semibold text-slate-500 block">
-              {lang === 'en' ? 'Account Holder' : 'ชื่อผู้ใช้งาน'}
-            </span>
-            <span className="text-sm font-bold text-slate-900 block">
-              แอน วัฒนศิริ (Ann)
-            </span>
-            <span className="text-xs text-slate-500 font-mono">
-              ann@memora.app
-            </span>
-          </div>
+        {/* Modern Profile Card: Avatar on Left, Clean Typographic Details & Family on Right */}
+        <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-slate-50/90 via-indigo-50/30 to-amber-50/20 border border-slate-200/80 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="flex items-center space-x-4">
+            {/* Circular Avatar of Ann */}
+            <div className="relative shrink-0">
+              <img
+                src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=300&q=80"
+                alt="Ann Wattanashiri"
+                className="w-16 h-16 sm:w-18 sm:h-18 rounded-full object-cover border-2 border-white shadow-sm ring-2 ring-indigo-200/70"
+              />
+              <span 
+                className="absolute bottom-0 right-0 w-4 h-4 rounded-full bg-emerald-500 border-2 border-white shadow-2xs" 
+                title="Active" 
+              />
+            </div>
 
-          <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-1">
-            <span className="text-[11px] font-semibold text-slate-500 block">
-              {lang === 'en' ? 'Family & Role' : 'กลุ่มครอบครัวและบทบาท'}
-            </span>
-            <span className="text-sm font-bold text-slate-900 block">
-              ครอบครัววัฒนศิริ
-            </span>
-            <span className="text-xs text-indigo-600 font-bold">
-              ลูกหลานคนโต (Caregiver / Buyer)
-            </span>
+            {/* Profile Info */}
+            <div className="space-y-1">
+              <div className="flex items-center space-x-2">
+                <h4 className="text-lg sm:text-xl font-extrabold text-slate-900 tracking-normal">
+                  แอน วัฒนศิริ
+                </h4>
+                <span className="text-xs font-bold text-indigo-700 bg-indigo-50 border border-indigo-200 px-2 py-0.5 rounded-full">
+                  Ann
+                </span>
+              </div>
+              <p className="text-xs sm:text-sm text-slate-500 font-mono">
+                ann@memora.app
+              </p>
+              <div className="flex flex-wrap items-center gap-1.5 pt-1">
+                <span className="text-[11px] font-bold text-amber-900 bg-amber-100/80 border border-amber-200/80 px-2.5 py-0.5 rounded-full">
+                  ครอบครัววัฒนศิริ
+                </span>
+                <span className="text-[10px] font-mono text-slate-500 bg-slate-100 border border-slate-200 px-2 py-0.5 rounded-full">
+                  MEMORA-8821
+                </span>
+                <span className="text-[11px] font-semibold text-indigo-700 bg-indigo-50/80 border border-indigo-200/70 px-2.5 py-0.5 rounded-full">
+                  {lang === 'en' ? 'Eldest Daughter • Primary Caregiver' : 'ลูกสาวคนโต • ผู้ดูแลหลัก'}
+                </span>
+              </div>
+            </div>
           </div>
         </div>
       </div>

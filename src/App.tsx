@@ -39,6 +39,22 @@ export const App: React.FC = () => {
   const [familyGroup, setFamilyGroup] = useState<FamilyGroup>(initialFamilyGroup);
   const [activeSeniorId, setActiveSeniorId] = useState<string>('elder-1');
 
+  // Global Senior-Friendly Responsive Text Size state
+  const [textSize, setTextSize] = useState<'normal' | 'large' | 'huge'>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('memora_text_size');
+      if (saved === 'normal' || saved === 'large' || saved === 'huge') return saved;
+    }
+    return 'large';
+  });
+
+  React.useEffect(() => {
+    if (typeof window !== 'undefined') {
+      document.documentElement.setAttribute('data-text-size', textSize);
+      localStorage.setItem('memora_text_size', textSize);
+    }
+  }, [textSize]);
+
   // Hydrate from SQLite / Prisma Backend Database on Mount & Warm Image Cache
   React.useEffect(() => {
     // 1. Proactively warm all 15 memory orbs & recap photos in background
@@ -176,6 +192,7 @@ export const App: React.FC = () => {
               onCorrectAnswer={handleCorrectAnswer}
               onFinishSession={handleFinishSession}
               lang={lang}
+              textSize={textSize}
             />
           )}
 
@@ -190,6 +207,7 @@ export const App: React.FC = () => {
             />
           )}
 
+          {/* Dedicated Vault View */}
           {currentPage === 'vault' && (
             <VaultView
               orbs={orbs}
@@ -213,6 +231,8 @@ export const App: React.FC = () => {
               onNavigate={handleNavigate}
               lang={lang}
               onToggleLang={handleToggleLang}
+              textSize={textSize}
+              onUpdateTextSize={setTextSize}
               onResetOrbs={() => setOrbs((prev) => prev.map((o) => ({ ...o, isUnlocked: false })))}
               onUnlockAllOrbs={() => setOrbs((prev) => prev.map((o) => ({ ...o, isUnlocked: true })))}
             />

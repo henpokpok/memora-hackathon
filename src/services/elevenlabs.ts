@@ -1,8 +1,11 @@
 export interface VoicePreset {
   id: string;
   name: string;
+  nameEn?: string;
   label: string;
+  labelEn?: string;
   description: string;
+  descriptionEn?: string;
   gender: 'female' | 'male';
   lang: 'th' | 'en';
 }
@@ -11,40 +14,55 @@ export const THAI_VOICE_PRESETS: VoicePreset[] = [
   {
     id: 'B4NdgwdU97lHqA8Udh2D',
     name: 'Kanya (กัญญา)',
+    nameEn: 'Kanya',
     label: 'เสียงอบอุ่น อ่อนโยน (แนะนำสูงสุดสำหรับคุณยาย)',
+    labelEn: 'Warm & Gentle Tone (Recommended)',
     description: 'น้ำเสียงคุณป้า/คุณน้าใจดี สำเนียงไทยแท้ นุ่มนวล จังหวะช้า ไม่เร่งรีบ',
+    descriptionEn: 'Kind aunt tone, authentic Thai accent, soothing and unhurried pace',
     gender: 'female',
     lang: 'th'
   },
   {
     id: 'v2NF9R77fF8wZRdbGYTg',
     name: 'Siriporn (ศิริพร)',
+    nameEn: 'Siriporn',
     label: 'เสียงสุขุม นุ่มนวล ชัดเจน',
+    labelEn: 'Calm, Gentle & Articulate',
     description: 'น้ำเสียงหญิงไทยวัยกลางคน สุภาพ อบอุ่น ฟังสบาย',
+    descriptionEn: 'Polite mature female voice, clear, respectful and comfortable to hear',
     gender: 'female',
     lang: 'th'
   },
   {
     id: 'nealpwJT5tCyJFKDzEq8',
     name: 'Aom (ออม)',
+    nameEn: 'Aom',
     label: 'เสียงหวาน ละมุน เป็นกันเอง',
+    labelEn: 'Sweet, Caring & Cheerful',
     description: 'น้ำเสียงลูกหลาน อ่อนหวาน น่ารัก เป็นกันเอง',
+    descriptionEn: 'Affectionate granddaughter voice, sweet, uplifting and friendly',
     gender: 'female',
     lang: 'th'
   },
   {
     id: 'H9eYlNHpm1vah6PPgYAk',
     name: 'Ekkarat (เอกราช)',
+    nameEn: 'Ekkarat',
     label: 'เสียงผู้ชาย อบอุ่น เป็นกันเอง',
+    labelEn: 'Warm & Friendly Male Voice',
     description: 'น้ำเสียงผู้ชายไทยสบายๆ เป็นมิตร ชัดถ้อยชัดคำ',
+    descriptionEn: 'Casual and friendly Thai male voice, clear articulation and reassuring',
     gender: 'male',
     lang: 'th'
   },
   {
     id: 'XLXcyPK1jTjw1pYLLcM9',
     name: 'Somchai (สมชาย)',
+    nameEn: 'Somchai',
     label: 'เสียงคุณหมอ ทุ้ม สุขุม น่าเชื่อถือ',
+    labelEn: 'Doctor Voice, Deep & Trustworthy',
     description: 'น้ำเสียงผู้เชี่ยวชาญ/คุณหมอผู้ดูแล อบอุ่น ให้ความมั่นใจ',
+    descriptionEn: 'Professional caregiver/physician tone, deep, calm and reassuring',
     gender: 'male',
     lang: 'th'
   }
@@ -54,32 +72,44 @@ export const ENGLISH_VOICE_PRESETS: VoicePreset[] = [
   {
     id: 'pFZP5JQG7iQjIQuC4Bku',
     name: 'Lily',
-    label: 'Gentle & Warm Companion',
-    description: 'Soothing, gentle female voice, perfect for calm listening',
+    nameEn: 'Lily',
+    label: 'เสียงอบอุ่น อ่อนโยน ปลอบประโลม (แนะนำ)',
+    labelEn: 'Gentle & Warm Companion (Recommended)',
+    description: 'น้ำเสียงผู้หญิงนุ่มนวล ฟังสบาย เหมาะสำหรับการฟังอย่างสงบ',
+    descriptionEn: 'Soothing, gentle female voice, perfect for calm listening',
     gender: 'female',
     lang: 'en'
   },
   {
     id: '21m00Tcm4TlvDq8ikWAM',
     name: 'Rachel',
-    label: 'Clear & Natural Narrator',
-    description: 'Professional, articulate American English voice',
+    nameEn: 'Rachel',
+    label: 'เสียงชัดเจน เล่าเรื่องเป็นธรรมชาติ',
+    labelEn: 'Clear & Natural Narrator',
+    description: 'น้ำเสียงมืออาชีพ สำเนียงอเมริกันชัดถ้อยชัดคำ',
+    descriptionEn: 'Professional, articulate American English voice',
     gender: 'female',
     lang: 'en'
   },
   {
     id: 'EXAVITQu4vr4xnSDxMaL',
     name: 'Bella',
-    label: 'Friendly & Cheerful',
-    description: 'Warm and expressive, like a daughter or grandchild',
+    nameEn: 'Bella',
+    label: 'เสียงสดใส อบอุ่น เป็นมิตร',
+    labelEn: 'Friendly & Cheerful',
+    description: 'น้ำเสียงเป็นกันเอง ร่าเริง เหมือนลูกหลานคุยด้วย',
+    descriptionEn: 'Warm and expressive, like a daughter or grandchild',
     gender: 'female',
     lang: 'en'
   },
   {
     id: 'ErXwobaYiN019PkySvjV',
     name: 'Antoni',
-    label: 'Comforting Male Voice',
-    description: 'Gentle, reassuring tone suitable for caregiving',
+    nameEn: 'Antoni',
+    label: 'เสียงผู้ชาย อบอุ่น ให้ความมั่นใจ',
+    labelEn: 'Comforting Male Voice',
+    description: 'น้ำเสียงทุ้ม สุภาพ เหมาะสำหรับการดูแลผู้สูงอายุ',
+    descriptionEn: 'Gentle, reassuring tone suitable for caregiving',
     gender: 'male',
     lang: 'en'
   }

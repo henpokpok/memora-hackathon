@@ -21,6 +21,7 @@ interface TestViewProps {
   onCorrectAnswer: (orbId: string) => void;
   onFinishSession: () => void;
   lang: Language;
+  textSize?: 'normal' | 'large' | 'huge';
 }
 
 // Angles of memory questions derived from photos
@@ -78,6 +79,7 @@ export const TestView: React.FC<TestViewProps> = ({
   onCorrectAnswer,
   onFinishSession,
   lang,
+  textSize = 'large',
 }) => {
   // Currently focused photo orb
   const currentOrbIndex = orbs.findIndex((o) => o.id === activeOrbId);
@@ -89,9 +91,79 @@ export const TestView: React.FC<TestViewProps> = ({
   // Interaction States
   const [isPlayingAudio, setIsPlayingAudio] = useState(false);
   const [selectedOptId, setSelectedOptId] = useState<string | null>(null);
+  const [selectedTraitOption, setSelectedTraitOption] = useState<{
+    id: string;
+    label: string;
+    sublabel?: string;
+    photoUrl?: string;
+  } | null>(null);
   const [answerState, setAnswerState] = useState<'unanswered' | 'correct' | 'wrong'>('unanswered');
   const [showClue, setShowClue] = useState(false);
   const [isListeningMic, setIsListeningMic] = useState(false);
+
+  // Conversational trait formatter: tells who/what this person or item is ("เขาเป็น...") warmly
+  const getChoiceStoryTrait = (
+    opt: { label: string; sublabel?: string },
+    angle?: QuestionAngle,
+    currentLang: Language = lang
+  ) => {
+    const name = opt.label.replace(/^[👉✨🏷️]\s*/, '').trim();
+    const trait = opt.sublabel || '';
+
+    if (currentLang === 'en') {
+      if (angle === 'person') {
+        return {
+          title: `About ${name}`,
+          detail: `This is ${name}. They are our ${trait || 'family member'}. 🏡`,
+          promptToLook: 'Take another gentle look at the photo... who is in this picture?',
+        };
+      } else if (angle === 'place') {
+        return {
+          title: `About ${name}`,
+          detail: `${name} is a special place for ${trait || 'memories'}. 🌿`,
+          promptToLook: 'Look closely at the photo surroundings... where was this taken?',
+        };
+      } else if (angle === 'event') {
+        return {
+          title: `About ${name}`,
+          detail: `${name} is a memorable time of ${trait || 'celebration'}. 🎈`,
+          promptToLook: 'What special moment is taking place in this photo?',
+        };
+      } else {
+        return {
+          title: `About ${name}`,
+          detail: `${name} is ${trait || 'heartwarming feeling'}. ✨`,
+          promptToLook: 'How does seeing this photo make your heart feel?',
+        };
+      }
+    } else {
+      if (angle === 'person') {
+        return {
+          title: `เรื่องราวของ ${name}`,
+          detail: `คนนี้คือ ${name} ค่ะ เขาเป็น${trait || 'คนในครอบครัว'} 🏡`,
+          promptToLook: 'ลองดูรอยยิ้มในภาพถ่ายใบนี้อีกทีนะคะ... คนในภาพนี้คือใครเอ่ย?',
+        };
+      } else if (angle === 'place') {
+        return {
+          title: `เกี่ยวกับ ${name}`,
+          detail: `${name} ที่นี่เป็น${trait ? `${trait}` : 'สถานที่คุ้นเคย'}ค่ะ 🌿`,
+          promptToLook: 'ลองสังเกตบรรยากาศรอบๆ ในภาพนี้นะคะ... ถ่ายที่ไหนเอ่ย?',
+        };
+      } else if (angle === 'event') {
+        return {
+          title: `เกี่ยวกับ ${name}`,
+          detail: `${name} เป็นช่วงเวลา${trait ? `${trait}` : 'ที่มีความสุข'}ค่ะ 🎈`,
+          promptToLook: 'ในภาพนี้ ทุกคนกำลังทำอะไรกันอยู่เอ่ย?',
+        };
+      } else {
+        return {
+          title: `เกี่ยวกับ ${name}`,
+          detail: `${name} เป็น${trait ? `${trait}` : 'ความรู้สึกอบอุ่น'}ค่ะ ✨`,
+          promptToLook: 'เห็นภาพนี้แล้ว ในใจรู้สึกอย่างไรบ้างคะ?',
+        };
+      }
+    }
+  };
 
   // Matching game state
   const [selectedMatchPhoto, setSelectedMatchPhoto] = useState<string | null>(null);
@@ -448,6 +520,7 @@ export const TestView: React.FC<TestViewProps> = ({
 
     // Reset interaction states for the new step
     setSelectedOptId(null);
+    setSelectedTraitOption(null);
     setAnswerState('unanswered');
     setShowClue(false);
     setIsListeningMic(false);
@@ -509,9 +582,12 @@ export const TestView: React.FC<TestViewProps> = ({
     soundFx.playTap();
     setSelectedOptId(optId);
 
+    const tappedOpt = currentStep.question.options.find((o) => o.id === optId);
+
     if (isCorrect) {
       soundFx.playSuccessChime();
       setAnswerState('correct');
+      setSelectedTraitOption(null);
 
       // Persist unlock
       if (activeOrb) {
@@ -521,13 +597,15 @@ export const TestView: React.FC<TestViewProps> = ({
       const successSpeech = lang === 'en' ? currentStep.question.voiceSuccess.en : currentStep.question.voiceSuccess.th;
       speakWithElevenLabs(successSpeech, undefined, undefined, lang);
     } else {
-      soundFx.playGentleRetry();
-      setAnswerState('wrong');
-
-      const gentleRetrySpeech = lang === 'en'
-        ? 'Almost there Grandma! Take another gentle look or tap the clue button!'
-        : 'เกือบถูกแล้วค่ะคุณตาคุณยาย... ค่อยๆ ดูอีกนิด หรือแตะดูคำใบ้ได้เลยนะคะ 💡';
-      speakWithElevenLabs(gentleRetrySpeech, undefined, undefined, lang);
+      // Respectful, natural storytelling affirmation ("เขาเป็น..."):
+      // NEVER evaluate or say "almost correct" / "wrong" to seniors!
+      setAnswerState('unanswered');
+      if (tappedOpt) {
+        setSelectedTraitOption(tappedOpt);
+        const traitInfo = getChoiceStoryTrait(tappedOpt, currentStep.question.angle, lang);
+        const speech = `${traitInfo.detail} ${traitInfo.promptToLook}`;
+        speakWithElevenLabs(speech, undefined, undefined, lang);
+      }
     }
   };
 
@@ -537,6 +615,7 @@ export const TestView: React.FC<TestViewProps> = ({
     soundFx.playTap();
     setAnswerState('unanswered');
     setSelectedOptId(null);
+    setSelectedTraitOption(null);
     setIsMatchCompleted(false);
     setMatchedIds([]);
 
@@ -663,15 +742,19 @@ export const TestView: React.FC<TestViewProps> = ({
   }
 
   return (
-    <div className="max-w-xl mx-auto px-2 sm:px-4 space-y-2 select-none">
+    <div className={`max-w-xl mx-auto px-2 sm:px-4 select-none ${
+      textSize === 'huge' ? 'space-y-1.5' : 'space-y-2'
+    }`}>
       {/* =========================================================================
           STEP TYPE 1: PHOTO MEMORY QUIZ
           (NO progress bar - endless continuous play with prominent large photo & choices)
           ========================================================================= */}
       {currentStep.type === 'quiz' && currentStep.question && (
-        <div className="space-y-2 sm:space-y-2.5 animate-fade-in">
+        <div className={`animate-fade-in ${textSize === 'huge' ? 'space-y-1.5 sm:space-y-2' : 'space-y-2 sm:space-y-2.5'}`}>
           {/* Question Card with Photo */}
-          <div className="bg-white rounded-3xl border border-slate-200/80 p-3 sm:p-3.5 shadow-sm text-center space-y-2">
+          <div className={`bg-white rounded-3xl border border-slate-200/80 shadow-sm text-center ${
+            textSize === 'huge' ? 'p-2.5 sm:p-3 space-y-1.5' : 'p-3 sm:p-3.5 space-y-2'
+          }`}>
             {/* Header: Angle Indicator Pill + Warm Amber Audio Speaker Button in one row */}
             <div className="flex items-center justify-between">
               <div className="inline-flex items-center space-x-1.5 px-3 py-1 rounded-full bg-amber-50/90 border border-amber-200/90 text-amber-900 text-xs font-bold shadow-2xs">
@@ -698,8 +781,10 @@ export const TestView: React.FC<TestViewProps> = ({
               </button>
             </div>
 
-            {/* Photo Card: Much larger size, vivid and prominent */}
-            <div className="relative mx-auto w-full h-40 sm:h-44 rounded-2xl overflow-hidden border border-slate-200/90 shadow-2xs group bg-slate-100">
+            {/* Photo Card: Prominent yet viewport-constrained */}
+            <div className={`relative mx-auto w-full rounded-2xl overflow-hidden border border-slate-200/90 shadow-2xs group bg-slate-100 transition-all ${
+              textSize === 'huge' ? 'h-32 sm:h-36 max-h-[20vh]' : 'h-36 sm:h-40 md:h-44 max-h-[24vh]'
+            }`}>
               <img
                 src={activeOrb.photoUrl}
                 alt={activeOrb.title}
@@ -746,12 +831,11 @@ export const TestView: React.FC<TestViewProps> = ({
             </div>
           )}
 
-          {/* Tactile Choice Cards: Enlarged size, larger font & avatar, generous padding */}
+          {/* Tactile Choice Cards: Responsive padding for zero-scroll comfort */}
           <div className="grid grid-cols-1 gap-2 sm:gap-2.5">
             {currentStep.question.options.map((opt) => {
               const isSelected = selectedOptId === opt.id;
               const isAnswerCorrect = answerState === 'correct' && opt.isCorrect;
-              const isAnswerWrong = answerState === 'wrong' && isSelected && !opt.isCorrect;
 
               // Senior-friendly conversational text for identity questions:
               // "นี่คือ น้องภูมิ", "นี่คือ น้องมินท์"
@@ -764,19 +848,21 @@ export const TestView: React.FC<TestViewProps> = ({
                   key={opt.id}
                   onClick={() => handleSelectOption(opt.id, opt.isCorrect)}
                   disabled={answerState === 'correct'}
-                  className={`group w-full flex items-center px-4 py-2.5 sm:py-3 rounded-2xl border-2 transition-all text-left cursor-pointer active:translate-y-[1px] ${
+                  className={`group w-full flex items-center px-4 rounded-2xl border-2 transition-all text-left cursor-pointer active:translate-y-[1px] ${
+                    textSize === 'huge' ? 'py-2 sm:py-2.5' : 'py-2.5 sm:py-3'
+                  } ${
                     isAnswerCorrect
                       ? 'bg-emerald-50 border-emerald-500 border-b-3 border-b-emerald-600 text-emerald-950 shadow-xs'
-                      : isAnswerWrong
-                      ? 'bg-rose-50 border-rose-300 border-b-3 border-b-rose-400 text-rose-950 shadow-2xs'
                       : isSelected
-                      ? 'bg-amber-50 border-amber-400 border-b-3 border-b-amber-500 text-slate-950 shadow-2xs'
+                      ? 'bg-amber-50/90 border-amber-400 border-b-3 border-b-amber-500 text-slate-950 shadow-xs ring-2 ring-amber-200/60'
                       : 'bg-white hover:bg-amber-50/30 border-slate-200/90 hover:border-amber-300/80 border-b-3 border-b-slate-300/80 text-slate-800 shadow-2xs'
                   }`}
                 >
                   {/* Photo thumbnail if provided */}
                   {opt.photoUrl && (
-                    <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-full overflow-hidden shrink-0 border-2 border-slate-200/90 mr-3 shadow-2xs">
+                    <div className={`rounded-full overflow-hidden shrink-0 border-2 border-slate-200/90 mr-3 shadow-2xs ${
+                      textSize === 'huge' ? 'w-9 h-9 sm:w-10 sm:h-10' : 'w-10 h-10 sm:w-11 sm:h-11'
+                    }`}>
                       <img
                         src={opt.photoUrl}
                         alt={opt.label}
@@ -807,6 +893,48 @@ export const TestView: React.FC<TestViewProps> = ({
               );
             })}
           </div>
+
+          {/* Conversational Memory Trait Card: Tells about this choice ("เขาเป็น...") warmly and dignity-preserving */}
+          {selectedTraitOption && answerState !== 'correct' && (() => {
+            const traitInfo = getChoiceStoryTrait(selectedTraitOption, currentStep.question?.angle, lang);
+            return (
+              <div className="bg-gradient-to-r from-amber-50/95 via-orange-50/90 to-amber-50/95 border-2 border-amber-300/90 rounded-2xl sm:rounded-3xl p-3.5 sm:p-4 text-left shadow-2xs space-y-2 animate-fade-in">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-2">
+                    <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-amber-400 text-slate-950 flex items-center justify-center font-bold text-xs sm:text-sm shadow-2xs">
+                      <span>🌸</span>
+                    </div>
+                    <span className="text-xs sm:text-base font-extrabold text-amber-950 tracking-tight">
+                      {traitInfo.title}
+                    </span>
+                  </div>
+
+                  {/* Re-play Audio Button for this trait */}
+                  <button
+                    onClick={() => {
+                      const speech = `${traitInfo.detail} ${traitInfo.promptToLook}`;
+                      speakWithElevenLabs(speech, undefined, undefined, lang);
+                    }}
+                    className="inline-flex items-center space-x-1 px-3 py-1 rounded-full bg-white hover:bg-amber-100/80 border border-amber-200/80 text-amber-900 text-xs font-bold transition-all shadow-2xs cursor-pointer active:scale-95"
+                    title={lang === 'en' ? 'Listen to story' : 'ฟังเสียงเล่า'}
+                    aria-label="Listen to explanation"
+                  >
+                    <Volume2 className="w-3.5 h-3.5 text-amber-700 stroke-[2.3]" />
+                    <span className="text-xs">{lang === 'en' ? 'Listen' : 'ฟังเสียง'}</span>
+                  </button>
+                </div>
+
+                <div className="space-y-1 pl-1">
+                  <p className="text-sm sm:text-base font-black text-slate-900 leading-snug">
+                    {traitInfo.detail}
+                  </p>
+                  <p className="text-xs sm:text-sm text-amber-900 font-semibold leading-relaxed flex items-center space-x-1">
+                    <span>{traitInfo.promptToLook}</span>
+                  </p>
+                </div>
+              </div>
+            );
+          })()}
 
           {/* Quick Voice / Clue Auxiliary Controls */}
           {answerState !== 'correct' && (
@@ -1167,33 +1295,6 @@ export const TestView: React.FC<TestViewProps> = ({
           </div>
         </div>,
         document.body
-      )}
-
-      {currentStep.type === 'quiz' && answerState === 'wrong' && (
-        <div className="fixed bottom-0 left-0 right-0 z-50 bg-amber-100/95 border-t-3 border-amber-300 shadow-xl backdrop-blur-md animate-slide-up">
-          <div className="max-w-xl mx-auto px-4 py-2 sm:py-2.5 flex items-center justify-between gap-2.5">
-            <div className="flex items-center space-x-2 text-left min-w-0">
-              <div className="w-8 h-8 rounded-full bg-amber-400 text-slate-950 flex items-center justify-center shrink-0">
-                <Smile className="w-5 h-5 stroke-[2.5]" />
-              </div>
-              <div className="min-w-0">
-                <h4 className="text-xs sm:text-sm font-black text-amber-950 truncate">
-                  {lang === 'en' ? 'Almost there, take another look!' : 'เกือบถูกแล้วค่ะ ลองดูอีกทีนะคะ 💡'}
-                </h4>
-                <p className="text-[10px] sm:text-[11px] text-amber-800 font-medium truncate">
-                  {lang === 'en' ? 'No worries at all, tap any choice to try again.' : 'ไม่เป็นไรเลยนะคะ ค่อยๆ นึกดูหรือแตะดูคำใบ้ได้เลยค่ะ'}
-                </p>
-              </div>
-            </div>
-
-            <button
-              onClick={handleTriggerClue}
-              className="px-4 py-1.5 rounded-xl bg-amber-400 hover:bg-amber-300 border-b-2 border-b-amber-600 text-slate-950 font-extrabold text-xs shadow-xs active:border-b-0 active:translate-y-[1px] transition-all cursor-pointer shrink-0"
-            >
-              <span>{lang === 'en' ? 'View Clue' : 'ดูคำใบ้ 💡'}</span>
-            </button>
-          </div>
-        </div>
       )}
     </div>
   );
