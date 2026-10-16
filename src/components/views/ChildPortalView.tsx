@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { MemoryOrb, Language, FamilyGroup, FamilyMember, NavigationPage, OrbEmotion } from '../../types';
+import { MemoryOrb as MemoryOrbView } from '../common/MemoryOrb';
+import { Modal } from '../common/Modal';
 import { 
   ArrowLeft, 
   MessageCircle, 
@@ -1287,7 +1289,7 @@ export const ChildPortalView: React.FC<ChildPortalViewProps> = ({
               className="px-6 py-3.5 rounded-full bg-amber-500 hover:bg-amber-600 text-slate-950 font-extrabold text-sm shadow-md active:scale-95 transition-all flex items-center justify-center space-x-2 shrink-0 cursor-pointer"
             >
               <Plus className="w-4 h-4 stroke-[3]" />
-              <span>{lang === 'en' ? '+ Add New Memory' : '+ เพิ่มความทรงจำใหม่'}</span>
+              <span>{lang === 'en' ? 'Add New Memory' : 'เพิ่มความทรงจำใหม่'}</span>
             </button>
           </div>
 
@@ -1360,8 +1362,8 @@ export const ChildPortalView: React.FC<ChildPortalViewProps> = ({
                 <ImageIcon className="w-8 h-8 text-slate-300 mx-auto" />
                 <p className="text-xs text-slate-500 font-medium">
                   {lang === 'en'
-                    ? 'No uploaded family media yet. Click above or use the "+ Add New Memory" button.'
-                    : 'ยังไม่มีไฟล์สื่อที่อัปโหลด คลิกปุ่มด้านบนหรือกด "+ เพิ่มความทรงจำใหม่" ได้เลย'}
+                    ? 'No uploaded family media yet. Click above or use the "Add New Memory" button.'
+                    : 'ยังไม่มีไฟล์สื่อที่อัปโหลด คลิกปุ่มด้านบนหรือกด "เพิ่มความทรงจำใหม่" ได้เลย'}
                 </p>
               </div>
             ) : (
@@ -1493,293 +1495,282 @@ export const ChildPortalView: React.FC<ChildPortalViewProps> = ({
       {/* =========================================================================
           RICH MEMORY CREATION MODAL
          ========================================================================= */}
-      {showCreateOrbModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-sm animate-in fade-in duration-150">
-          <div 
-            className="bg-white rounded-[32px] max-w-2xl w-full max-h-[90vh] overflow-y-auto border border-slate-200 shadow-2xl p-6 sm:p-8 text-left space-y-6"
-            onClick={(e) => e.stopPropagation()}
-          >
-            {/* Modal Header */}
-            <div className="flex items-center justify-between border-b border-slate-100 pb-4">
-              <div className="flex items-center space-x-3">
-                <div className="w-10 h-10 rounded-2xl bg-amber-500 text-white flex items-center justify-center shadow-xs">
-                  <Sparkles className="w-5 h-5" />
-                </div>
-                <div>
-                  <h3 className="text-xl font-extrabold text-slate-900">
-                    {lang === 'en' ? 'Add New Memory' : 'เพิ่มความทรงจำใหม่'}
-                  </h3>
-                  <p className="text-xs text-slate-500 font-medium">
-                    {lang === 'en' ? 'Upload photo/video and tell the story for Grandma & Grandpa' : 'ระบุข้อมูลภาพ เรื่องราว และเลือกลูกแก้วอารมณ์สำหรับคุณตาคุณยาย'}
-                  </p>
-                </div>
-              </div>
+      <Modal
+        isOpen={showCreateOrbModal}
+        onClose={() => setShowCreateOrbModal(false)}
+        title={lang === 'en' ? 'Add New Memory' : 'เพิ่มความทรงจำใหม่'}
+        subtitle={lang === 'en' ? 'Upload photo/video and tell the story for Grandma & Grandpa' : 'ระบุข้อมูลภาพ เรื่องราว และเลือกลูกแก้วอารมณ์สำหรับคุณตาคุณยาย'}
+        icon={<Sparkles className="w-5 h-5 text-white" />}
+        maxWidth="max-w-2xl"
+      >
+        <form onSubmit={handleCreateNewMemoryOrb} className="space-y-5">
+          {/* Media Upload / Preview */}
+          <div className="space-y-2">
+            <label className="text-xs font-extrabold uppercase tracking-wider text-slate-700 flex items-center space-x-1.5">
+              <ImageIcon className="w-4 h-4 text-indigo-600" />
+              <span>{lang === 'en' ? 'Upload Photo or Video *' : 'อัปโหลดรูปภาพหรือวิดีโอ *'}</span>
+            </label>
 
-              <button
-                onClick={() => setShowCreateOrbModal(false)}
-                className="w-8 h-8 rounded-full hover:bg-slate-100 text-slate-400 hover:text-slate-700 flex items-center justify-center transition-all cursor-pointer"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            {/* Modal Form */}
-            <form onSubmit={handleCreateNewMemoryOrb} className="space-y-5">
-              {/* 1. Media Upload / Preview */}
-              <div className="space-y-2">
-                <label className="text-xs font-extrabold uppercase tracking-wider text-slate-700 flex items-center space-x-1.5">
-                  <ImageIcon className="w-4 h-4 text-indigo-600" />
-                  <span>{lang === 'en' ? '1. Upload Photo or Video *' : '1. อัปโหลดรูปภาพหรือวิดีโอ *'}</span>
-                </label>
-
-                {orbMediaUrl ? (
-                  <div className="relative rounded-2xl overflow-hidden border border-slate-200 bg-slate-900 max-h-56 flex items-center justify-center">
-                    {orbMediaType === 'video' ? (
-                      <video src={orbMediaUrl} className="max-h-56 w-full object-contain" controls />
-                    ) : (
-                      <img src={orbMediaUrl} alt="Preview" className="max-h-56 w-full object-contain" />
-                    )}
-                    <button
-                      type="button"
-                      onClick={() => setOrbMediaUrl('')}
-                      className="absolute top-2 right-2 px-3 py-1 rounded-full bg-slate-900/80 hover:bg-rose-600 text-white text-xs font-bold transition-colors cursor-pointer"
-                    >
-                      {lang === 'en' ? 'Change File' : 'เปลี่ยนไฟล์'}
-                    </button>
-                  </div>
+            {orbMediaUrl ? (
+              <div className="relative rounded-2xl overflow-hidden border border-slate-200 bg-slate-900 max-h-56 flex items-center justify-center">
+                {orbMediaType === 'video' ? (
+                  <video src={orbMediaUrl} className="max-h-56 w-full object-contain" controls />
                 ) : (
-                  <div className="grid grid-cols-2 gap-3">
-                    <label className="border-2 border-dashed border-slate-300 hover:border-indigo-400 rounded-2xl p-5 text-center flex flex-col items-center justify-center space-y-2 cursor-pointer bg-slate-50/60 hover:bg-indigo-50/30 transition-all">
-                      <ImageIcon className="w-8 h-8 text-indigo-500" />
-                      <span className="text-xs font-bold text-slate-800">{lang === 'en' ? 'Upload Photo (Image)' : 'อัปโหลดรูปภาพ (Photo)'}</span>
-                      <span className="text-[10px] text-slate-400">JPG, PNG, WebP ≤ 10MB</span>
-                      <input
-                        type="file"
-                        accept="image/*"
-                        onChange={(e) => handleModalFileUpload(e, 'photo')}
-                        className="hidden"
-                      />
-                    </label>
-
-                    <label className="border-2 border-dashed border-slate-300 hover:border-purple-400 rounded-2xl p-5 text-center flex flex-col items-center justify-center space-y-2 cursor-pointer bg-slate-50/60 hover:bg-purple-50/30 transition-all">
-                      <Video className="w-8 h-8 text-purple-500" />
-                      <span className="text-xs font-bold text-slate-800">{lang === 'en' ? 'Upload Video (MP4)' : 'อัปโหลดวิดีโอ (Video)'}</span>
-                      <span className="text-[10px] text-slate-400">MP4, WebM ≤ 50MB</span>
-                      <input
-                        type="file"
-                        accept="video/*"
-                        onChange={(e) => handleModalFileUpload(e, 'video')}
-                        className="hidden"
-                      />
-                    </label>
-                  </div>
+                  <img src={orbMediaUrl} alt="Preview" className="max-h-56 w-full object-contain" />
                 )}
-              </div>
-
-              {/* 2. Memory Title */}
-              <div className="space-y-1.5">
-                <label className="text-xs font-extrabold uppercase tracking-wider text-slate-700 flex items-center space-x-1.5">
-                  <Tag className="w-4 h-4 text-indigo-600" />
-                  <span>{lang === 'en' ? '2. Memory Name / Title *' : '2. ชื่อภาพ / ชื่อความทรงจำ *'}</span>
-                </label>
-                <input
-                  type="text"
-                  value={orbTitle}
-                  onChange={(e) => setOrbTitle(e.target.value)}
-                  placeholder={lang === 'en' ? 'e.g. Family trip to Hua Hin beach' : 'เช่น เที่ยวทะเลหัวหินกับครอบครัว, วันรับปริญญาหลาน'}
-                  className="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-white text-sm focus:outline-indigo-500 font-medium"
-                  required
-                />
-              </div>
-
-              {/* 3. Who is in the photo */}
-              <div className="space-y-2">
-                <label className="text-xs font-extrabold uppercase tracking-wider text-slate-700 flex items-center space-x-1.5">
-                  <Users className="w-4 h-4 text-indigo-600" />
-                  <span>{lang === 'en' ? '3. Who is in this photo/video? *' : '3. ใครอยู่ในภาพนี้บ้าง? (เลือกสมาชิกหรือพิมพ์เพิ่ม) *'}</span>
-                </label>
-                
-                {/* Family Member Chips */}
-                <div className="flex flex-wrap gap-2">
-                  {familyGroup.members.map((member) => {
-                    const isSelected = orbPeople.includes(member.name);
-                    return (
-                      <button
-                        type="button"
-                        key={member.id}
-                        onClick={() => handleTogglePerson(member.name)}
-                        className={`px-3 py-1.5 rounded-full text-xs font-bold flex items-center space-x-1.5 border transition-all cursor-pointer ${
-                          isSelected
-                            ? 'bg-indigo-600 text-white border-indigo-600 shadow-2xs'
-                            : 'bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-200'
-                        }`}
-                      >
-                        {isSelected && <Check className="w-3.5 h-3.5 stroke-[3]" />}
-                        <span>{member.name} ({member.relationTitle})</span>
-                      </button>
-                    );
-                  })}
-                </div>
-
-                {/* Custom Name Input */}
-                <div className="flex space-x-2 pt-1">
-                  <input
-                    type="text"
-                    value={customPersonName}
-                    onChange={(e) => setCustomPersonName(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter') {
-                        e.preventDefault();
-                        handleAddCustomPerson();
-                      }
-                    }}
-                    placeholder={lang === 'en' ? 'Add other person name...' : 'เพิ่มชื่อคนอื่นๆ ในภาพ...'}
-                    className="flex-1 px-3.5 py-2 rounded-xl border border-slate-200 bg-white text-xs focus:outline-indigo-500"
-                  />
-                  <button
-                    type="button"
-                    onClick={handleAddCustomPerson}
-                    className="px-4 py-2 rounded-xl bg-slate-900 text-white text-xs font-bold hover:bg-slate-800 cursor-pointer"
-                  >
-                    {lang === 'en' ? '+ Add' : '+ เพิ่ม'}
-                  </button>
-                </div>
-              </div>
-
-              {/* 4. Location & Date/Year */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div className="space-y-1.5">
-                  <label className="text-xs font-extrabold uppercase tracking-wider text-slate-700 flex items-center space-x-1.5">
-                    <MapPin className="w-4 h-4 text-rose-500" />
-                    <span>{lang === 'en' ? '4. Location' : '4. สถานที่ของภาพ'}</span>
-                  </label>
-                  <input
-                    type="text"
-                    value={orbLocation}
-                    onChange={(e) => setOrbLocation(e.target.value)}
-                    placeholder={lang === 'en' ? 'e.g. Hua Hin Beach, Chiang Mai' : 'เช่น ชายหาดหัวหิน, วัดพระแก้ว'}
-                    className="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-white text-sm focus:outline-indigo-500 font-medium"
-                  />
-                </div>
-
-                <div className="space-y-1.5">
-                  <label className="text-xs font-extrabold uppercase tracking-wider text-slate-700 flex items-center space-x-1.5">
-                    <Calendar className="w-4 h-4 text-amber-500" />
-                    <span>{lang === 'en' ? '5. Date or Year' : '5. วันที่หรือปีในภาพ'}</span>
-                  </label>
-                  <input
-                    type="text"
-                    value={orbDateYear}
-                    onChange={(e) => setOrbDateYear(e.target.value)}
-                    placeholder={lang === 'en' ? 'e.g. 1995 or 15 April 2020' : 'เช่น พ.ศ. 2538 หรือ เมษายน 2542'}
-                    className="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-white text-sm focus:outline-indigo-500 font-medium"
-                  />
-                </div>
-              </div>
-
-              {/* 5. Description / Story */}
-              <div className="space-y-1.5">
-                <label className="text-xs font-extrabold uppercase tracking-wider text-slate-700 flex items-center space-x-1.5">
-                  <FileText className="w-4 h-4 text-emerald-600" />
-                  <span>{lang === 'en' ? '6. Description / Story' : '6. คำอธิบาย / เรื่องเล่าเบื้องหลังภาพ'}</span>
-                </label>
-                <textarea
-                  value={orbDescription}
-                  onChange={(e) => setOrbDescription(e.target.value)}
-                  rows={2}
-                  placeholder={lang === 'en' ? 'e.g. The first time the kids took Grandma to see the ocean. Grandma loved the sea breeze and eating coconut ice cream.' : 'เช่น ทริปแรกที่ลูกๆ พาคุณยายไปเห็นทะเล คุณยายชอบลมทะเลมาก และนั่งทานไอศกรีมกะทิสดอย่างเอร็ดอร่อย'}
-                  className="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-white text-sm focus:outline-indigo-500 font-medium resize-none"
-                />
-              </div>
-
-              {/* 6. Orb Emotion & Color Selection */}
-              <div className="space-y-2">
-                <label className="text-xs font-extrabold uppercase tracking-wider text-slate-700 flex items-center space-x-1.5">
-                  <Sparkles className="w-4 h-4 text-amber-500" />
-                  <span>{lang === 'en' ? '7. Memory Orb Emotion & Color *' : '7. สีและอารมณ์ของลูกแก้ว (Orb Emotion) *'}</span>
-                </label>
-
-                <div className="grid grid-cols-1 sm:grid-cols-5 gap-2.5">
-                  {(Object.keys(EMOTION_CONFIG) as OrbEmotion[]).map((em) => {
-                    const conf = EMOTION_CONFIG[em];
-                    const isSelected = orbEmotion === em;
-
-                    return (
-                      <button
-                        type="button"
-                        key={em}
-                        onClick={() => setOrbEmotion(em)}
-                        className={`p-3 rounded-2xl border text-left flex flex-col justify-between transition-all cursor-pointer ${
-                          isSelected
-                            ? `${conf.badgeBg} ${conf.badgeBorder} ring-2 ${conf.ringColor} shadow-xs`
-                            : 'bg-slate-50 hover:bg-white border-slate-200'
-                        }`}
-                      >
-                        <div className="flex items-center justify-between mb-1">
-                          <div className={`w-6 h-6 rounded-full bg-gradient-to-br ${conf.orbPreviewBg} shadow-2xs`} />
-                          {isSelected && <Check className="w-4 h-4 text-slate-900 stroke-[3]" />}
-                        </div>
-                        <div>
-                          <span className="text-xs font-bold text-slate-900 block leading-tight">
-                            {lang === 'en' ? conf.labelEn : conf.labelTh}
-                          </span>
-                          <span className="text-[10px] text-slate-500 block mt-0.5">{conf.colorName}</span>
-                        </div>
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-
-              {/* 7. Quiz Prompt & Clue (Optional / Auto-suggested) */}
-              <div className="p-4 rounded-2xl bg-amber-50/60 border border-amber-200/80 space-y-3">
-                <div className="flex items-center space-x-2">
-                  <Volume2 className="w-4 h-4 text-amber-600" />
-                  <span className="text-xs font-extrabold uppercase tracking-wider text-amber-900">
-                    {lang === 'en' ? 'Memory Quiz Settings for Grandma' : 'คำถามและคำใบ้สำหรับคุณตาคุณยาย'}
-                  </span>
-                </div>
-
-                <div className="space-y-2">
-                  <input
-                    type="text"
-                    value={orbQuizQuestion}
-                    onChange={(e) => setOrbQuizQuestion(e.target.value)}
-                    placeholder={lang === 'en' ? 'Voice prompt (e.g. Do you remember who is hugging you in this photo?)' : 'คำถามเสียง (เช่น จำรูปนี้ได้ไหมคะ... คนที่ยืนกอดคุณยายอยู่คือใครเอ่ย?)'}
-                    className="w-full px-3.5 py-2 rounded-xl border border-amber-200 bg-white text-xs focus:outline-amber-500"
-                  />
-                  <input
-                    type="text"
-                    value={orbQuizClue}
-                    onChange={(e) => setOrbQuizClue(e.target.value)}
-                    placeholder={lang === 'en' ? 'Gentle clue (e.g. The granddaughter who calls you every Sunday)' : 'คำใบ้แบบอ่อนโยน (เช่น หลานสาวคนที่ชอบโทรมาหาคุณยายทุกวันอาทิตย์)'}
-                    className="w-full px-3.5 py-2 rounded-xl border border-amber-200 bg-white text-xs focus:outline-amber-500"
-                  />
-                </div>
-              </div>
-
-              {/* Submit Buttons */}
-              <div className="flex items-center justify-end space-x-3 pt-2 border-t border-slate-100">
                 <button
                   type="button"
-                  onClick={() => setShowCreateOrbModal(false)}
-                  className="px-5 py-2.5 rounded-full text-xs font-bold text-slate-600 hover:bg-slate-100 cursor-pointer"
+                  onClick={() => setOrbMediaUrl('')}
+                  className="absolute top-2 right-2 px-3 py-1 rounded-full bg-slate-900/80 hover:bg-rose-600 text-white text-xs font-bold transition-colors cursor-pointer"
                 >
-                  {lang === 'en' ? 'Cancel' : 'ยกเลิก'}
-                </button>
-                <button
-                  type="submit"
-                  disabled={isFormSubmitting}
-                  className="px-6 py-2.5 rounded-full bg-slate-950 hover:bg-slate-800 text-white text-xs font-extrabold shadow-md active:scale-95 transition-all flex items-center space-x-2 cursor-pointer"
-                >
-                  <Sparkles className="w-4 h-4 text-amber-400" />
-                  <span>{lang === 'en' ? 'Save & Create Memory Orb' : 'บันทึกและสร้างลูกแก้วความทรงจำ'}</span>
+                  {lang === 'en' ? 'Change File' : 'เปลี่ยนไฟล์'}
                 </button>
               </div>
-            </form>
+            ) : (
+              <div className="grid grid-cols-2 gap-3">
+                <label className="border-2 border-dashed border-slate-300 hover:border-indigo-400 rounded-2xl p-5 text-center flex flex-col items-center justify-center space-y-2 cursor-pointer bg-slate-50/60 hover:bg-indigo-50/30 transition-all">
+                  <ImageIcon className="w-8 h-8 text-indigo-500" />
+                  <span className="text-xs font-bold text-slate-800">{lang === 'en' ? 'Upload Photo (Image)' : 'อัปโหลดรูปภาพ (Photo)'}</span>
+                  <span className="text-[10px] text-slate-400">JPG, PNG, WebP ≤ 10MB</span>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) => handleModalFileUpload(e, 'photo')}
+                    className="hidden"
+                  />
+                </label>
+
+                <label className="border-2 border-dashed border-slate-300 hover:border-purple-400 rounded-2xl p-5 text-center flex flex-col items-center justify-center space-y-2 cursor-pointer bg-slate-50/60 hover:bg-purple-50/30 transition-all">
+                  <Video className="w-8 h-8 text-purple-500" />
+                  <span className="text-xs font-bold text-slate-800">{lang === 'en' ? 'Upload Video (MP4)' : 'อัปโหลดวิดีโอ (Video)'}</span>
+                  <span className="text-[10px] text-slate-400">MP4, WebM ≤ 50MB</span>
+                  <input
+                    type="file"
+                    accept="video/*"
+                    onChange={(e) => handleModalFileUpload(e, 'video')}
+                    className="hidden"
+                  />
+                </label>
+              </div>
+            )}
           </div>
-        </div>
-      )}
+
+          {/* Memory Title */}
+          <div className="space-y-1.5">
+            <label className="text-xs font-extrabold uppercase tracking-wider text-slate-700 flex items-center space-x-1.5">
+              <Tag className="w-4 h-4 text-indigo-600" />
+              <span>{lang === 'en' ? 'Memory Name / Title *' : 'ชื่อภาพ / ชื่อความทรงจำ *'}</span>
+            </label>
+            <input
+              type="text"
+              value={orbTitle}
+              onChange={(e) => setOrbTitle(e.target.value)}
+              placeholder={lang === 'en' ? 'e.g. Family trip to Hua Hin beach' : 'เช่น เที่ยวทะเลหัวหินกับครอบครัว, วันรับปริญญาหลาน'}
+              className="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-white text-sm focus:outline-indigo-500 font-medium"
+              required
+            />
+          </div>
+
+          {/* Who is in the photo */}
+          <div className="space-y-2">
+            <label className="text-xs font-extrabold uppercase tracking-wider text-slate-700 flex items-center space-x-1.5">
+              <Users className="w-4 h-4 text-indigo-600" />
+              <span>{lang === 'en' ? 'Who is in this photo/video? *' : 'ใครอยู่ในภาพนี้บ้าง? (เลือกสมาชิกหรือพิมพ์เพิ่ม) *'}</span>
+            </label>
+            
+            {/* Family Member Chips */}
+            <div className="flex flex-wrap gap-2">
+              {familyGroup.members.map((member) => {
+                const isSelected = orbPeople.includes(member.name);
+                return (
+                  <button
+                    type="button"
+                    key={member.id}
+                    onClick={() => handleTogglePerson(member.name)}
+                    className={`px-3 py-1.5 rounded-full text-xs font-bold flex items-center space-x-1.5 border transition-all cursor-pointer ${
+                      isSelected
+                        ? 'bg-indigo-600 text-white border-indigo-600 shadow-2xs'
+                        : 'bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-200'
+                    }`}
+                  >
+                    {isSelected && <Check className="w-3.5 h-3.5 stroke-[3]" />}
+                    <span>{member.name} ({member.relationTitle})</span>
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Custom Name Input */}
+            <div className="flex space-x-2 pt-1">
+              <input
+                type="text"
+                value={customPersonName}
+                onChange={(e) => setCustomPersonName(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    handleAddCustomPerson();
+                  }
+                }}
+                placeholder={lang === 'en' ? 'Add other person name...' : 'เพิ่มชื่อคนอื่นๆ ในภาพ...'}
+                className="flex-1 px-3.5 py-2 rounded-xl border border-slate-200 bg-white text-xs focus:outline-indigo-500"
+              />
+              <button
+                type="button"
+                onClick={handleAddCustomPerson}
+                className="px-4 py-2 rounded-xl bg-slate-900 text-white text-xs font-bold hover:bg-slate-800 cursor-pointer"
+              >
+                {lang === 'en' ? '+ Add' : '+ เพิ่ม'}
+              </button>
+            </div>
+          </div>
+
+          {/* Location & Date/Year */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="space-y-1.5">
+              <label className="text-xs font-extrabold uppercase tracking-wider text-slate-700 flex items-center space-x-1.5">
+                <MapPin className="w-4 h-4 text-rose-500" />
+                <span>{lang === 'en' ? 'Location' : 'สถานที่ของภาพ'}</span>
+              </label>
+              <input
+                type="text"
+                value={orbLocation}
+                onChange={(e) => setOrbLocation(e.target.value)}
+                placeholder={lang === 'en' ? 'e.g. Hua Hin Beach, Chiang Mai' : 'เช่น ชายหาดหัวหิน, วัดพระแก้ว'}
+                className="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-white text-sm focus:outline-indigo-500 font-medium"
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="text-xs font-extrabold uppercase tracking-wider text-slate-700 flex items-center space-x-1.5">
+                <Calendar className="w-4 h-4 text-amber-500" />
+                <span>{lang === 'en' ? 'Date or Year' : 'วันที่หรือปีในภาพ'}</span>
+              </label>
+              <input
+                type="text"
+                value={orbDateYear}
+                onChange={(e) => setOrbDateYear(e.target.value)}
+                placeholder={lang === 'en' ? 'e.g. 1995 or 15 April 2020' : 'เช่น พ.ศ. 2538 หรือ เมษายน 2542'}
+                className="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-white text-sm focus:outline-indigo-500 font-medium"
+              />
+            </div>
+          </div>
+
+          {/* Description / Story */}
+          <div className="space-y-1.5">
+            <label className="text-xs font-extrabold uppercase tracking-wider text-slate-700 flex items-center space-x-1.5">
+              <FileText className="w-4 h-4 text-emerald-600" />
+              <span>{lang === 'en' ? 'Description / Story' : 'คำอธิบาย / เรื่องเล่าเบื้องหลังภาพ'}</span>
+            </label>
+            <textarea
+              value={orbDescription}
+              onChange={(e) => setOrbDescription(e.target.value)}
+              rows={2}
+              placeholder={lang === 'en' ? 'e.g. The first time the kids took Grandma to see the ocean. Grandma loved the sea breeze and eating coconut ice cream.' : 'เช่น ทริปแรกที่ลูกๆ พาคุณยายไปเห็นทะเล คุณยายชอบลมทะเลมาก และนั่งทานไอศกรีมกะทิสดอย่างเอร็ดอร่อย'}
+              className="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-white text-sm focus:outline-indigo-500 font-medium resize-none"
+            />
+          </div>
+
+          {/* Orb Emotion & Color Selection with authentic 3D Glass MemoryOrb */}
+          <div className="space-y-2">
+            <label className="text-xs font-extrabold uppercase tracking-wider text-slate-700 flex items-center space-x-1.5">
+              <Sparkles className="w-4 h-4 text-amber-500" />
+              <span>{lang === 'en' ? 'Memory Orb Emotion & Color *' : 'สีและอารมณ์ของลูกแก้ว (Orb Emotion) *'}</span>
+            </label>
+
+            <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+              {(Object.keys(EMOTION_CONFIG) as OrbEmotion[]).map((em) => {
+                const conf = EMOTION_CONFIG[em];
+                const isSelected = orbEmotion === em;
+
+                return (
+                  <button
+                    type="button"
+                    key={em}
+                    onClick={() => setOrbEmotion(em)}
+                    className={`p-3 rounded-2xl border text-center flex flex-col items-center justify-between transition-all cursor-pointer relative ${
+                      isSelected
+                        ? `${conf.badgeBg} ${conf.badgeBorder} ring-2 ${conf.ringColor} shadow-xs scale-102`
+                        : 'bg-slate-50/70 hover:bg-white border-slate-200 hover:border-slate-300'
+                    }`}
+                  >
+                    {isSelected && (
+                      <div className="absolute top-2 right-2 w-5 h-5 rounded-full bg-slate-900 text-white flex items-center justify-center shadow-2xs z-10">
+                        <Check className="w-3 h-3 stroke-[3]" />
+                      </div>
+                    )}
+
+                    {/* Official Inside Out 3D Glass Memory Orb with Core Swirl and Aura */}
+                    <div className="py-1.5 flex items-center justify-center">
+                      <MemoryOrbView
+                        emotion={em}
+                        size={52}
+                        isSelected={isSelected}
+                        showAura={true}
+                      />
+                    </div>
+
+                    <div className="mt-1 w-full text-center">
+                      <span className="text-xs font-extrabold text-slate-900 block leading-tight">
+                        {lang === 'en' ? conf.labelEn : conf.labelTh}
+                      </span>
+                      <span className="text-[10px] text-slate-500 font-medium block mt-0.5">
+                        {conf.colorName}
+                      </span>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Quiz Prompt & Clue (Optional / Auto-suggested) */}
+          <div className="p-4 rounded-2xl bg-amber-50/60 border border-amber-200/80 space-y-3">
+            <div className="flex items-center space-x-2">
+              <Volume2 className="w-4 h-4 text-amber-600" />
+              <span className="text-xs font-extrabold uppercase tracking-wider text-amber-900">
+                {lang === 'en' ? 'Memory Quiz Settings for Grandma' : 'คำถามและคำใบ้สำหรับคุณตาคุณยาย'}
+              </span>
+            </div>
+
+            <div className="space-y-2">
+              <input
+                type="text"
+                value={orbQuizQuestion}
+                onChange={(e) => setOrbQuizQuestion(e.target.value)}
+                placeholder={lang === 'en' ? 'Voice prompt (e.g. Do you remember who is hugging you in this photo?)' : 'คำถามเสียง (เช่น จำรูปนี้ได้ไหมคะ... คนที่ยืนกอดคุณยายอยู่คือใครเอ่ย?)'}
+                className="w-full px-3.5 py-2 rounded-xl border border-amber-200 bg-white text-xs focus:outline-amber-500"
+              />
+              <input
+                type="text"
+                value={orbQuizClue}
+                onChange={(e) => setOrbQuizClue(e.target.value)}
+                placeholder={lang === 'en' ? 'Gentle clue (e.g. The granddaughter who calls you every Sunday)' : 'คำใบ้แบบอ่อนโยน (เช่น หลานสาวคนที่ชอบโทรมาหาคุณยายทุกวันอาทิตย์)'}
+                className="w-full px-3.5 py-2 rounded-xl border border-amber-200 bg-white text-xs focus:outline-amber-500"
+              />
+            </div>
+          </div>
+
+          {/* Submit Buttons */}
+          <div className="flex items-center justify-end space-x-3 pt-3 border-t border-slate-100">
+            <button
+              type="button"
+              onClick={() => setShowCreateOrbModal(false)}
+              className="px-5 py-2.5 rounded-full text-xs font-bold text-slate-600 hover:bg-slate-100 cursor-pointer"
+            >
+              {lang === 'en' ? 'Cancel' : 'ยกเลิก'}
+            </button>
+            <button
+              type="submit"
+              disabled={isFormSubmitting}
+              className="px-6 py-2.5 rounded-full bg-slate-950 hover:bg-slate-800 text-white text-xs font-extrabold shadow-md active:scale-95 transition-all flex items-center space-x-2 cursor-pointer"
+            >
+              <Sparkles className="w-4 h-4 text-amber-400" />
+              <span>{lang === 'en' ? 'Save & Create Memory Orb' : 'บันทึกและสร้างลูกแก้วความทรงจำ'}</span>
+            </button>
+          </div>
+        </form>
+      </Modal>
     </div>
   );
 };
