@@ -184,38 +184,42 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
           SECTION 2: VOICE GUIDANCE & AI NARRATOR (MINIMAL & ELEVENLABS WORDMARK LOGO)
          ========================================================================= */}
       <div className="bg-white rounded-[28px] border border-slate-200/80 p-6 sm:p-7 shadow-xs space-y-6">
-        <div className="flex items-center justify-between border-b border-slate-100 pb-4">
-          <div className="flex items-center space-x-3.5">
+        <div className="flex items-center justify-between border-b border-slate-100 pb-4 gap-4">
+          <div className="flex items-center space-x-3.5 min-w-0 flex-1">
             <div className="w-10 h-10 rounded-2xl bg-amber-50 border border-amber-200/70 text-amber-700 flex items-center justify-center shrink-0">
               <Volume2 className="w-5 h-5" />
             </div>
-            <div className="text-left space-y-1">
+            <div className="text-left space-y-1 min-w-0">
               <div className="flex flex-wrap items-center gap-2">
                 <h3 className="text-lg font-bold text-slate-900 leading-tight">
                   {lang === 'en' ? 'Voice Guidance & AI Narrator' : 'ระบบเสียงพูดและคุณหมอ AI'}
                 </h3>
-                <div className="inline-flex items-center space-x-1.5 px-2.5 py-0.5 rounded-full bg-slate-950 text-white shadow-2xs">
-                  <span className="text-[9px] font-bold text-slate-400 tracking-wider uppercase">AI by</span>
+                <div className="inline-flex items-center px-2.5 py-1 rounded-full bg-slate-950 text-white shadow-2xs">
                   <ElevenLabsLogo className="h-2.5 w-auto text-white" />
                 </div>
               </div>
-              <p className="text-xs sm:text-sm text-slate-500">
+              <p className="text-xs sm:text-sm text-slate-500 truncate sm:whitespace-normal">
                 {lang === 'en' ? 'Natural warm speech powered by ElevenLabs' : 'เสียงพูดภาษาไทยและอังกฤษที่เป็นธรรมชาติ ฟังสบาย'}
               </p>
             </div>
           </div>
 
-          {/* Sound Master Toggle */}
+          {/* Sound Master Toggle - Sturdy, Senior-Friendly, Never Squishes */}
           <button
+            type="button"
+            role="switch"
+            aria-checked={soundEnabled}
             onClick={handleToggleSoundMaster}
-            className={`w-14 h-8 rounded-full transition-colors relative p-1 cursor-pointer ${
+            className={`relative shrink-0 w-16 h-9 rounded-full p-1 transition-colors duration-200 ease-in-out cursor-pointer focus:outline-none focus:ring-2 focus:ring-amber-400 focus:ring-offset-2 ${
               soundEnabled ? 'bg-amber-500' : 'bg-slate-300'
             }`}
             title={soundEnabled ? (lang === 'en' ? 'Mute Speech' : 'ปิดเสียงชั่วคราว') : (lang === 'en' ? 'Enable Speech' : 'เปิดใช้งานเสียง')}
           >
-            <div
-              className={`w-6 h-6 rounded-full bg-white shadow-sm transition-transform ${
-                soundEnabled ? 'translate-x-6' : 'translate-x-0'
+            <span className="sr-only">Toggle Voice</span>
+            <span
+              aria-hidden="true"
+              className={`pointer-events-none block w-7 h-7 rounded-full bg-white shadow-md transform ring-0 transition-transform duration-200 ease-in-out ${
+                soundEnabled ? 'translate-x-7' : 'translate-x-0'
               }`}
             />
           </button>
@@ -283,25 +287,15 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                         : 'bg-slate-50/70 hover:bg-white border-slate-200/90 text-slate-700'
                     }`}
                   >
-                    {/* 3D Glass Memory Orb representation */}
+                    {/* Simple Circle Placeholder ("กลมๆโง่ๆ" ระหว่างรอ Agent อีกตัว Redesign) */}
                     <div
-                      className="relative shrink-0 w-13 h-13 sm:w-15 sm:h-15 rounded-full overflow-hidden transition-all duration-300"
+                      className="w-11 h-11 sm:w-12 sm:h-12 rounded-full shrink-0 border-2 border-white/80 shadow-xs"
                       style={{
-                        boxShadow: isSelected
-                          ? `0 0 18px 3px ${preset.glowColor || 'rgba(245, 158, 11, 0.5)'}, inset 0 0 10px rgba(255, 255, 255, 0.7)`
-                          : `0 4px 10px ${preset.glowColor || 'rgba(245, 158, 11, 0.25)'}, inset 0 0 6px rgba(255, 255, 255, 0.4)`
+                        backgroundColor: preset.glowColor 
+                          ? preset.glowColor.replace(/rgba\(([^,]+),([^,]+),([^,]+),[^)]+\)/, 'rgb($1,$2,$3)') 
+                          : '#f59e0b'
                       }}
-                    >
-                      <img
-                        src={preset.orbPhotoUrl || 'https://images.unsplash.com/photo-1492562080023-ab3db95bfbce?auto=format&fit=crop&w=400&q=80'}
-                        alt={displayName}
-                        className="w-full h-full object-cover scale-110"
-                      />
-                      {/* Glass Specular Glare & Ring */}
-                      <div className="absolute inset-0 rounded-full bg-gradient-to-tr from-transparent via-white/10 to-white/60 pointer-events-none" />
-                      <div className="absolute inset-0 rounded-full ring-1 ring-white/60 pointer-events-none" />
-                      <div className="absolute top-1 left-1.5 w-3 h-2 rounded-full bg-white/70 blur-[0.8px] pointer-events-none" />
-                    </div>
+                    />
 
                     {/* Text Details: title, label, description */}
                     <div className="flex-1 min-w-0 pr-2">
@@ -347,25 +341,15 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                         : 'bg-slate-50/70 hover:bg-white border-slate-200/90 text-slate-700'
                     }`}
                   >
-                    {/* 3D Glass Memory Orb representation */}
+                    {/* Simple Circle Placeholder ("กลมๆโง่ๆ" ระหว่างรอ Agent อีกตัว Redesign) */}
                     <div
-                      className="relative shrink-0 w-13 h-13 sm:w-15 sm:h-15 rounded-full overflow-hidden transition-all duration-300"
+                      className="w-11 h-11 sm:w-12 sm:h-12 rounded-full shrink-0 border-2 border-white/80 shadow-xs"
                       style={{
-                        boxShadow: isSelected
-                          ? `0 0 18px 3px ${preset.glowColor || 'rgba(245, 158, 11, 0.5)'}, inset 0 0 10px rgba(255, 255, 255, 0.7)`
-                          : `0 4px 10px ${preset.glowColor || 'rgba(245, 158, 11, 0.25)'}, inset 0 0 6px rgba(255, 255, 255, 0.4)`
+                        backgroundColor: preset.glowColor 
+                          ? preset.glowColor.replace(/rgba\(([^,]+),([^,]+),([^,]+),[^)]+\)/, 'rgb($1,$2,$3)') 
+                          : '#f59e0b'
                       }}
-                    >
-                      <img
-                        src={preset.orbPhotoUrl || 'https://images.unsplash.com/photo-1511632765486-a01980e01a18?auto=format&fit=crop&w=400&q=80'}
-                        alt={displayName}
-                        className="w-full h-full object-cover scale-110"
-                      />
-                      {/* Glass Specular Glare & Ring */}
-                      <div className="absolute inset-0 rounded-full bg-gradient-to-tr from-transparent via-white/10 to-white/60 pointer-events-none" />
-                      <div className="absolute inset-0 rounded-full ring-1 ring-white/60 pointer-events-none" />
-                      <div className="absolute top-1 left-1.5 w-3 h-2 rounded-full bg-white/70 blur-[0.8px] pointer-events-none" />
-                    </div>
+                    />
 
                     {/* Text Details: title, label, description */}
                     <div className="flex-1 min-w-0 pr-2">
