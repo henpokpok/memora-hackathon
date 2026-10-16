@@ -275,7 +275,7 @@
 .animate-shelf-scroll {
   display: flex;
   width: max-content;
-  animation: scrollShelfLeft 60s linear infinite;
+  animation: scrollShelfLeft 85s linear infinite;
   will-change: transform;
   -webkit-backface-visibility: hidden;
   backface-visibility: hidden;

@@ -283,7 +283,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
           setActiveOrbKey(null);
           setIsTrayPaused(false);
           setAutoPreviewIndex((prev) => (prev + 1) % orbs.length);
-        }, 350);
+        }, 650);
       }, 10000);
     }, 3000);
 
@@ -1007,7 +1007,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
-                transition={{ duration: 0.3 }}
+                transition={{ duration: 0.6, ease: 'easeOut' }}
                 onClick={(e) => handleOpenFromMiniPreview(miniPreviewOrb, e)}
                 className="w-full cursor-pointer flex flex-col items-center justify-start select-none group relative pt-7 sm:pt-8"
                 title={lang === 'en' ? 'Tap to view full story' : 'แตะเพื่อเปิดดูความทรงจำเต็มจอ'}
@@ -1017,8 +1017,8 @@ export const HomeView: React.FC<HomeViewProps> = ({
                   <motion.div
                     initial={{ scaleY: 0, opacity: 0 }}
                     animate={{ scaleY: 1, opacity: 1 }}
-                    exit={{ opacity: 0, transition: { duration: 0.25 } }}
-                    transition={{ duration: 0.55, ease: [0.16, 1, 0.3, 1] }}
+                    exit={{ opacity: 0, transition: { duration: 0.5, ease: 'easeIn' } }}
+                    transition={{ duration: 0.9, ease: [0.16, 1, 0.3, 1] }}
                     style={{
                       transformOrigin: `${spotlightBeam.startX}px ${spotlightBeam.startY}px`,
                     }}
@@ -1091,9 +1091,9 @@ export const HomeView: React.FC<HomeViewProps> = ({
 
                 {/* 2. Floating Rectangular Photo (Clean, compact 220x136, Pure Aura Glow matching orb emotion, NO hard stroke border) */}
                 <motion.div
-                  initial={{ opacity: 0, scale: 0.97 }}
+                  initial={{ opacity: 0, scale: 0.95 }}
                   animate={{ opacity: 1, scale: 1 }}
-                  transition={{ delay: 0.2, duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
+                  transition={{ delay: 0.35, duration: 0.85, ease: [0.16, 1, 0.3, 1] }}
                   data-mini-photo
                   className="relative flex items-center justify-center -mt-0.5"
                   style={{ width: 220, height: 136 }}
@@ -1159,9 +1159,9 @@ export const HomeView: React.FC<HomeViewProps> = ({
 
                 {/* 3. Floating Description Text (Comfortable spacing and senior-friendly readable font sizes) */}
                 <motion.div
-                  initial={{ opacity: 0, y: 3 }}
+                  initial={{ opacity: 0, y: 8 }}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.1, duration: 0.4, ease: 'easeOut' }}
+                  transition={{ delay: 0.55, duration: 0.75, ease: 'easeOut' }}
                   className="mt-3.5 sm:mt-4 text-center space-y-1.5 max-w-[320px] sm:max-w-[360px] pointer-events-auto select-none flex flex-col items-center px-2"
                 >
                   <h4 className="text-base sm:text-lg font-extrabold text-slate-900 tracking-tight leading-snug drop-shadow-xs line-clamp-1">
