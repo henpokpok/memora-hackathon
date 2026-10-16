@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Language, NavigationPage } from '../../types';
+import { Language, NavigationPage, OrbEmotion } from '../../types';
 import { 
   ArrowLeft, 
   Volume2, 
@@ -22,6 +22,29 @@ import {
   THAI_VOICE_PRESETS,
   ENGLISH_VOICE_PRESETS
 } from '../../services/elevenlabs';
+import { MemoryOrb } from '../common/MemoryOrb';
+
+// Helper to map voice preset to authentic Inside Out Memory Orb emotion
+const getPresetEmotion = (presetId: string): OrbEmotion => {
+  switch (presetId) {
+    case 'B4NdgwdU97lHqA8Udh2D': // Kanya (อบอุ่น อ่อนโยน)
+    case 'pFZP5JQG7iQjIQuC4Bku': // Lily (อบอุ่น อ่อนโยน)
+      return 'joy';
+    case 'v2NF9R77fF8wZRdbGYTg': // Siriporn (สุขุม นุ่มนวล ชัดเจน)
+    case '21m00Tcm4TlvDq8ikWAM': // Rachel (ชัดเจน เล่าเรื่องเป็นธรรมชาติ)
+      return 'nostalgia';
+    case 'nealpwJT5tCyJFKDzEq8': // Aom (หวาน ละมุน เป็นกันเอง)
+    case 'EXAVITQu4vr4xnSDxMaL': // Bella (สดใส อบอุ่น เป็นมิตร)
+      return 'love';
+    case 'H9eYlNHpm1vah6PPgYAk': // Ekkarat (สบายๆ เป็นมิตร มีพลัง)
+      return 'vitality';
+    case 'XLXcyPK1jTjw1pYLLcM9': // Somchai (คุณหมอ ทุ้ม สุขุม น่าเชื่อถือ)
+    case 'ErXwobaYiN019PkySvjV': // Antoni (สุขุม อบอุ่น มั่นใจ)
+      return 'celebration';
+    default:
+      return 'joy';
+  }
+};
 
 // Official ElevenLabs SVG wordmark logo
 const ElevenLabsLogo: React.FC<{ className?: string }> = ({ className = "h-3.5 w-auto" }) => (
@@ -287,15 +310,16 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                         : 'bg-slate-50/70 hover:bg-white border-slate-200/90 text-slate-700'
                     }`}
                   >
-                    {/* Simple Circle Placeholder ("กลมๆโง่ๆ" ระหว่างรอ Agent อีกตัว Redesign) */}
-                    <div
-                      className="w-11 h-11 sm:w-12 sm:h-12 rounded-full shrink-0 border-2 border-white/80 shadow-xs"
-                      style={{
-                        backgroundColor: preset.glowColor 
-                          ? preset.glowColor.replace(/rgba\(([^,]+),([^,]+),([^,]+),[^)]+\)/, 'rgb($1,$2,$3)') 
-                          : '#f59e0b'
-                      }}
-                    />
+                    {/* Official Inside Out 3D Memory Orb Component */}
+                    <div className="shrink-0 p-0.5">
+                      <MemoryOrb
+                        emotion={getPresetEmotion(preset.id)}
+                        photoUrl={preset.orbPhotoUrl}
+                        size={52}
+                        isSelected={isSelected}
+                        showAura={true}
+                      />
+                    </div>
 
                     {/* Text Details: title, label, description */}
                     <div className="flex-1 min-w-0 pr-2">
@@ -341,15 +365,16 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                         : 'bg-slate-50/70 hover:bg-white border-slate-200/90 text-slate-700'
                     }`}
                   >
-                    {/* Simple Circle Placeholder ("กลมๆโง่ๆ" ระหว่างรอ Agent อีกตัว Redesign) */}
-                    <div
-                      className="w-11 h-11 sm:w-12 sm:h-12 rounded-full shrink-0 border-2 border-white/80 shadow-xs"
-                      style={{
-                        backgroundColor: preset.glowColor 
-                          ? preset.glowColor.replace(/rgba\(([^,]+),([^,]+),([^,]+),[^)]+\)/, 'rgb($1,$2,$3)') 
-                          : '#f59e0b'
-                      }}
-                    />
+                    {/* Official Inside Out 3D Memory Orb Component */}
+                    <div className="shrink-0 p-0.5">
+                      <MemoryOrb
+                        emotion={getPresetEmotion(preset.id)}
+                        photoUrl={preset.orbPhotoUrl}
+                        size={52}
+                        isSelected={isSelected}
+                        showAura={true}
+                      />
+                    </div>
 
                     {/* Text Details: title, label, description */}
                     <div className="flex-1 min-w-0 pr-2">

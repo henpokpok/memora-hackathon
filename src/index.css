@@ -201,6 +201,51 @@
   -webkit-transform: translateZ(0);
 }
 
+/* Dynamic Liquid Light Streams & Sparkles for Inside Out Memory Orbs (วิ่งๆ วิ้งๆ มนๆ Mix) */
+@keyframes orbLightStream {
+  0% {
+    transform: rotate(0deg) scale(1) translateZ(0);
+  }
+  50% {
+    transform: rotate(180deg) scale(1.15) translateZ(0);
+  }
+  100% {
+    transform: rotate(360deg) scale(1) translateZ(0);
+  }
+}
+
+@keyframes orbCausticSweep {
+  0% {
+    transform: rotate(0deg) translate3d(0, 0, 0);
+    opacity: 0.55;
+  }
+  50% {
+    transform: rotate(-180deg) translate3d(2px, -2px, 0);
+    opacity: 0.9;
+  }
+  100% {
+    transform: rotate(-360deg) translate3d(0, 0, 0);
+    opacity: 0.55;
+  }
+}
+
+.animate-orb-stream {
+  animation: orbLightStream 7s linear infinite;
+  will-change: transform;
+  transform: translateZ(0);
+}
+
+.animate-orb-caustic {
+  animation: orbCausticSweep 10s ease-in-out infinite;
+  will-change: transform, opacity;
+  transform: translateZ(0);
+}
+
+.orb-faint-projection {
+  mask-image: radial-gradient(circle at center, black 58%, rgba(0, 0, 0, 0.75) 78%, transparent 100%);
+  -webkit-mask-image: radial-gradient(circle at center, black 58%, rgba(0, 0, 0, 0.75) 78%, transparent 100%);
+}
+
 /* Floating orb animation */
 @keyframes floatOrb {
   0%, 100% {
