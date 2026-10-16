@@ -1,5 +1,6 @@
 import React from 'react';
 import { Settings } from 'lucide-react';
+import logoImg from '../assets/memora-logo.png';
 
 interface TopHeaderProps {
   onOpenSettings: () => void;
@@ -11,7 +12,7 @@ export const TopHeader: React.FC<TopHeaderProps> = ({ onOpenSettings }) => {
       <div className="max-w-5xl mx-auto px-4 sm:px-6">
         <div className="flex items-center justify-between h-16 sm:h-20">
           {/* Logo with Living Shifting Aura Mist: Non-Clickable Branding Header */}
-          <div className="relative flex items-center space-x-3.5 text-left py-1.5 select-none pointer-events-none">
+          <div className="relative flex items-center space-x-3 text-left py-1.5 select-none pointer-events-none">
             {/* Extended Horizontal Aura Mist: Spanning from Logo all the way across "Memora" (Softened by 50%) */}
             <div className="absolute -inset-y-3 -left-4 -right-8 pointer-events-none z-0 opacity-50">
               {/* Outer horizontal swirling mist */}
@@ -37,23 +38,22 @@ export const TopHeader: React.FC<TopHeaderProps> = ({ onOpenSettings }) => {
               />
             </div>
 
-            {/* Logo Sphere with Centered Organic Swirling Mist Vapor (Softened by 50%) */}
-            <div className="relative flex items-center justify-center w-11 h-11 sm:w-12 sm:h-12 z-10">
-              {/* Multi-layered Organic Mist Vapor (Centered on Orb, Softened) */}
-              <div className="absolute w-20 h-20 sm:w-24 sm:h-24 rounded-full animate-aura-mist opacity-50 pointer-events-none z-0" />
-              <div className="absolute w-16 h-16 sm:w-20 sm:h-20 rounded-full animate-aura-mist-glow opacity-50 pointer-events-none z-0" />
-              <div className="absolute w-12 h-12 sm:w-14 sm:h-14 rounded-full animate-aura-mist-core opacity-50 pointer-events-none z-0" />
-
-              {/* Logo Sphere */}
-              <div className="relative z-10 w-full h-full rounded-full bg-gradient-to-tr from-amber-400 via-rose-400 to-indigo-500 p-[1.5px] shadow-sm shadow-amber-200/50 flex items-center justify-center">
-                <div className="w-full h-full bg-white rounded-full flex items-center justify-center">
-                  <span className="text-xl sm:text-2xl">🔮</span>
-                </div>
-              </div>
+            {/* Official Memora Memory Orb Cluster Logo */}
+            <div className="relative flex items-center justify-center shrink-0 z-10">
+              {/* Gentle ambient halo behind the logo cluster */}
+              <div className="absolute -inset-2 rounded-full animate-aura-mist opacity-40 pointer-events-none z-0 blur-md" />
+              <img
+                src={logoImg}
+                alt="Memora Logo"
+                className="h-11 sm:h-13 w-auto object-contain drop-shadow-xs select-none relative z-10"
+              />
             </div>
 
-            {/* Wordmark "Memora" (Pure & Clean Typography with subtle ambient text shadow) */}
-            <span className="relative z-10 text-2xl sm:text-[26px] font-extrabold tracking-normal text-slate-900 drop-shadow-xs">
+            {/* Wordmark "Memora" (Luxury Editorial Serif Typography) */}
+            <span 
+              className="relative z-10 text-2xl sm:text-[28px] font-bold tracking-tight text-slate-900 drop-shadow-xs select-none"
+              style={{ fontFamily: "'Playfair Display', 'Cormorant Garamond', Georgia, serif" }}
+            >
               Memora
             </span>
           </div>
