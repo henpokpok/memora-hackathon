@@ -217,12 +217,12 @@ export const TestView: React.FC<TestViewProps> = ({
           th: activeOrb.gentleClue || 'ลองสังเกตรอยยิ้มที่คุ้นเคยดูนะคะ',
           en: activeOrb.gentleClueEn || 'Notice their warm and familiar smile.',
         },
-        options: activeOrb.options.map((opt) => ({
-          id: opt.id,
-          label: lang === 'en' && opt.labelEn ? opt.labelEn : opt.label,
-          sublabel: lang === 'en' && opt.relationEn ? opt.relationEn : opt.relation,
-          photoUrl: opt.photoUrl,
-          isCorrect: opt.isCorrect,
+        options: (activeOrb.options || []).map((opt) => ({
+          id: opt?.id || `opt-${Math.random()}`,
+          label: lang === 'en' && opt?.labelEn ? opt.labelEn : (opt?.label || ''),
+          sublabel: lang === 'en' && opt?.relationEn ? opt.relationEn : (opt?.relation || ''),
+          photoUrl: opt?.photoUrl || activeOrb.photoUrl || '',
+          isCorrect: Boolean(opt?.isCorrect),
         })),
       },
 

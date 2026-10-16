@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { NavigationPage, Language, DailyRecapMemory, OrbEmotion } from '../../types';
 import {
@@ -820,16 +821,35 @@ export const TodayRecapView: React.FC<TodayRecapViewProps> = ({ onNavigate, lang
         </button>
       </div>
 
-      {/* 7. PREVIEW & CONFIRMATION MODAL WITH ORGANIC TILTED PHOTOS & EMOJI SELECTOR */}
-      <AnimatePresence>
-        {isPreviewOpen && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-sm">
-            <motion.div
-              initial={{ opacity: 0, scale: 0.9, y: 20 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.9, y: 20 }}
-              className="bg-white rounded-[32px] border border-slate-200/90 shadow-2xl max-w-lg w-full p-6 sm:p-7 space-y-5 text-left relative overflow-hidden max-h-[92vh] overflow-y-auto"
-            >
+      {/* 7. PREVIEW & CONFIRMATION MODAL WITH ORGANIC TILTED PHOTOS & EMOJI SELECTOR (Rendered via Portal to document.body) */}
+      {typeof document !== 'undefined' &&
+        createPortal(
+          <AnimatePresence>
+            {isPreviewOpen && (
+              <div
+                onClick={(e) => {
+                  if (e.target === e.currentTarget && !isSavedSuccess) {
+                    setIsPreviewOpen(false);
+                  }
+                }}
+                className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-sm select-none animate-fade-in"
+                style={{
+                  position: 'fixed',
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  width: '100vw',
+                  height: '100dvh',
+                  margin: 0,
+                }}
+              >
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.9, y: 20 }}
+                  animate={{ opacity: 1, scale: 1, y: 0 }}
+                  exit={{ opacity: 0, scale: 0.9, y: 20 }}
+                  className="bg-white rounded-[32px] border border-slate-200/90 shadow-2xl max-w-lg w-full p-6 sm:p-7 space-y-5 text-left relative overflow-hidden max-h-[92vh] overflow-y-auto"
+                >
               {/* Close Button */}
               <button
                 onClick={() => setIsPreviewOpen(false)}
@@ -1018,9 +1038,11 @@ export const TodayRecapView: React.FC<TodayRecapViewProps> = ({ onNavigate, lang
                 </button>
               </div>
             </motion.div>
-          </div>
+              </div>
+            )}
+          </AnimatePresence>,
+          document.body
         )}
-      </AnimatePresence>
     </div>
   );
 };

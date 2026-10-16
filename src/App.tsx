@@ -7,8 +7,10 @@ import { TopHeader } from './components/TopHeader';
 import { BottomNav } from './components/BottomNav';
 import { HomeView } from './components/views/HomeView';
 
-// Dynamic code splitting for non-initial views to optimize bundle size and LCP
-const TestView = React.lazy(() => import('./components/views/TestView').then((m) => ({ default: m.TestView })));
+import { TestView } from './components/views/TestView';
+import { ErrorBoundary } from './components/ErrorBoundary';
+
+// Dynamic code splitting for secondary views to optimize bundle size and LCP
 const VaultView = React.lazy(() => import('./components/views/VaultView').then((m) => ({ default: m.VaultView })));
 const SettingsView = React.lazy(() => import('./components/views/SettingsView').then((m) => ({ default: m.SettingsView })));
 const ChildPortalView = React.lazy(() => import('./components/views/ChildPortalView').then((m) => ({ default: m.ChildPortalView })));
@@ -138,16 +140,20 @@ export const App: React.FC = () => {
       <main className={`flex-1 max-w-5xl w-full mx-auto px-4 sm:px-6 ${
         currentPage === 'test' ? 'pt-2 sm:pt-2.5 pb-14 sm:pb-15' : 'py-4 pb-32 sm:pb-36'
       }`}>
-        <React.Suspense
-          fallback={
-            <div className="flex flex-col items-center justify-center min-h-[45vh] space-y-3">
-              <div className="w-9 h-9 rounded-full border-3 border-amber-400 border-t-transparent animate-spin" />
-              <p className="text-xs font-semibold text-slate-400">
-                {lang === 'en' ? 'Loading view...' : 'กำลังเปิดหน้าจอ...'}
-              </p>
-            </div>
-          }
+        <ErrorBoundary
+          fallbackTitle={lang === 'en' ? 'Opening View...' : 'กำลังเปิดหน้าจอ...'}
+          onReset={() => setCurrentPage('home')}
         >
+          <React.Suspense
+            fallback={
+              <div className="flex flex-col items-center justify-center min-h-[45vh] space-y-3">
+                <div className="w-9 h-9 rounded-full border-3 border-amber-400 border-t-transparent animate-spin" />
+                <p className="text-xs font-semibold text-slate-400">
+                  {lang === 'en' ? 'Loading view...' : 'กำลังเปิดหน้าจอ...'}
+                </p>
+              </div>
+            }
+          >
           {currentPage === 'home' && (
             <HomeView
               orbs={orbs}
@@ -227,6 +233,7 @@ export const App: React.FC = () => {
             />
           )}
         </React.Suspense>
+        </ErrorBoundary>
       </main>
 
       {/* LINE Memory Capsule Push Preview Modal */}

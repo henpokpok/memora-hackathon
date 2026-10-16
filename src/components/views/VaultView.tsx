@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
+import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { MemoryOrb, OrbEmotion, Language, DailyRecapMemory, NavigationPage } from '../../types';
 import {
@@ -942,126 +943,148 @@ export const VaultView: React.FC<VaultViewProps> = ({
             </div>
           )}
 
-          {/* DETAIL MODAL FOR DAILY RECAP */}
-          <AnimatePresence>
-            {selectedRecap && (
-              <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-sm">
-                <motion.div
-                  initial={{ opacity: 0, scale: 0.9, y: 20 }}
-                  animate={{ opacity: 1, scale: 1, y: 0 }}
-                  exit={{ opacity: 0, scale: 0.9, y: 20 }}
-                  className="bg-white rounded-[32px] border border-slate-200/90 shadow-2xl max-w-xl w-full p-6 sm:p-7 space-y-5 text-left relative overflow-hidden max-h-[90vh] overflow-y-auto"
-                >
-                  <button
-                    onClick={() => {
-                      stopAllAudio();
-                      setSelectedRecap(null);
-                    }}
-                    aria-label={lang === 'en' ? 'Close story details' : 'ปิดรายละเอียดบันทึก'}
-                    className="absolute top-5 right-5 w-9 h-9 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 flex items-center justify-center transition-colors cursor-pointer"
-                  >
-                    <X className="w-4 h-4" />
-                  </button>
-
-                  <div className="space-y-1">
-                    <span className="text-xs font-bold uppercase tracking-wider text-amber-800 flex items-center space-x-1.5">
-                      <Calendar className="w-3.5 h-3.5 text-amber-600" />
-                      <span>{lang === 'en' ? selectedRecap.displayDateEn : selectedRecap.displayDateTh}</span>
-                    </span>
-                    <h3 className="text-xl sm:text-2xl font-black text-slate-900">
-                      {lang === 'en' ? "Today's Family Story" : 'เรื่องราวความทรงจำประจำวัน'}
-                    </h3>
-                  </div>
-
-                  {/* Polaroid Scrapbook Gallery Grid inside Detail */}
-                  <div className="flex flex-wrap justify-center items-start gap-4 py-2">
-                    {selectedRecap.photos.map((photoUrl, pIndex) => (
-                      <div
-                        key={pIndex}
-                        style={{
-                          transform: `rotate(${pIndex % 2 === 0 ? '-2deg' : '2deg'})`,
-                        }}
-                        className="w-[46%] sm:w-[30%] min-w-[130px] bg-white p-2 rounded-2xl border border-slate-200 shadow-md flex flex-col"
-                      >
-                        <div className="w-full rounded-xl overflow-hidden bg-slate-100 flex items-center justify-center">
-                          <img
-                            src={photoUrl}
-                            alt=""
-                            className="w-full h-auto max-h-[320px] object-cover block rounded-xl"
-                          />
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-
-                  {/* Full Story Text & Voice Player */}
-                  <div className="p-5 rounded-2xl bg-amber-50/70 border border-amber-200 space-y-3.5">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center space-x-2">
-                        <div className="w-8 h-8 rounded-full bg-amber-500 text-slate-950 flex items-center justify-center font-bold shadow-2xs">
-                          <Mic className="w-4 h-4" />
-                        </div>
-                        <div>
-                          <span className="text-xs font-black uppercase tracking-wider text-amber-950 block">
-                            {selectedRecap.audioUrl
-                              ? (lang === 'en' ? 'Grandma’s Real Recorded Voice' : 'เสียงบันทึกจริงของคุณยาย (สำหรับลูกหลาน)')
-                              : (lang === 'en' ? 'Story Voice & Words' : 'เรื่องเล่าจากใจคุณ')}
-                          </span>
-                          <span className="text-[11px] text-amber-800 font-medium">
-                            {selectedRecap.audioDurationSec
-                              ? (lang === 'en' ? `Audio length: ${selectedRecap.audioDurationSec}s` : `ความยาวเสียง ${selectedRecap.audioDurationSec} วินาที`)
-                              : (lang === 'en' ? 'Tap to listen to the story' : 'แตะเพื่อเปิดฟังเสียงเรื่องเล่า')}
-                          </span>
-                        </div>
-                      </div>
-
-                      <button
-                        onClick={() => handleToggleRecapAudio(selectedRecap)}
-                        aria-label={
-                          playingRecapId === selectedRecap.id
-                            ? (lang === 'en' ? 'Pause story voice' : 'พักเสียงเล่า')
-                            : (lang === 'en' ? 'Listen to your recorded story' : 'ฟังเสียงที่คุณเล่าเรื่องราว')
-                        }
-                        className={`inline-flex items-center space-x-2 px-4 py-2.5 rounded-2xl text-xs sm:text-sm font-extrabold transition-all shadow-xs active:scale-95 cursor-pointer border ${
-                          playingRecapId === selectedRecap.id
-                            ? 'bg-rose-500 hover:bg-rose-600 text-white border-rose-400 animate-pulse'
-                            : 'bg-white hover:bg-amber-100 text-amber-950 border-amber-300'
-                        }`}
-                      >
-                        {playingRecapId === selectedRecap.id ? (
-                          <>
-                            <Pause className="w-5 h-5 fill-current text-white shrink-0" />
-                            <span>{lang === 'en' ? 'Playing voice...' : 'กำลังเล่นเสียงที่คุณเล่า...'}</span>
-                          </>
-                        ) : (
-                          <>
-                            <Volume2 className="w-5 h-5 text-amber-800 shrink-0 stroke-[2.3]" />
-                            <span>{lang === 'en' ? 'Listen to your recorded story' : 'ฟังเสียงที่คุณเล่าเรื่องราว'}</span>
-                          </>
-                        )}
-                      </button>
-                    </div>
-
-                    <p className="text-base sm:text-lg text-slate-800 font-medium leading-relaxed bg-white/70 p-4 rounded-xl border border-amber-200/60">
-                      "{selectedRecap.transcript}"
-                    </p>
-                  </div>
-
-                  <div className="pt-2 flex justify-end">
-                    <button
-                      onClick={() => {
+          {/* DETAIL MODAL FOR DAILY RECAP (Rendered via React Portal to document.body to ensure 100vw x 100dvh full coverage) */}
+          {typeof document !== 'undefined' &&
+            createPortal(
+              <AnimatePresence>
+                {selectedRecap && (
+                  <div
+                    onClick={(e) => {
+                      if (e.target === e.currentTarget) {
                         stopAllAudio();
                         setSelectedRecap(null);
-                      }}
-                      className="px-6 py-2.5 rounded-full bg-slate-900 hover:bg-slate-800 text-white font-bold text-sm transition-transform active:scale-95 cursor-pointer"
+                      }
+                    }}
+                    className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-sm select-none animate-fade-in"
+                    style={{
+                      position: 'fixed',
+                      top: 0,
+                      left: 0,
+                      right: 0,
+                      bottom: 0,
+                      width: '100vw',
+                      height: '100dvh',
+                      margin: 0,
+                    }}
+                  >
+                    <motion.div
+                      initial={{ opacity: 0, scale: 0.9, y: 20 }}
+                      animate={{ opacity: 1, scale: 1, y: 0 }}
+                      exit={{ opacity: 0, scale: 0.9, y: 20 }}
+                      className="bg-white rounded-[32px] border border-slate-200/90 shadow-2xl max-w-xl w-full p-6 sm:p-7 space-y-5 text-left relative overflow-hidden max-h-[90vh] overflow-y-auto"
                     >
-                      {lang === 'en' ? 'Close' : 'ปิด'}
-                    </button>
+                      <button
+                        onClick={() => {
+                          stopAllAudio();
+                          setSelectedRecap(null);
+                        }}
+                        aria-label={lang === 'en' ? 'Close story details' : 'ปิดรายละเอียดบันทึก'}
+                        className="absolute top-5 right-5 w-9 h-9 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 flex items-center justify-center transition-colors cursor-pointer"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+
+                      <div className="space-y-1">
+                        <span className="text-xs font-bold uppercase tracking-wider text-amber-800 flex items-center space-x-1.5">
+                          <Calendar className="w-3.5 h-3.5 text-amber-600" />
+                          <span>{lang === 'en' ? selectedRecap.displayDateEn : selectedRecap.displayDateTh}</span>
+                        </span>
+                        <h3 className="text-xl sm:text-2xl font-black text-slate-900">
+                          {lang === 'en' ? "Today's Family Story" : 'เรื่องราวความทรงจำประจำวัน'}
+                        </h3>
+                      </div>
+
+                      {/* Polaroid Scrapbook Gallery Grid inside Detail */}
+                      <div className="flex flex-wrap justify-center items-start gap-4 py-2">
+                        {selectedRecap.photos.map((photoUrl, pIndex) => (
+                          <div
+                            key={pIndex}
+                            style={{
+                              transform: `rotate(${pIndex % 2 === 0 ? '-2deg' : '2deg'})`,
+                            }}
+                            className="w-[46%] sm:w-[30%] min-w-[130px] bg-white p-2 rounded-2xl border border-slate-200 shadow-md flex flex-col"
+                          >
+                            <div className="w-full rounded-xl overflow-hidden bg-slate-100 flex items-center justify-center">
+                              <img
+                                src={photoUrl}
+                                alt=""
+                                className="w-full h-auto max-h-[320px] object-cover block rounded-xl"
+                              />
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+
+                      {/* Full Story Text & Voice Player */}
+                      <div className="p-5 rounded-2xl bg-amber-50/70 border border-amber-200 space-y-3.5">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center space-x-2">
+                            <div className="w-8 h-8 rounded-full bg-amber-500 text-slate-950 flex items-center justify-center font-bold shadow-2xs">
+                              <Mic className="w-4 h-4" />
+                            </div>
+                            <div>
+                              <span className="text-xs font-black uppercase tracking-wider text-amber-950 block">
+                                {selectedRecap.audioUrl
+                                  ? (lang === 'en' ? 'Grandma’s Real Recorded Voice' : 'เสียงบันทึกจริงของคุณยาย (สำหรับลูกหลาน)')
+                                  : (lang === 'en' ? 'Story Voice & Words' : 'เรื่องเล่าจากใจคุณ')}
+                              </span>
+                              <span className="text-[11px] text-amber-800 font-medium">
+                                {selectedRecap.audioDurationSec
+                                  ? (lang === 'en' ? `Audio length: ${selectedRecap.audioDurationSec}s` : `ความยาวเสียง ${selectedRecap.audioDurationSec} วินาที`)
+                                  : (lang === 'en' ? 'Tap to listen to the story' : 'แตะเพื่อเปิดฟังเสียงเรื่องเล่า')}
+                              </span>
+                            </div>
+                          </div>
+
+                          <button
+                            onClick={() => handleToggleRecapAudio(selectedRecap)}
+                            aria-label={
+                              playingRecapId === selectedRecap.id
+                                ? (lang === 'en' ? 'Pause story voice' : 'พักเสียงเล่า')
+                                : (lang === 'en' ? 'Listen to your recorded story' : 'ฟังเสียงที่คุณเล่าเรื่องราว')
+                            }
+                            className={`inline-flex items-center space-x-2 px-4 py-2.5 rounded-2xl text-xs sm:text-sm font-extrabold transition-all shadow-xs active:scale-95 cursor-pointer border ${
+                              playingRecapId === selectedRecap.id
+                                ? 'bg-rose-500 hover:bg-rose-600 text-white border-rose-400 animate-pulse'
+                                : 'bg-white hover:bg-amber-100 text-amber-950 border-amber-300'
+                            }`}
+                          >
+                            {playingRecapId === selectedRecap.id ? (
+                              <>
+                                <Pause className="w-5 h-5 fill-current text-white shrink-0" />
+                                <span>{lang === 'en' ? 'Playing voice...' : 'กำลังเล่นเสียงที่คุณเล่า...'}</span>
+                              </>
+                            ) : (
+                              <>
+                                <Volume2 className="w-5 h-5 text-amber-800 shrink-0 stroke-[2.3]" />
+                                <span>{lang === 'en' ? 'Listen to your recorded story' : 'ฟังเสียงที่คุณเล่าเรื่องราว'}</span>
+                              </>
+                            )}
+                          </button>
+                        </div>
+
+                        <p className="text-base sm:text-lg text-slate-800 font-medium leading-relaxed bg-white/70 p-4 rounded-xl border border-amber-200/60">
+                          "{selectedRecap.transcript}"
+                        </p>
+                      </div>
+
+                      <div className="pt-2 flex justify-end">
+                        <button
+                          onClick={() => {
+                            stopAllAudio();
+                            setSelectedRecap(null);
+                          }}
+                          className="px-6 py-2.5 rounded-full bg-slate-900 hover:bg-slate-800 text-white font-bold text-sm transition-transform active:scale-95 cursor-pointer"
+                        >
+                          {lang === 'en' ? 'Close' : 'ปิด'}
+                        </button>
+                      </div>
+                    </motion.div>
                   </div>
-                </motion.div>
-              </div>
+                )}
+              </AnimatePresence>,
+              document.body
             )}
-          </AnimatePresence>
         </div>
       )}
 
